@@ -1,0 +1,41 @@
+networks:
+  monitoring:
+    driver: bridge
+
+services:
+  influxdb:
+    image: influxdb:2
+    container_name: influxdb
+    hostname: influxdb
+    networks:
+      - monitoring
+    ports:
+      - 8086:8086
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password
+      - DOCKER_INFLUXDB_INIT_ORG=vechain
+      - DOCKER_INFLUXDB_INIT_BUCKET=vechain
+      - DOCKER_INFLUXDB_INIT_RETENTION=0
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=admin-token
+    volumes:
+      - ${PWD}/volumes/influxdb2:/var/lib/influxdb2
+
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    networks:
+      - monitoring
+    ports:
+      - 3000:3000
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=admin-token
+    volumes:
+      - ${PWD}/grafana/data-sources.yaml:/etc/grafana/provisioning/datasources/grafana-data-sources.yaml
+      - ${PWD}/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards
+      - ${PWD}/volumes/grafana:/var/lib/grafana
