@@ -37,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	influx, err := influxdb.New(influxURL, influxToken, thor.Client().ChainTag())
+	influx, err := influxdb.New(thor, influxURL, influxToken, thor.Client().ChainTag())
 	if err != nil {
 		slog.Error("failed to create influxdb", "error", err)
 		os.Exit(1)

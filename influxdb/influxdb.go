@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/darrenvechain/thor-go-sdk/thorgo"
 	"log/slog"
+	"math/big"
 	"sort"
 	"sync/atomic"
 	"time"
@@ -14,7 +15,7 @@ import (
 
 type DB struct {
 	thor      *thorgo.Thor
-	client    *influxdb2.Client
+	client    influxdb2.Client
 	chainTag  byte
 	prevBlock atomic.Value
 }
@@ -30,7 +31,8 @@ func New(thor *thorgo.Thor, url, token string, chainTag byte) (*DB, error) {
 	}
 
 	return &DB{
-		client:   &influx,
+		thor:     thor,
+		client:   influx,
 		chainTag: chainTag,
 	}, nil
 }
@@ -109,9 +111,9 @@ type coefStats struct {
 func (i *DB) appendTxStats(block *client.ExpandedBlock, flags map[string]interface{}) (total, success, failed int) {
 	txs := block.Transactions
 	clauseCount := 0
-	for _, tx := range txs {
-		clauseCount += len(tx.Clauses)
-	}
+	vetTransferCount := 0
+	vetTransfersAmount := new(big.Float)
+	eventCount := 0
 
 	stats := coefStats{
 		Total: len(txs),
@@ -122,10 +124,19 @@ func (i *DB) appendTxStats(block *client.ExpandedBlock, flags map[string]interfa
 	sum := 0
 
 	for _, t := range txs {
+		clauseCount += len(t.Clauses)
 		coef := t.GasPriceCoef
 		coefs = append(coefs, float64(coef))
 		coefCount[float64(coef)]++
 		sum += int(coef)
+		for _, o := range t.Outputs {
+			vetTransferCount += len(o.Transfers)
+			eventCount += len(o.Events)
+			for _, tr := range o.Transfers {
+				amountFloat := new(big.Float).SetInt(tr.Amount.Int)
+				vetTransfersAmount.Add(vetTransfersAmount, amountFloat)
+			}
+		}
 	}
 
 	if len(coefs) > 0 {
@@ -146,6 +157,8 @@ func (i *DB) appendTxStats(block *client.ExpandedBlock, flags map[string]interfa
 		stats.Mode = mode
 	}
 
+	vetAmount, _ := vetTransfersAmount.Quo(vetTransfersAmount, big.NewFloat(1e18)).Float64()
+
 	flags["total_txs"] = stats.Total
 	flags["total_clauses"] = clauseCount
 	flags["coef_average"] = stats.Average
@@ -153,6 +166,8 @@ func (i *DB) appendTxStats(block *client.ExpandedBlock, flags map[string]interfa
 	flags["coef_min"] = stats.Min
 	flags["coef_mode"] = stats.Mode
 	flags["coef_median"] = stats.Median
+	flags["vet_transfers"] = vetTransferCount
+	flags["vet_transfers_amount"] = vetAmount
 
 	return
 }
@@ -191,13 +206,13 @@ func (i *DB) appendSlotStats(block *client.ExpandedBlock, flags map[string]inter
 	flags["current_epoch"] = currentEpoch
 
 	// if blockTime is within the 15 mins, call to chain for the real finalized block
-	if time.Since(blockTime) < time.Minute*15 {
+	if time.Since(blockTime) < time.Minute*3 {
 		finalized, err := i.thor.Blocks.Finalized()
 		if err != nil {
 			slog.Error("failed to get finalized block", "error", err)
 			flags["finalized"] = esitmatedFinalized
 		} else {
-			flags["finalized"] = finalized
+			flags["finalized"] = finalized.Number
 		}
 	} else {
 		flags["finalized"] = esitmatedFinalized
