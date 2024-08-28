@@ -190,8 +190,8 @@ func (i *DB) appendSlotStats(block *client.ExpandedBlock, flags map[string]inter
 	esitmatedFinalized := currentEpoch - 360
 	flags["current_epoch"] = currentEpoch
 
-	// if blockTime is within the last hour, call to chain for the real finalized block
-	if time.Since(blockTime) < time.Hour {
+	// if blockTime is within the 15 mins, call to chain for the real finalized block
+	if time.Since(blockTime) < time.Minute*15 {
 		finalized, err := i.thor.Blocks.Finalized()
 		if err != nil {
 			slog.Error("failed to get finalized block", "error", err)
