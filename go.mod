@@ -1,4 +1,4 @@
-module github.com/darrenvechain/thorflux
+module github.com/vechain/thorflux
 
 go 1.22.6
 

@@ -11,20 +11,20 @@ import (
 
 	"github.com/darrenvechain/thor-go-sdk/client"
 	"github.com/darrenvechain/thor-go-sdk/thorgo"
-	influx2 "github.com/darrenvechain/thorflux/influxdb"
+	"github.com/vechain/thorflux/influxdb"
 )
 
-const querySize = 1000
+const querySize = 100
 
 type Sync struct {
 	thor      *thorgo.Thor
-	influx    *influx2.DB
+	influx    *influxdb.DB
 	prev      *atomic.Uint64
 	blockChan chan *client.ExpandedBlock
 	context   context.Context
 }
 
-func New(thor *thorgo.Thor, influx *influx2.DB, start uint64, ctx context.Context) *Sync {
+func New(thor *thorgo.Thor, influx *influxdb.DB, start uint64, ctx context.Context) *Sync {
 	prev := &atomic.Uint64{}
 	prev.Store(start - 1)
 	blockChan := make(chan *client.ExpandedBlock, 5000)
@@ -86,8 +86,8 @@ func (s *Sync) fastSync() {
 				for _, block := range blocks {
 					s.blockChan <- block
 				}
-				time.Sleep(100 * time.Millisecond)
 			}
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
@@ -138,7 +138,7 @@ func (s *Sync) fetchBlocksAsync(n int, startBlock uint64) ([]*client.ExpandedBlo
 				return
 			}
 			blocks[i] = block
-		}(i) // Pass i to the goroutine
+		}(i)
 	}
 
 	wg.Wait()

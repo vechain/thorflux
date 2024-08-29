@@ -71,9 +71,7 @@ func (i *DB) Latest() (uint64, error) {
 
 // WriteBlock writes a block to the database
 func (i *DB) WriteBlock(block *client.ExpandedBlock) {
-	defer func() {
-		i.prevBlock.Store(block)
-	}()
+	defer i.prevBlock.Store(block)
 
 	if block.Number%1000 == 0 {
 		slog.Info("🪣 saving results to bucket", "number", block.Number)
@@ -179,11 +177,13 @@ func (i *DB) appendBlockStats(block *client.ExpandedBlock, flags map[string]inte
 	flags["block_gas_usage"] = float64(block.GasUsed) * 100 / float64(block.GasLimit)
 	flags["storage_size"] = block.Size
 	prev, ok := i.prevBlock.Load().(*client.ExpandedBlock)
+	gap := uint64(0)
 	if ok {
-		flags["block_mine_gap"] = block.Timestamp - prev.Timestamp
+		gap = block.Timestamp - prev.Timestamp
 	} else {
-		flags["block_mine_gap"] = uint64(10)
+		gap = uint64(10)
 	}
+	flags["block_mine_gap"] = (gap - 10) / 10
 }
 
 func (i *DB) appendB3trStats(block *client.ExpandedBlock, flags map[string]interface{}) {

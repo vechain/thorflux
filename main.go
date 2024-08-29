@@ -10,8 +10,8 @@ import (
 	"syscall"
 
 	"github.com/darrenvechain/thor-go-sdk/thorgo"
-	"github.com/darrenvechain/thorflux/influxdb"
-	"github.com/darrenvechain/thorflux/sync"
+	"github.com/vechain/thorflux/influxdb"
+	"github.com/vechain/thorflux/sync"
 )
 
 var (
