@@ -24,6 +24,7 @@ services:
 
 
   grafana:
+    user: "0"
     image: grafana/grafana:latest
     container_name: grafana
     networks:

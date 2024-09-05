@@ -200,6 +200,11 @@ func (i *DB) appendB3trStats(block *client.ExpandedBlock, flags map[string]inter
 
 func (i *DB) appendSlotStats(block *client.ExpandedBlock, flags map[string]interface{}) {
 	blockTime := time.Unix(int64(block.Timestamp), 0).UTC()
+	prevBlock, ok := i.prevBlock.Load().(*client.ExpandedBlock)
+
+	if ok {
+		flags["slots_per_block"] = (block.Timestamp - prevBlock.Timestamp) / 10
+	}
 
 	currentEpoch := block.Number / 180 * 180
 	esitmatedFinalized := currentEpoch - 360
