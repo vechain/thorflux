@@ -203,7 +203,17 @@ func (i *DB) appendSlotStats(block *client.ExpandedBlock, flags map[string]inter
 	prevBlock, ok := i.prevBlock.Load().(*client.ExpandedBlock)
 
 	if ok {
-		flags["slots_per_block"] = (block.Timestamp - prevBlock.Timestamp) / 10
+		genesisBlockTimestamp := i.thor.Client().GenesisBlock().Timestamp
+		slots := ((block.Timestamp - genesisBlockTimestamp) / 10) + 1
+		newSlots := (block.Timestamp - prevBlock.Timestamp) + 1
+		flags["slots_per_block"] = slots
+
+		for i := uint64(0); i < newSlots-1; i++ {
+			flags["slots"] = 0
+		}
+		flags["slots"] = 1
+
+		flags["blocks_slots_percentage"] = (float64(block.Number) / float64(slots)) * 100
 	}
 
 	currentEpoch := block.Number / 180 * 180
