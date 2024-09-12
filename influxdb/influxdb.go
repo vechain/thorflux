@@ -233,6 +233,8 @@ func (i *DB) appendSlotStats(
 			value := 0
 			if isFilled {
 				value = 1
+			} else {
+				println("EMPTY SLOT EMPTY SLOT")
 			}
 
 			p := influxdb2.NewPoint(
@@ -267,7 +269,8 @@ func (i *DB) appendSlotStats(
 		}
 	}
 
-	currentEpoch := block.Number / 180
+	currentEpoch := block.Number / 180 * 180
+	esitmatedFinalized := currentEpoch - 360
 	flags["current_epoch"] = currentEpoch
 
 	// if blockTime is within the 15 mins, call to chain for the real finalized block
@@ -275,24 +278,11 @@ func (i *DB) appendSlotStats(
 		finalized, err := i.thor.Blocks.Finalized()
 		if err != nil {
 			slog.Error("failed to get finalized block", "error", err)
-			flags["finalized_block"] = currentEpoch*180 - 360
+			flags["finalized"] = esitmatedFinalized
 		} else {
-			flags["finalized_block"] = finalized.Number
-			flags["finalized_epoch"] = finalized.Number / 180
-		}
-
-		justified, err := i.thor.Blocks.Justified()
-		if err != nil {
-			slog.Error("failed to get justified block", "error", err)
-		} else {
-			flags["justified_block"] = justified.Number
-			flags["justified_epoch"] = justified.Number / 180
+			flags["finalized"] = finalized.Number
 		}
 	} else {
-		estimatedFinalized := currentEpoch*180 - 360
-		flags["finalized_block"] = estimatedFinalized
-		flags["finalized_epoch"] = estimatedFinalized / 180
-		flags["justified_block"] = estimatedFinalized + 180
-		flags["justified_epoch"] = (estimatedFinalized + 180) / 180
+		flags["finalized"] = esitmatedFinalized
 	}
 }
