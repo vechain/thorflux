@@ -269,9 +269,11 @@ func (i *DB) appendSlotStats(
 		}
 	}
 
+	epoch := block.Number / 180
 	currentEpoch := block.Number / 180 * 180
 	esitmatedFinalized := currentEpoch - 360
 	flags["current_epoch"] = currentEpoch
+	flags["epoch"] = epoch
 
 	// if blockTime is within the 15 mins, call to chain for the real finalized block
 	if time.Since(blockTime) < time.Minute*3 {
