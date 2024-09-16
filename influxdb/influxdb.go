@@ -272,6 +272,7 @@ func (i *DB) appendSlotStats(
 	epoch := block.Number / 180
 	currentEpoch := block.Number / 180 * 180
 	esitmatedFinalized := currentEpoch - 360
+	esitmatedJustified := currentEpoch - 180
 	flags["current_epoch"] = currentEpoch
 	flags["epoch"] = epoch
 
@@ -281,10 +282,13 @@ func (i *DB) appendSlotStats(
 		if err != nil {
 			slog.Error("failed to get finalized block", "error", err)
 			flags["finalized"] = esitmatedFinalized
+			flags["justified_block"] = esitmatedJustified
 		} else {
 			flags["finalized"] = finalized.Number
+			flags["justified_block"] = finalized.Number + 180
 		}
 	} else {
 		flags["finalized"] = esitmatedFinalized
+		flags["justified_block"] = esitmatedJustified
 	}
 }
