@@ -81,13 +81,13 @@ func (s *Sync) fastSync() {
 			blocks, err := s.fetchBlocksAsync(querySize, s.prev.Load()+1)
 			if err != nil {
 				slog.Error("failed to fetch blocks", "error", err)
+				time.Sleep(5 * time.Second)
 			} else {
 				s.prev.Store(s.prev.Load() + querySize)
 				for _, block := range blocks {
 					s.blockChan <- block
 				}
 			}
-			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
@@ -120,13 +120,13 @@ func (s *Sync) writeBlocks() {
 	}
 }
 
-func (s *Sync) fetchBlocksAsync(n int, startBlock uint64) ([]*client.ExpandedBlock, error) {
+func (s *Sync) fetchBlocksAsync(amount int, startBlock uint64) ([]*client.ExpandedBlock, error) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var err error
-	blocks := make([]*client.ExpandedBlock, n)
+	blocks := make([]*client.ExpandedBlock, amount)
 
-	for i := 0; i < n; i++ {
+	for i := 0; i < amount; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
