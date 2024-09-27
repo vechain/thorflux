@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/darrenvechain/thor-go-sdk/thorgo"
+	"github.com/kouhin/envflag"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/sync"
 )
@@ -17,10 +18,10 @@ import (
 var (
 	defaultThorURL  = "http://localhost:8669"
 	defaultInfluxDB = "http://localhost:8086"
-	thorFlag        = flag.String("thor-url", defaultThorURL, "thor node URL")
-	influxUrlFlag   = flag.String("influx-url", defaultInfluxDB, "influxdb URL")
-	influxTokenFlag = flag.String("influx-token", "", "influxdb auth token")
-	startBlock      = flag.Uint64("start-block", 0, "start block number")
+	thorFlag        = flag.String("thor-url", defaultThorURL, "thor node URL, (env var: THOR_URL)")
+	startBlockFlag  = flag.Uint64("thor-start-block", 0, "start block number, (env var: THOR_START_BLOCK)")
+	influxUrlFlag   = flag.String("influx-url", defaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
+	influxTokenFlag = flag.String("influx-token", "", "influxdb auth token, (env var: INFLUX_TOKEN)")
 )
 
 func main() {
@@ -60,24 +61,26 @@ func main() {
 }
 
 func parseFlags() (string, string, string, uint64, error) {
-	flag.Parse()
+	if err := envflag.Parse(); err != nil {
+		return "", "", "", 0, err
+	}
 
 	influxToken := *influxTokenFlag
 	if influxToken == "" {
-		return "", "", "", 0, errors.New("influx token is required")
+		return "", "", "", 0, errors.New("--influx-token or INFLUX_DB_TOKEN is required")
 	}
 
 	thorURL := *thorFlag
 	if thorURL == defaultThorURL {
-		slog.Warn("using default thor URL, make sure it's correct")
+		slog.Warn("thor node URL not set via flag or env, using default", "url", defaultThorURL)
 	}
 
 	influxURL := *influxUrlFlag
 	if influxURL == defaultInfluxDB {
-		slog.Warn("using default influx URL, make sure it's correct")
+		slog.Warn("influxdb URL not set via flag or env, using default", "url", defaultInfluxDB)
 	}
 
-	startBlock := *startBlock
+	startBlock := *startBlockFlag
 
 	return thorURL, influxURL, influxToken, startBlock, nil
 }
