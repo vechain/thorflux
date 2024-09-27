@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/darrenvechain/thor-go-sdk/thorgo"
+
 	"github.com/darrenvechain/thor-go-sdk/client"
 	"github.com/darrenvechain/thor-go-sdk/thorgo"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -202,7 +204,8 @@ func (i *DB) appendSlotStats(block *client.ExpandedBlock, flags map[string]inter
 
 	currentEpoch := block.Number / 180 * 180
 	esitmatedFinalized := currentEpoch - 360
-	flags["current_epoch"] = currentEpoch
+	estimatedJustified := currentEpoch - 180
+	flags["current_epoch"] = currentEpoch // first block of currentEpoch
 
 	// if blockTime is within the 15 mins, call to chain for the real finalized block
 	if time.Since(blockTime) < time.Minute*3 {
@@ -210,10 +213,26 @@ func (i *DB) appendSlotStats(block *client.ExpandedBlock, flags map[string]inter
 		if err != nil {
 			slog.Error("failed to get finalized block", "error", err)
 			flags["finalized"] = esitmatedFinalized
+			flags["liveliness"] = (currentEpoch - esitmatedFinalized) / 180
 		} else {
 			flags["finalized"] = finalized.Number
+			flags["liveliness"] = (currentEpoch - finalized.Number) / 180
 		}
 	} else {
 		flags["finalized"] = esitmatedFinalized
+		flags["liveliness"] = (currentEpoch - esitmatedFinalized) / 180
 	}
+
+	if time.Since(blockTime) < time.Minute*3 {
+		justified, err := i.thor.Blocks.Expanded("justified")
+		if err != nil {
+			slog.Error("failed to get justified block", "error", err)
+			flags["justified"] = estimatedJustified
+		} else {
+			flags["justified"] = justified.Number
+		}
+	} else {
+		flags["justified"] = estimatedJustified
+	}
+
 }
