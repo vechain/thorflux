@@ -11,6 +11,7 @@ import (
 	"github.com/darrenvechain/thor-go-sdk/client"
 	"github.com/darrenvechain/thor-go-sdk/thorgo"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/vechain/thorflux/accounts"
 )
 
@@ -89,7 +90,7 @@ func (i *DB) WriteBlock(block *client.ExpandedBlock) {
 	i.appendBlockStats(block, flags)
 	i.appendTxStats(block, flags)
 	i.appendB3trStats(block, flags)
-	i.appendSlotStats(block, flags)
+	i.appendSlotStats(block, flags, writeAPI)
 
 	p := influxdb2.NewPoint("block_stats", tags, flags, time.Unix(int64(block.Timestamp), 0))
 
@@ -197,12 +198,81 @@ func (i *DB) appendB3trStats(block *client.ExpandedBlock, flags map[string]inter
 	}
 }
 
-func (i *DB) appendSlotStats(block *client.ExpandedBlock, flags map[string]interface{}) {
+func (i *DB) appendSlotStats(
+	block *client.ExpandedBlock,
+	flags map[string]interface{},
+	writeAPI api.WriteAPIBlocking,
+) {
 	blockTime := time.Unix(int64(block.Timestamp), 0).UTC()
+	prevBlock, ok := i.prevBlock.Load().(*client.ExpandedBlock)
 
+	if ok {
+		genesisBlockTimestamp := i.thor.Client().GenesisBlock().Timestamp
+		slots := ((block.Timestamp - genesisBlockTimestamp) / 10) + 1
+		flags["slots_per_block"] = slots
+
+		flags["blocks_slots_percentage"] = (float64(block.Number) / float64(slots)) * 100
+
+		// Process recent slots
+		slotsSinceLastBlock := (block.Timestamp - prevBlock.Timestamp + 9) / 10
+		missedSlots := slotsSinceLastBlock - 1
+		flags["recent_missed_slots"] = missedSlots
+
+		// Write detailed slot data for the last hour (360 slots)
+		const detailedSlotWindow = 360
+		startSlot := uint64(0)
+		if slotsSinceLastBlock > detailedSlotWindow {
+			startSlot = slotsSinceLastBlock - detailedSlotWindow
+		}
+
+		for a := startSlot; a < slotsSinceLastBlock; a++ {
+			slotTime := time.Unix(int64(prevBlock.Timestamp+a*10), 0)
+			isFilled := (a == slotsSinceLastBlock-1)
+			value := 0
+			if isFilled {
+				value = 1
+			} else {
+				println("EMPTY SLOT EMPTY SLOT")
+			}
+
+			p := influxdb2.NewPoint(
+				"recent_slots",
+				map[string]string{"chain_tag": string(i.chainTag)},
+				map[string]interface{}{"filled": value},
+				slotTime,
+			)
+			if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+				slog.Error("Failed to write recent slot point", "error", err)
+			}
+		}
+
+		// Aggregate older slot data
+		if slotsSinceLastBlock > detailedSlotWindow {
+			olderMissedSlots := slotsSinceLastBlock - detailedSlotWindow - 1
+			olderFilledSlots := 1 // The previous block
+			aggregateTime := time.Unix(int64(prevBlock.Timestamp), 0)
+
+			p := influxdb2.NewPoint(
+				"aggregated_slots",
+				map[string]string{"chain_tag": string(i.chainTag)},
+				map[string]interface{}{
+					"missed": olderMissedSlots,
+					"filled": olderFilledSlots,
+				},
+				aggregateTime,
+			)
+			if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+				slog.Error("Failed to write aggregated slot point", "error", err)
+			}
+		}
+	}
+
+	epoch := block.Number / 180
 	currentEpoch := block.Number / 180 * 180
 	esitmatedFinalized := currentEpoch - 360
+	esitmatedJustified := currentEpoch - 180
 	flags["current_epoch"] = currentEpoch
+	flags["epoch"] = epoch
 
 	// if blockTime is within the 15 mins, call to chain for the real finalized block
 	if time.Since(blockTime) < time.Minute*3 {
@@ -210,10 +280,13 @@ func (i *DB) appendSlotStats(block *client.ExpandedBlock, flags map[string]inter
 		if err != nil {
 			slog.Error("failed to get finalized block", "error", err)
 			flags["finalized"] = esitmatedFinalized
+			flags["justified_block"] = esitmatedJustified
 		} else {
 			flags["finalized"] = finalized.Number
+			flags["justified_block"] = finalized.Number + 180
 		}
 	} else {
 		flags["finalized"] = esitmatedFinalized
+		flags["justified_block"] = esitmatedJustified
 	}
 }
