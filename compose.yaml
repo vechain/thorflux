@@ -10,7 +10,7 @@ services:
     networks:
       - monitoring
     ports:
-      - 8086:8086
+      - "8086:8086"
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
@@ -21,7 +21,11 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=admin-token
     volumes:
       - ${PWD}/volumes/influxdb2:/var/lib/influxdb2
-
+    healthcheck:
+      test: "curl -f http://localhost:8086/ping"
+      interval: 5s
+      timeout: 10s
+      retries: 5
 
   grafana:
     user: "0"
@@ -36,7 +40,23 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=admin-token
     volumes:
-      - ${PWD}/grafana/data-sources.yaml:/etc/grafana/provisioning/datasources/grafana-data-sources.yaml
-      - ${PWD}/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
-      - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards
+      - ${PWD}/grafana/data-sources.yaml:/etc/grafana/provisioning/datasources/grafana-data-sources.yaml:ro
+      - ${PWD}/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml:ro
+      - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - ${PWD}/volumes/grafana:/var/lib/grafana
+
+  thorflux:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: thorflux
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    networks:
+        - monitoring
+    environment:
+      - THOR_URL=http://mainnet.vechain.org
+      - INFLUX_URL=http://influxdb:8086
+      - INFLUX_TOKEN=admin-token
+      - THOR_START_BLOCK=19804000
