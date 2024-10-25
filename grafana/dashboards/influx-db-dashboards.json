@@ -70,7 +70,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -133,7 +133,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -196,7 +196,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -259,7 +259,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -321,7 +321,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -384,7 +384,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -404,6 +404,10 @@
         "type": "influxdb",
         "uid": "P951FEA4DE68E13C5"
       },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
       "gridPos": {
         "h": 15,
         "w": 18,
@@ -411,6 +415,8 @@
         "y": 16
       },
       "id": 31,
+      "options": {},
+      "pluginVersion": "1.0.0",
       "targets": [
         {
           "datasource": {
@@ -455,7 +461,8 @@
         "y": 31
       },
       "id": 26,
-      "pluginVersion": "11.1.4",
+      "options": {},
+      "pluginVersion": "1.0.0",
       "targets": [
         {
           "datasource": {
@@ -487,6 +494,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -548,6 +556,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -597,6 +606,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -658,6 +668,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -689,6 +700,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -763,6 +775,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -802,6 +815,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -901,7 +915,7 @@
         },
         "xField": "epoch"
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -962,7 +976,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1029,7 +1043,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1101,7 +1115,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1163,7 +1177,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1224,14 +1238,14 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.1.4",
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_txs\")\n  |> filter(fn: (r) => r[\"signer\"] != \"\")\n  |> distinct(column: \"signer\")\n  |> group(columns: [])  // Ungroup all keys\n  |> count(column: \"signer\")",
+          "query": "from(bucket:\"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n    r._measurement == \"block_stats\" \n  )\n  |> keep(columns: [\"signer\"])\n  |> group()\n  |> distinct(column: \"signer\")\n  |> count()",
           "refId": "A"
         }
       ],
@@ -1255,6 +1269,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1316,6 +1331,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1347,6 +1363,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1408,6 +1425,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1439,6 +1457,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1500,6 +1519,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1530,6 +1550,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1592,6 +1613,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1684,6 +1706,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1776,6 +1799,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1870,6 +1894,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -1962,6 +1987,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -2080,6 +2106,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.3.0",
       "targets": [
         {
           "datasource": {
@@ -2103,8 +2130,9 @@
       "type": "timeseries"
     }
   ],
+  "preload": false,
   "refresh": "10s",
-  "schemaVersion": 39,
+  "schemaVersion": 40,
   "tags": [],
   "templating": {
     "list": []
