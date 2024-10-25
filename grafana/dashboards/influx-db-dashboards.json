@@ -18,7 +18,9 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+
   "id": 1,
+
   "links": [],
   "panels": [
     {
@@ -1108,7 +1110,9 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"measurement1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"blocks_slots_percentage\")\n  |> group(columns: [\"blocks_slots_percentage\"])\n  |> last()",
+
           "refId": "A"
         }
       ],
@@ -1170,7 +1174,9 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"measurement1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"current_epoch\")\n  |> group(columns: [\"current_epoch\"])\n  |> last()",
+
           "refId": "A"
         }
       ],
@@ -1231,7 +1237,9 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"measurement1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_txs\")\n  |> filter(fn: (r) => r[\"signer\"] != \"\")\n  |> distinct(column: \"signer\")\n  |> group(columns: [])  // Ungroup all keys\n  |> count(column: \"signer\")",
+
           "refId": "A"
         }
       ],
@@ -1322,7 +1330,9 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"measurement1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_gas_usage\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+
           "refId": "A"
         }
       ],
@@ -1331,6 +1341,7 @@
     },
     {
       "datasource": {
+        "default": false,
         "type": "influxdb",
         "uid": "P951FEA4DE68E13C5"
       },
@@ -1422,6 +1433,7 @@
     },
     {
       "datasource": {
+        "default": true,
         "type": "influxdb",
         "uid": "P951FEA4DE68E13C5"
       },
@@ -1437,8 +1449,10 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+
             "drawStyle": "line",
             "fillOpacity": 0,
+
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1447,12 +1461,12 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineWidth": 0,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1472,7 +1486,7 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 0.000001
               }
             ]
           }
@@ -1504,7 +1518,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"measurement1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_mine_gap\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_mine_gap\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -1519,6 +1533,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+
             "mode": "palette-classic"
           },
           "custom": {
@@ -1569,6 +1584,8 @@
             ]
           }
         },
+
+
         "overrides": []
       },
       "gridPos": {
@@ -1596,7 +1613,9 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"block_gas_used\")\n  |> group(columns: [\"_field\"])\n  |> map(fn: (r) => ({r with epoch: uint(v:uint(v: r.block_number) / uint(v:180))}))\n  |> duplicate(column: \"epoch\", as: \"tag\")\n  |> group(columns: [\"epoch\"])\n  |> sum()\n  |> group(columns: [\"tag\"])\n  |> duplicate(column: \"_value\", as: \"block_gas_used\")\n  |> drop(columns: [\"_value\"])",
+
           "refId": "A"
         }
       ],
@@ -1651,7 +1670,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1687,7 +1707,9 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"measurement1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"b3tr_gas_percent\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+
           "refId": "A"
         }
       ],
@@ -1702,6 +1724,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+
             "mode": "palette-classic"
           },
           "custom": {
@@ -1742,7 +1765,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1778,6 +1802,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"measurement1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"storage_size\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
@@ -1787,6 +1812,7 @@
     },
     {
       "datasource": {
+        "default": false,
         "type": "influxdb",
         "uid": "P951FEA4DE68E13C5"
       },
@@ -1834,7 +1860,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1870,8 +1897,10 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"b3tr_gas_percent\")\n  |> group(columns: [\"_field\"])\n  |> map(fn: (r) => ({r with epoch: uint(v:uint(v: r.block_number) / uint(v:180))}))\n  |> duplicate(column: \"epoch\", as: \"tag\")\n  |> group(columns: [\"epoch\"])\n  |> sum()\n  |> group(columns: [\"tag\"])\n  |> duplicate(column: \"_value\", as: \"b3tr_gas_percent\")\n  |> drop(columns: [\"_value\"])",
           "refId": "A"
+
         }
       ],
       "title": "B3tr Gas Used per Epoch",
@@ -1925,7 +1954,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1961,8 +1991,10 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"storage_size\")\n  |> group(columns: [\"_field\"])\n  |> map(fn: (r) => ({r with epoch: uint(v:uint(v: r.block_number) / uint(v:180))}))\n  |> duplicate(column: \"epoch\", as: \"tag\")\n  |> group(columns: [\"epoch\"])\n  |> sum()\n  |> group(columns: [\"tag\"])\n  |> duplicate(column: \"_value\", as: \"storage_size\")\n  |> drop(columns: [\"_value\"])",
           "refId": "A"
+
         }
       ],
       "title": "Block Size per Epoch",
@@ -2017,7 +2049,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2078,7 +2111,9 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
+
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"measurement1\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_clauses\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+
           "refId": "A"
         },
         {
@@ -2095,20 +2130,24 @@
       "type": "timeseries"
     }
   ],
+
   "refresh": "10s",
+
   "schemaVersion": 39,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-5m",
-    "to": "now"
+    "from": "2024-10-13T00:03:39.290Z",
+    "to": "2024-10-13T00:06:19.302Z"
   },
   "timepicker": {},
   "timezone": "",
+
   "title": "InfluxDB Stats",
   "uid": "bdw67xl69siyo1",
   "version": 1,
+
   "weekStart": ""
 }

@@ -9,11 +9,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/darrenvechain/thor-go-sdk/thorgo"
-
 	"github.com/darrenvechain/thor-go-sdk/client"
+	"github.com/darrenvechain/thor-go-sdk/thorgo"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/vechain/thorflux/accounts"
 )
 
 type DB struct {
@@ -45,7 +45,7 @@ func (i *DB) Latest() (uint64, error) {
 	queryAPI := i.client.QueryAPI("vechain")
 	query := `from(bucket: "vechain")
 	  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)
-	  |> filter(fn: (r) => r["_measurement"] == "measurement1")
+	  |> filter(fn: (r) => r["_measurement"] == "block_stats")
 	  |> filter(fn: (r) => r["_field"] == "block_number")
 	  |> last()`
 	res, err := queryAPI.Query(context.Background(), query)
@@ -95,7 +95,7 @@ func (i *DB) WriteBlock(block *client.ExpandedBlock) {
 	i.appendSlotStats(block, flags, writeAPI)
 	i.appendEpochStats(block, flags, writeAPI)
 
-	p := influxdb2.NewPoint("measurement1", tags, flags, time.Unix(int64(block.Timestamp), 0))
+	p := influxdb2.NewPoint("block_stats", tags, flags, time.Unix(int64(block.Timestamp), 0))
 
 	if err := writeAPI.WritePoint(context.Background(), p); err != nil {
 		slog.Error("Failed to write point", "error", err)
@@ -181,18 +181,16 @@ func (i *DB) appendBlockStats(block *client.ExpandedBlock, flags map[string]inte
 	flags["block_gas_limit"] = block.GasLimit
 	flags["block_gas_usage"] = float64(block.GasUsed) * 100 / float64(block.GasLimit)
 	flags["storage_size"] = block.Size
+	gap := uint64(10)
 	prev, ok := i.prevBlock.Load().(*client.ExpandedBlock)
-	gap := uint64(0)
 	if ok {
 		gap = block.Timestamp - prev.Timestamp
-	} else {
-		gap = uint64(10)
 	}
 	flags["block_mine_gap"] = (gap - 10) / 10
 }
 
 func (i *DB) appendB3trStats(block *client.ExpandedBlock, flags map[string]interface{}) {
-	b3trTxs, b3trClauses, b3trGas := b3trStats(block)
+	b3trTxs, b3trClauses, b3trGas := accounts.B3trStats(block)
 	flags["b3tr_total_txs"] = b3trTxs
 	flags["b3tr_total_clauses"] = b3trClauses
 	flags["b3tr_gas_amount"] = b3trGas

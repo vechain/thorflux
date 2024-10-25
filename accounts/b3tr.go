@@ -1,4 +1,4 @@
-package influxdb
+package accounts
 
 import (
 	"github.com/darrenvechain/thor-go-sdk/client"
@@ -67,7 +67,7 @@ func isB3trTransaction(tx client.BlockTransaction) bool {
 	return false
 }
 
-func b3trStats(block *client.ExpandedBlock) (uint64, uint64, uint64) {
+func B3trStats(block *client.ExpandedBlock) (uint64, uint64, uint64) {
 	var b3trTxs uint64
 	var b3trClauses uint64
 	var b3trGas uint64

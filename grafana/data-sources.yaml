@@ -1,12 +1,13 @@
 apiVersion: 1
 
 datasources:
-  - name: InfluxDB
+  - name: influxdb
     version: 2
     type: influxdb
     access: proxy
     url: http://influxdb:8086
     editable: true
+    uid: P951FEA4DE68E13C5
     jsonData:
       defaultBucket: vechain
       httpMode: POST
