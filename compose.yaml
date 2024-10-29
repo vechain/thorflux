@@ -3,6 +3,13 @@ networks:
     driver: bridge
 
 services:
+  plugin-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.plugins
+    volumes:
+      - plugin-dist:/plugins
+
   influxdb:
     image: influxdb:2
     container_name: influxdb
@@ -45,8 +52,10 @@ services:
       - ${PWD}/grafana/data-sources.yaml:/etc/grafana/provisioning/datasources/grafana-data-sources.yaml:ro
       - ${PWD}/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml:ro
       - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - ${PWD}/grafana/plugins:/var/lib/grafana/plugins
+      - plugin-dist:/var/lib/grafana/plugins
       - ${PWD}/volumes/grafana:/var/lib/grafana
+    depends_on:
+      - plugin-builder
 
   thorflux:
     build:
@@ -63,3 +72,6 @@ services:
       - INFLUX_URL=http://influxdb:8086
       - INFLUX_TOKEN=admin-token
       - THOR_START_BLOCK=19804000
+
+volumes:
+  plugin-dist:
