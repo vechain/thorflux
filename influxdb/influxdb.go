@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math/big"
 	"sort"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -82,8 +83,9 @@ func (i *DB) WriteBlock(block *client.ExpandedBlock) {
 	writeAPI := i.client.WriteAPIBlocking("vechain", "vechain")
 
 	tags := map[string]string{
-		"chain_tag": string(i.chainTag),
-		"signer":    block.Signer.Hex(),
+		"chain_tag":    string(i.chainTag),
+		"signer":       block.Signer.Hex(),
+		"block_number": strconv.FormatUint(block.Number, 10),
 	}
 
 	flags := map[string]interface{}{}
@@ -91,6 +93,7 @@ func (i *DB) WriteBlock(block *client.ExpandedBlock) {
 	i.appendTxStats(block, flags)
 	i.appendB3trStats(block, flags)
 	i.appendSlotStats(block, flags, writeAPI)
+	i.appendEpochStats(block, flags, writeAPI)
 
 	p := influxdb2.NewPoint("block_stats", tags, flags, time.Unix(int64(block.Timestamp), 0))
 
@@ -173,7 +176,7 @@ func (i *DB) appendTxStats(block *client.ExpandedBlock, flags map[string]interfa
 }
 
 func (i *DB) appendBlockStats(block *client.ExpandedBlock, flags map[string]interface{}) {
-	flags["block_number"] = block.Number
+	flags["best_block_number"] = block.Number
 	flags["block_gas_used"] = block.GasUsed
 	flags["block_gas_limit"] = block.GasLimit
 	flags["block_gas_usage"] = float64(block.GasUsed) * 100 / float64(block.GasLimit)
@@ -206,6 +209,7 @@ func (i *DB) appendSlotStats(
 	blockTime := time.Unix(int64(block.Timestamp), 0).UTC()
 	prevBlock, ok := i.prevBlock.Load().(*client.ExpandedBlock)
 
+	epoch := block.Number / 180
 	if ok {
 		genesisBlockTimestamp := i.thor.Client().GenesisBlock().Timestamp
 		slots := ((block.Timestamp - genesisBlockTimestamp) / 10) + 1
@@ -226,19 +230,19 @@ func (i *DB) appendSlotStats(
 		}
 
 		for a := startSlot; a < slotsSinceLastBlock; a++ {
-			slotTime := time.Unix(int64(prevBlock.Timestamp+a*10), 0)
+			rawTime := prevBlock.Timestamp + a*10
+			slotTime := time.Unix(int64(rawTime), 0)
 			isFilled := (a == slotsSinceLastBlock-1)
 			value := 0
 			if isFilled {
 				value = 1
 			} else {
-				println("EMPTY SLOT EMPTY SLOT")
+				println("EMPTY SLOT EMPTY SLOT", block.Number)
 			}
-
 			p := influxdb2.NewPoint(
 				"recent_slots",
 				map[string]string{"chain_tag": string(i.chainTag)},
-				map[string]interface{}{"filled": value},
+				map[string]interface{}{"filled": value, "epoch": epoch},
 				slotTime,
 			)
 			if err := writeAPI.WritePoint(context.Background(), p); err != nil {
@@ -267,7 +271,6 @@ func (i *DB) appendSlotStats(
 		}
 	}
 
-	epoch := block.Number / 180
 	currentEpoch := block.Number / 180 * 180
 	esitmatedFinalized := currentEpoch - 360
 	esitmatedJustified := currentEpoch - 180
@@ -281,12 +284,41 @@ func (i *DB) appendSlotStats(
 			slog.Error("failed to get finalized block", "error", err)
 			flags["finalized"] = esitmatedFinalized
 			flags["justified_block"] = esitmatedJustified
+			flags["liveliness"] = (currentEpoch - esitmatedFinalized) / 180
 		} else {
 			flags["finalized"] = finalized.Number
 			flags["justified_block"] = finalized.Number + 180
+			flags["liveliness"] = (currentEpoch - finalized.Number) / 180
 		}
 	} else {
 		flags["finalized"] = esitmatedFinalized
 		flags["justified_block"] = esitmatedJustified
+		flags["liveliness"] = (currentEpoch - esitmatedFinalized) / 180
+	}
+}
+
+func (i *DB) appendEpochStats(block *client.ExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
+	epoch := block.Number / 180
+	blockInEpoch := block.Number % 180
+
+	flags["epoch"] = epoch
+	flags["block_in_epoch"] = blockInEpoch
+
+	// Prepare data for heatmap
+	heatmapPoint := influxdb2.NewPoint(
+		"blockspace_utilization",
+		map[string]string{
+			"chain_tag": string(i.chainTag),
+		},
+		map[string]interface{}{
+			//"block_in_epoch": blockInEpoch,
+			"utilization": float64(block.GasUsed) * 100 / float64(block.GasLimit),
+			"epoch":       strconv.FormatUint(epoch, 10),
+		},
+		time.Unix(int64(block.Timestamp), 0),
+	)
+
+	if err := writeAPI.WritePoint(context.Background(), heatmapPoint); err != nil {
+		slog.Error("Failed to write heatmap point", "error", err)
 	}
 }
