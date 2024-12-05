@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -11,7 +12,10 @@ import (
 
 	"github.com/darrenvechain/thor-go-sdk/client"
 	"github.com/darrenvechain/thor-go-sdk/thorgo"
+	"github.com/ethereum/go-ethereum/rlp"
+	blockType "github.com/vechain/thorflux/block"
 	"github.com/vechain/thorflux/influxdb"
+	innerRlp "github.com/vechain/thorflux/rlp"
 )
 
 const querySize = 100
@@ -20,14 +24,14 @@ type Sync struct {
 	thor      *thorgo.Thor
 	influx    *influxdb.DB
 	prev      *atomic.Uint64
-	blockChan chan *client.ExpandedBlock
+	blockChan chan *blockType.Block
 	context   context.Context
 }
 
 func New(thor *thorgo.Thor, influx *influxdb.DB, start uint64, ctx context.Context) *Sync {
 	prev := &atomic.Uint64{}
 	prev.Store(start - 1)
-	blockChan := make(chan *client.ExpandedBlock, 5000)
+	blockChan := make(chan *blockType.Block, 5000)
 	return &Sync{thor: thor, influx: influx, prev: prev, blockChan: blockChan, context: ctx}
 }
 
@@ -47,7 +51,9 @@ func (s *Sync) sync() {
 			slog.Info("sync - context done")
 			return
 		default:
-			block, err := s.thor.Client().ExpandedBlock(fmt.Sprintf("%d", s.prev.Load()+1))
+
+			blockNumber := s.prev.Load() + 1
+			block, err := s.thor.Client().ExpandedBlock(fmt.Sprintf("%d", blockNumber))
 			if err != nil {
 				slog.Error("failed to fetch block", "error", err)
 				time.Sleep(5 * time.Second)
@@ -59,8 +65,21 @@ func (s *Sync) sync() {
 				time.Sleep(60*time.Second - diff)
 			}
 			slog.Info("✅ fetched block", "block", block.Number)
+
+			rawBlock := innerRlp.JSONRawBlockSummary{}
+			client.Get(s.thor.Client(), "/blocks/"+fmt.Sprintf("%d", blockNumber)+"?raw=true", &rawBlock)
+			data, err := hex.DecodeString(rawBlock.Raw[2:])
+			if err != nil {
+				panic(err)
+			}
+			header := innerRlp.Header{}
+			err = rlp.DecodeBytes(data, &header)
+
 			s.prev.Store(block.Number)
-			s.blockChan <- block
+			s.blockChan <- &blockType.Block{
+				ExpandedBlock: block,
+				RawHeader:     &header,
+			}
 		}
 	}
 }
@@ -120,11 +139,11 @@ func (s *Sync) writeBlocks() {
 	}
 }
 
-func (s *Sync) fetchBlocksAsync(amount int, startBlock uint64) ([]*client.ExpandedBlock, error) {
+func (s *Sync) fetchBlocksAsync(amount int, startBlock uint64) ([]*blockType.Block, error) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var err error
-	blocks := make([]*client.ExpandedBlock, amount)
+	blocks := make([]*blockType.Block, amount)
 
 	for i := 0; i < amount; i++ {
 		wg.Add(1)
@@ -137,7 +156,20 @@ func (s *Sync) fetchBlocksAsync(amount int, startBlock uint64) ([]*client.Expand
 				mu.Unlock()
 				return
 			}
-			blocks[i] = block
+
+			rawBlock := innerRlp.JSONRawBlockSummary{}
+			client.Get(s.thor.Client(), "/blocks/"+fmt.Sprintf("%d", startBlock+uint64(i))+"?raw=true", &rawBlock)
+			data, err := hex.DecodeString(rawBlock.Raw[2:])
+			if err != nil {
+				panic(err)
+			}
+			header := innerRlp.Header{}
+			err = rlp.DecodeBytes(data, &header)
+
+			blocks[i] = &blockType.Block{
+				ExpandedBlock: block,
+				RawHeader:     &header,
+			}
 		}(i)
 	}
 
@@ -147,7 +179,7 @@ func (s *Sync) fetchBlocksAsync(amount int, startBlock uint64) ([]*client.Expand
 	}
 
 	sort.Slice(blocks, func(i, j int) bool {
-		return blocks[i].Number < blocks[j].Number
+		return blocks[i].ExpandedBlock.Number < blocks[j].ExpandedBlock.Number
 	})
 
 	return blocks, nil
