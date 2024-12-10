@@ -326,9 +326,9 @@ func listAllCandidates(thorClient *thorgo.Thor, blockNumber uint64) ([]Candidate
 	return candidates, nil
 }
 
-func shuffleCandidates(candidates []Candidate, seed []byte, block *client.ExpandedBlock) []common.Address {
+func shuffleCandidates(candidates []Candidate, seed []byte, blockNumber uint64) []common.Address {
 	var num [4]byte
-	binary.BigEndian.PutUint32(num[:], uint32(block.Number))
+	binary.BigEndian.PutUint32(num[:], uint32(blockNumber))
 	var list []struct {
 		addr common.Address
 		hash common.Hash
@@ -366,12 +366,12 @@ func (i *DB) appendSlotStats(
 
 	epoch := block.ExpandedBlock.Number / 180
 	if ok {
-		candidates, err := listAllCandidates(i.thor, block.ExpandedBlock.Number)
+		candidates, err := listAllCandidates(i.thor, prevBlock.Number)
 		if err != nil {
 			return
 		}
-		seed, _ := i.generateSeed(block.RawHeader.ID())
-		_ = shuffleCandidates(candidates, seed, block.ExpandedBlock)
+		seed, _ := i.generateSeed(prevBlock.ID)
+		shuffledCandidates := shuffleCandidates(candidates, seed, prevBlock.Number)
 
 		genesisBlockTimestamp := i.thor.Client().GenesisBlock().Timestamp
 		slots := ((block.ExpandedBlock.Timestamp - genesisBlockTimestamp) / 10) + 1
@@ -404,7 +404,7 @@ func (i *DB) appendSlotStats(
 			p := influxdb2.NewPoint(
 				"recent_slots",
 				map[string]string{"chain_tag": string(i.chainTag)},
-				map[string]interface{}{"filled": value, "epoch": epoch},
+				map[string]interface{}{"filled": value, "epoch": epoch, "proposer": shuffledCandidates[a]},
 				slotTime,
 			)
 			if err := writeAPI.WritePoint(context.Background(), p); err != nil {
