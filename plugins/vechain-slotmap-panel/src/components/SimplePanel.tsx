@@ -14,25 +14,27 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
     }
 
     const epochField = data.series[0].fields.find(f => f.name === 'epoch');
-    const valueField = data.series[0].fields.find(f => f.name === '_value');
+    const filledField = data.series[0].fields.find(f => f.name === 'filled');
+    const proposerField = data.series[0].fields.find(f => f.name === 'proposer');
 
-    if (!epochField || !valueField) {
+    if (!epochField || !filledField || !proposerField) {
       return { epochs: [], maxSlots: DEFAULT_SLOTS_PER_EPOCH };
     }
 
-    const epochData: { [key: number]: number[] } = {};
+    const epochData: { [key: number]: Array<{ filled: number; proposer: string }> } = {};
     let maxSlotsInEpoch = DEFAULT_SLOTS_PER_EPOCH;
 
     // First pass: group by epoch and find max slots
     for (let i = 0; i < epochField.values.length; i++) {
       const epoch = epochField.values[i];
-      const value = valueField.values[i];
+      const filled = filledField.values[i];
+      const proposer = proposerField.values[i];
 
       if (!epochData[epoch]) {
         epochData[epoch] = [];
       }
 
-      epochData[epoch].push(value);
+      epochData[epoch].push({ filled, proposer });
       maxSlotsInEpoch = Math.max(maxSlotsInEpoch, epochData[epoch].length);
     }
 
@@ -55,7 +57,7 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
       } else {
         const filledValues = [...epochData.values];
         while (filledValues.length < maxSlotsInEpoch) {
-          filledValues.push(-1);
+          filledValues.push({ filled: -1, proposer: '' });
         }
         return {
           epoch: epochData.epoch,
@@ -84,6 +86,14 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
         return theme.colors.error.main;
       default:
         return theme.colors.secondary.main;
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
     }
   };
 
@@ -145,6 +155,11 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
       top: 100%;
       margin-top: 1px;
     `,
+    tooltipContent: css`
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    `,
     headerContainer: css`
       margin-bottom: ${HEADER_BOTTOM_MARGIN}px;
       position: relative;
@@ -166,11 +181,11 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
 
   const [tooltip, setTooltip] = React.useState<{
     visible: boolean;
-    text: string;
+    text: string[];
     style: React.CSSProperties;
   }>({
     visible: false,
-    text: '',
+    text: [],
     style: {},
   });
 
@@ -178,7 +193,7 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
     event: React.MouseEvent,
     epoch: number,
     slotIndex: number,
-    value: number
+    value: { filled: number; proposer: string }
   ) => {
     const element = event.currentTarget;
     const rect = element.getBoundingClientRect();
@@ -186,20 +201,29 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
 
     if (!containerRect) return;
 
-    const status = value === 1 ? 'filled' : value === 0 ? 'missed' : 'pending';
+    const status = value.filled === 1 ? 'filled' : value.filled === 0 ? 'missed' : 'pending';
     const slotNumber = getSlotNumber(epoch, slotIndex);
 
     const left = rect.left - containerRect.left + rect.width / 2;
-    const top = rect.top - containerRect.top + rect.height;
+    const top = rect.top - containerRect.top + (rect.height * 2);
 
     setTooltip({
       visible: true,
-      text: `Slot ${slotNumber}: ${status}`,
+      text: [
+        `Slot ${slotNumber}: ${status}`,
+        value.proposer || 'No proposer'
+      ],
       style: {
         left: `${left}px`,
         top: `${top}px`,
       },
     });
+  };
+
+  const handleSlotClick = (proposer: string) => {
+    if (proposer) {
+      copyToClipboard(proposer);
+    }
   };
 
   const getMarkerPosition = (slotIndex: number) => {
@@ -216,49 +240,55 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
   });
 
   return (
-    <div className={styles.container}>
-      <div className={styles.headerContainer}>
-        <div className={styles.headerContent}>
-          {markers.map(({ slotIndex, position }) => (
-            <div
-              key={slotIndex}
-              className={styles.headerMarker}
-              style={{ left: position }}
-            >
-              {slotIndex}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {epochs.map(({ epoch, values }) => (
-        <div key={epoch} className={styles.row}>
-          <div className={styles.epochNumber}>{epoch}</div>
-          <div className={styles.slotsContainer}>
-            {values.map((value, index) => (
+    <>
+      <div className={styles.container}>
+        <div className={styles.headerContainer}>
+          <div className={styles.headerContent}>
+            {markers.map(({ slotIndex, position }) => (
               <div
-                key={index}
-                className={styles.slot}
-                style={{
-                  backgroundColor: getSlotColor(value),
-                  opacity: value === -1 ? 0.3 : 1,
-                }}
-                onMouseEnter={(e) => handleSlotHover(e, epoch, index, value)}
-                onMouseLeave={() => setTooltip(prev => ({ ...prev, visible: false }))}
-              />
+                key={slotIndex}
+                className={styles.headerMarker}
+                style={{ left: position }}
+              >
+                {slotIndex}
+              </div>
             ))}
           </div>
         </div>
-      ))}
 
+        {epochs.map(({ epoch, values }) => (
+          <div key={epoch} className={styles.row}>
+            <div className={styles.epochNumber}>{epoch}</div>
+            <div className={styles.slotsContainer}>
+              {values.map((value, index) => (
+                <div
+                  key={index}
+                  className={styles.slot}
+                  style={{
+                    backgroundColor: getSlotColor(value.filled),
+                    opacity: value.filled === -1 ? 0.3 : 1,
+                  }}
+                  onClick={() => handleSlotClick(value.proposer)}
+                  onMouseEnter={(e) => handleSlotHover(e, epoch, index, value)}
+                  onMouseLeave={() => setTooltip(prev => ({ ...prev, visible: false }))}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
       {tooltip.visible && (
         <div
           className={styles.tooltip}
           style={tooltip.style}
         >
-          {tooltip.text}
+          <div className={styles.tooltipContent}>
+            {tooltip.text.map((line, index) => (
+              <div key={index}>{line}</div>
+            ))}
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 };

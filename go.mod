@@ -18,6 +18,7 @@ require (
 	github.com/holiman/uint256 v1.3.0 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/oapi-codegen/runtime v1.0.0 // indirect
+	github.com/vechain/go-ecvrf v0.0.0-20220525125849-96fa0442e765 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
