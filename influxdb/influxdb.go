@@ -1,12 +1,10 @@
 package influxdb
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -15,24 +13,25 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
-	accounts2 "github.com/vechain/thor/v2/api/accounts"
 	"github.com/vechain/thor/v2/api/blocks"
 	block2 "github.com/vechain/thor/v2/block"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/accounts"
+	"github.com/vechain/thorflux/authority"
 	"github.com/vechain/thorflux/block"
 )
 
 type DB struct {
-	thor      *thorclient.Client
-	client    influxdb2.Client
-	chainTag  byte
-	prevBlock atomic.Value
+	thor       *thorclient.Client
+	client     influxdb2.Client
+	chainTag   byte
+	prevBlock  atomic.Value
+	candidates *authority.List
+	genesis    *blocks.JSONCollapsedBlock
 }
 
 func New(thor *thorclient.Client, url, token string, chainTag byte) (*DB, error) {
@@ -45,10 +44,18 @@ func New(thor *thorclient.Client, url, token string, chainTag byte) (*DB, error)
 		return nil, err
 	}
 
+	genesis, err := thor.Block("0")
+	if err != nil {
+		slog.Error("failed to get genesis block", "error", err)
+		return nil, err
+	}
+
 	return &DB{
-		thor:     thor,
-		client:   influx,
-		chainTag: chainTag,
+		thor:       thor,
+		client:     influx,
+		chainTag:   chainTag,
+		candidates: authority.NewList(thor),
+		genesis:    genesis,
 	}, nil
 }
 
@@ -98,6 +105,15 @@ func (i *DB) WriteBlock(block *block.Block) {
 		"chain_tag":    string(i.chainTag),
 		"signer":       block.ExpandedBlock.Signer.String(),
 		"block_number": strconv.FormatUint(uint64(block.ExpandedBlock.Number), 10),
+	}
+
+	if i.candidates.ShouldReset(block.ExpandedBlock) {
+		i.candidates.Invalidate()
+		if err := i.candidates.Init(block.ExpandedBlock.ID); err != nil {
+			slog.Error("failed to init candidates", "error", err)
+		} else {
+			slog.Info("candidates reset", "length", i.candidates.Len())
+		}
 	}
 
 	flags := map[string]interface{}{}
@@ -246,111 +262,6 @@ func (i *DB) generateSeed(parentID thor.Bytes32) (seed []byte, err error) {
 	return header.Beta()
 }
 
-type Candidate struct {
-	Master    thor.Address
-	Endorsor  thor.Address
-	Indentity []byte
-	Active    bool
-}
-
-func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]Candidate, error) {
-	gas := uint64(3000000)
-	caller := thor.MustParseAddress("0x6d95e6dca01d109882fe1726a2fb9865fa41e7aa")
-	gasPayer := thor.MustParseAddress("0xd3ae78222beadb038203be21ed5ce7c9b1bff602")
-	authorityContract := thor.MustParseAddress("0x841a6556c524d47030762eb14dc4af897e605d9b")
-
-	contract, _ := hex.DecodeString(AuthorityListAll)
-	clauses := [2]accounts2.Clause{
-		{
-			To:    nil,
-			Value: nil,
-			Data:  hexutil.Encode(contract),
-		},
-		{
-			To:   &authorityContract,
-			Data: "0x6f0470aa",
-		},
-	}
-
-	body := &accounts2.BatchCallData{
-		Gas:      gas,
-		Caller:   &caller,
-		GasPayer: &gasPayer,
-		Clauses:  clauses[:],
-	}
-	response, err := thorClient.InspectClauses(body, thorclient.Revision(blockID.String()))
-	if err != nil {
-		return nil, err
-	}
-
-	data := response[1].Data[2:]
-
-	valueType, _ := big.NewInt(0).SetString(data[:64], 16)
-	if valueType.Cmp(big.NewInt(32)) != 0 {
-		return nil, errors.New("Wrong type returned by the contract")
-	}
-	data = data[64:]
-	amount, _ := big.NewInt(0).SetString(data[:64], 16)
-	data = data[64:]
-
-	candidates := make([]Candidate, amount.Uint64(), amount.Uint64())
-	for index := uint64(0); index < amount.Uint64(); index++ {
-		master := thor.MustParseAddress(data[24:64])
-		data = data[64:]
-		endorsor := thor.MustParseAddress(data[24:64])
-		data = data[64:]
-		identity, _ := hex.DecodeString(data[:64])
-		data = data[64:]
-
-		activeString := data[:64]
-		active := true
-		if activeString == "0000000000000000000000000000000000000000000000000000000000000000" {
-			active = false
-		}
-		data = data[64:]
-
-		candidate := Candidate{
-			Master:    master,
-			Endorsor:  endorsor,
-			Indentity: identity,
-			Active:    active,
-		}
-		candidates[index] = candidate
-	}
-
-	return candidates, nil
-}
-
-func shuffleCandidates(candidates []Candidate, seed []byte, blockNumber uint32) []thor.Address {
-	var num [4]byte
-	binary.BigEndian.PutUint32(num[:], blockNumber)
-	var list []struct {
-		addr thor.Address
-		hash thor.Bytes32
-	}
-	for _, p := range candidates {
-		if p.Active {
-			list = append(list, struct {
-				addr thor.Address
-				hash thor.Bytes32
-			}{
-				p.Master,
-				thor.Blake2b(seed, num[:], p.Master.Bytes()),
-			})
-		}
-	}
-
-	sort.Slice(list, func(i, j int) bool {
-		return bytes.Compare(list[i].hash.Bytes(), list[j].hash.Bytes()) < 0
-	})
-
-	shuffled := make([]thor.Address, 0, len(list))
-	for _, t := range list {
-		shuffled = append(shuffled, t.addr)
-	}
-	return shuffled
-}
-
 func (i *DB) appendSlotStats(
 	block *block.Block,
 	flags map[string]interface{},
@@ -361,22 +272,9 @@ func (i *DB) appendSlotStats(
 
 	epoch := block.ExpandedBlock.Number / 180
 	if ok {
-		candidates, err := listAllCandidates(i.thor, prevBlock.ID)
-		if err != nil {
-			return
-		}
-		seed, _ := i.generateSeed(prevBlock.ID)
-		shuffledCandidates := shuffleCandidates(candidates, seed, prevBlock.Number)
-
-		genesis, err := i.thor.Block("genesis")
-		if err != nil {
-			return
-		}
-
-		genesisBlockTimestamp := genesis.Timestamp
+		genesisBlockTimestamp := i.genesis.Timestamp
 		slots := ((block.ExpandedBlock.Timestamp - genesisBlockTimestamp) / 10) + 1
 		flags["slots_per_block"] = slots
-
 		flags["blocks_slots_percentage"] = (float64(block.ExpandedBlock.Number) / float64(slots)) * 100
 
 		// Process recent slots
@@ -390,21 +288,26 @@ func (i *DB) appendSlotStats(
 		if slotsSinceLastBlock > detailedSlotWindow {
 			startSlot = slotsSinceLastBlock - detailedSlotWindow
 		}
+		proposer := block.ExpandedBlock.Signer
 
 		for a := startSlot; a < slotsSinceLastBlock; a++ {
 			rawTime := prevBlock.Timestamp + a*10
 			slotTime := time.Unix(int64(rawTime), 0)
-			isFilled := (a == slotsSinceLastBlock-1)
+			isFilled := a == slotsSinceLastBlock-1
 			value := 0
 			if isFilled {
 				value = 1
 			} else {
-				println("EMPTY SLOT EMPTY SLOT", block.ExpandedBlock.Number)
+				slog.Warn("EMPTY SLOT", "number", block.ExpandedBlock.Number)
+				// shuffling the proposer for the block is expensive, only do it if we missed a slot. Otherwise, the signer is he proposer
+				shuffledCandidates := i.candidates.Shuffled(prevBlock)
+				proposer = shuffledCandidates[a]
 			}
+
 			p := influxdb2.NewPoint(
 				"recent_slots",
 				map[string]string{"chain_tag": string(i.chainTag)},
-				map[string]interface{}{"filled": value, "epoch": epoch, "proposer": shuffledCandidates[a]},
+				map[string]interface{}{"filled": value, "epoch": epoch, "proposer": proposer},
 				slotTime,
 			)
 			if err := writeAPI.WritePoint(context.Background(), p); err != nil {

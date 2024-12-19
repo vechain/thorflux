@@ -19,7 +19,7 @@ import (
 	"github.com/vechain/thorflux/influxdb"
 )
 
-const querySize = 100
+const querySize = 500
 
 type Sync struct {
 	thor      *thorclient.Client
@@ -155,7 +155,7 @@ func (s *Sync) fetchBlocksAsync(amount int, startBlock uint32) ([]*blockType.Blo
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var err error
-	blks := make([]*blockType.Block, amount)
+	blks := make([]*blockType.Block, 0)
 
 	for i := 0; i < amount; i++ {
 		wg.Add(1)
@@ -202,10 +202,12 @@ func (s *Sync) fetchBlocksAsync(amount int, startBlock uint32) ([]*blockType.Blo
 				return
 			}
 
-			blks[i] = &blockType.Block{
+			mu.Lock()
+			blks = append(blks, &blockType.Block{
 				ExpandedBlock: block,
 				RawHeader:     &header,
-			}
+			})
+			mu.Unlock()
 		}(i)
 	}
 
