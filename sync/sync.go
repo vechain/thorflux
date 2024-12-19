@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -10,26 +11,26 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/darrenvechain/thor-go-sdk/client"
-	"github.com/darrenvechain/thor-go-sdk/thorgo"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/vechain/thor/v2/api/blocks"
+	block2 "github.com/vechain/thor/v2/block"
+	"github.com/vechain/thor/v2/thorclient"
 	blockType "github.com/vechain/thorflux/block"
 	"github.com/vechain/thorflux/influxdb"
-	innerRlp "github.com/vechain/thorflux/rlp"
 )
 
 const querySize = 100
 
 type Sync struct {
-	thor      *thorgo.Thor
+	thor      *thorclient.Client
 	influx    *influxdb.DB
-	prev      *atomic.Uint64
+	prev      *atomic.Uint32
 	blockChan chan *blockType.Block
 	context   context.Context
 }
 
-func New(thor *thorgo.Thor, influx *influxdb.DB, start uint64, ctx context.Context) *Sync {
-	prev := &atomic.Uint64{}
+func New(thor *thorclient.Client, influx *influxdb.DB, start uint32, ctx context.Context) *Sync {
+	prev := &atomic.Uint32{}
 	prev.Store(start - 1)
 	blockChan := make(chan *blockType.Block, 5000)
 	return &Sync{thor: thor, influx: influx, prev: prev, blockChan: blockChan, context: ctx}
@@ -53,7 +54,7 @@ func (s *Sync) sync() {
 		default:
 
 			blockNumber := s.prev.Load() + 1
-			block, err := s.thor.Client().ExpandedBlock(fmt.Sprintf("%d", blockNumber))
+			block, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", blockNumber))
 			if err != nil {
 				slog.Error("failed to fetch block", "error", err)
 				time.Sleep(5 * time.Second)
@@ -66,13 +67,24 @@ func (s *Sync) sync() {
 			}
 			slog.Info("✅ fetched block", "block", block.Number)
 
-			rawBlock := innerRlp.JSONRawBlockSummary{}
-			client.Get(s.thor.Client(), "/blocks/"+fmt.Sprintf("%d", blockNumber)+"?raw=true", &rawBlock)
+			rawBlock := blocks.JSONRawBlockSummary{}
+			rawBytes, status, err := s.thor.RawHTTPClient().RawHTTPGet("/blocks/" + fmt.Sprintf("%d", blockNumber) + "?raw=true")
+			if err != nil || status != 200 {
+				slog.Error("failed to fetch raw block", "error", err)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			if err := json.Unmarshal(rawBytes, &rawBlock); err != nil {
+				slog.Error("failed to unmarshal raw block", "error", err)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+
 			data, err := hex.DecodeString(rawBlock.Raw[2:])
 			if err != nil {
 				panic(err)
 			}
-			header := innerRlp.Header{}
+			header := block2.Header{}
 			err = rlp.DecodeBytes(data, &header)
 
 			s.prev.Store(block.Number)
@@ -112,7 +124,7 @@ func (s *Sync) fastSync() {
 }
 
 func (s *Sync) shouldQuit() bool {
-	best, err := s.thor.Client().BestBlock()
+	best, err := s.thor.Block("best")
 	if err != nil {
 		slog.Error("failed to get best block", "error", err)
 		return false
@@ -139,17 +151,17 @@ func (s *Sync) writeBlocks() {
 	}
 }
 
-func (s *Sync) fetchBlocksAsync(amount int, startBlock uint64) ([]*blockType.Block, error) {
+func (s *Sync) fetchBlocksAsync(amount int, startBlock uint32) ([]*blockType.Block, error) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var err error
-	blocks := make([]*blockType.Block, amount)
+	blks := make([]*blockType.Block, amount)
 
 	for i := 0; i < amount; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			block, fetchErr := s.thor.Client().ExpandedBlock(fmt.Sprintf("%d", startBlock+uint64(i)))
+			block, fetchErr := s.thor.ExpandedBlock(fmt.Sprintf("%d", startBlock+uint32(i)))
 			if fetchErr != nil {
 				mu.Lock()
 				err = fetchErr
@@ -157,16 +169,40 @@ func (s *Sync) fetchBlocksAsync(amount int, startBlock uint64) ([]*blockType.Blo
 				return
 			}
 
-			rawBlock := innerRlp.JSONRawBlockSummary{}
-			client.Get(s.thor.Client(), "/blocks/"+fmt.Sprintf("%d", startBlock+uint64(i))+"?raw=true", &rawBlock)
-			data, err := hex.DecodeString(rawBlock.Raw[2:])
-			if err != nil {
-				panic(err)
+			rawBlock := blocks.JSONRawBlockSummary{}
+			rawBytes, status, fetchErr := s.thor.RawHTTPClient().RawHTTPGet("/blocks/" + fmt.Sprintf("%d", block.Number) + "?raw=true")
+			if fetchErr != nil || status != 200 {
+				mu.Lock()
+				err = fetchErr
+				mu.Unlock()
+				return
 			}
-			header := innerRlp.Header{}
-			err = rlp.DecodeBytes(data, &header)
 
-			blocks[i] = &blockType.Block{
+			if fetchErr := json.Unmarshal(rawBytes, &rawBlock); fetchErr != nil {
+				mu.Lock()
+				err = fetchErr
+				mu.Unlock()
+				return
+			}
+
+			data, fetchErr := hex.DecodeString(rawBlock.Raw[2:])
+			if fetchErr != nil {
+				mu.Lock()
+				err = fetchErr
+				mu.Unlock()
+				return
+			}
+
+			header := block2.Header{}
+			fetchErr = rlp.DecodeBytes(data, &header)
+			if fetchErr != nil {
+				mu.Lock()
+				err = fetchErr
+				mu.Unlock()
+				return
+			}
+
+			blks[i] = &blockType.Block{
 				ExpandedBlock: block,
 				RawHeader:     &header,
 			}
@@ -178,9 +214,9 @@ func (s *Sync) fetchBlocksAsync(amount int, startBlock uint64) ([]*blockType.Blo
 		return nil, err
 	}
 
-	sort.Slice(blocks, func(i, j int) bool {
-		return blocks[i].ExpandedBlock.Number < blocks[j].ExpandedBlock.Number
+	sort.Slice(blks, func(i, j int) bool {
+		return blks[i].ExpandedBlock.Number < blks[j].ExpandedBlock.Number
 	})
 
-	return blocks, nil
+	return blks, nil
 }

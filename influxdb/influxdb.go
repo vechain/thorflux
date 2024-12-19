@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -14,26 +15,27 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/darrenvechain/thor-go-sdk/client"
-	"github.com/darrenvechain/thor-go-sdk/thorgo"
-	"github.com/darrenvechain/thor-go-sdk/transaction"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
+	accounts2 "github.com/vechain/thor/v2/api/accounts"
+	"github.com/vechain/thor/v2/api/blocks"
+	block2 "github.com/vechain/thor/v2/block"
+	"github.com/vechain/thor/v2/thor"
+	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/accounts"
 	"github.com/vechain/thorflux/block"
-	innerRlp "github.com/vechain/thorflux/rlp"
 )
 
 type DB struct {
-	thor      *thorgo.Thor
+	thor      *thorclient.Client
 	client    influxdb2.Client
 	chainTag  byte
 	prevBlock atomic.Value
 }
 
-func New(thor *thorgo.Thor, url, token string, chainTag byte) (*DB, error) {
+func New(thor *thorclient.Client, url, token string, chainTag byte) (*DB, error) {
 	influx := influxdb2.NewClient(url, token)
 
 	_, err := influx.Ping(context.Background())
@@ -51,7 +53,7 @@ func New(thor *thorgo.Thor, url, token string, chainTag byte) (*DB, error) {
 }
 
 // Latest returns the latest block number stored in the database
-func (i *DB) Latest() (uint64, error) {
+func (i *DB) Latest() (uint32, error) {
 	queryAPI := i.client.QueryAPI("vechain")
 	query := `from(bucket: "vechain")
 	  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)
@@ -65,7 +67,7 @@ func (i *DB) Latest() (uint64, error) {
 	defer res.Close()
 
 	if res.Next() {
-		blockNum, ok := res.Record().Value().(uint64)
+		blockNum, ok := res.Record().Value().(uint32)
 		if !ok {
 			slog.Warn("failed to cast block number to uint64")
 			return 0, nil
@@ -94,8 +96,8 @@ func (i *DB) WriteBlock(block *block.Block) {
 
 	tags := map[string]string{
 		"chain_tag":    string(i.chainTag),
-		"signer":       block.ExpandedBlock.Signer.Hex(),
-		"block_number": strconv.FormatUint(block.ExpandedBlock.Number, 10),
+		"signer":       block.ExpandedBlock.Signer.String(),
+		"block_number": strconv.FormatUint(uint64(block.ExpandedBlock.Number), 10),
 	}
 
 	flags := map[string]interface{}{}
@@ -121,7 +123,7 @@ type coefStats struct {
 	Total   int
 }
 
-func (i *DB) appendTxStats(block *client.ExpandedBlock, flags map[string]interface{}) (total, success, failed int) {
+func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) (total, success, failed int) {
 	txs := block.Transactions
 	clauseCount := 0
 	vetTransferCount := 0
@@ -146,7 +148,8 @@ func (i *DB) appendTxStats(block *client.ExpandedBlock, flags map[string]interfa
 			vetTransferCount += len(o.Transfers)
 			eventCount += len(o.Events)
 			for _, tr := range o.Transfers {
-				amountFloat := new(big.Float).SetInt(tr.Amount.Int)
+				amount := (*big.Int)(tr.Amount)
+				amountFloat := new(big.Float).SetInt(amount)
 				vetTransfersAmount.Add(vetTransfersAmount, amountFloat)
 			}
 		}
@@ -185,21 +188,21 @@ func (i *DB) appendTxStats(block *client.ExpandedBlock, flags map[string]interfa
 	return
 }
 
-func (i *DB) appendBlockStats(block *client.ExpandedBlock, flags map[string]interface{}) {
+func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) {
 	flags["best_block_number"] = block.Number
 	flags["block_gas_used"] = block.GasUsed
 	flags["block_gas_limit"] = block.GasLimit
 	flags["block_gas_usage"] = float64(block.GasUsed) * 100 / float64(block.GasLimit)
 	flags["storage_size"] = block.Size
 	gap := uint64(10)
-	prev, ok := i.prevBlock.Load().(*client.ExpandedBlock)
+	prev, ok := i.prevBlock.Load().(*blocks.JSONExpandedBlock)
 	if ok {
 		gap = block.Timestamp - prev.Timestamp
 	}
 	flags["block_mine_gap"] = (gap - 10) / 10
 }
 
-func (i *DB) appendB3trStats(block *client.ExpandedBlock, flags map[string]interface{}) {
+func (i *DB) appendB3trStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) {
 	b3trTxs, b3trClauses, b3trGas := accounts.B3trStats(block)
 	flags["b3tr_total_txs"] = b3trTxs
 	flags["b3tr_total_clauses"] = b3trClauses
@@ -211,24 +214,30 @@ func (i *DB) appendB3trStats(block *client.ExpandedBlock, flags map[string]inter
 	}
 }
 
-func (i *DB) generateSeed(parentID common.Hash) (seed []byte, err error) {
+func (i *DB) generateSeed(parentID thor.Bytes32) (seed []byte, err error) {
 	blockNum := binary.BigEndian.Uint32(parentID[:]) + 1
 	epoch := blockNum / 8640
 	seedNum := (epoch - 1) * 8640
 
-	seedBlock, err := i.thor.Blocks.ByNumber(uint64(seedNum))
+	seedBlock, err := i.thor.Block(fmt.Sprintf("%d", seedNum))
 	if err != nil {
 		return
 	}
 	seedID := seedBlock.ID
 
-	rawBlock := innerRlp.JSONRawBlockSummary{}
-	client.Get(i.thor.Client(), "/blocks/"+hex.EncodeToString(seedID.Bytes())+"?raw=true", &rawBlock)
+	rawBlock := blocks.JSONRawBlockSummary{}
+	res, status, err := i.thor.RawHTTPClient().RawHTTPGet("/blocks/" + hex.EncodeToString(seedID.Bytes()) + "?raw=true")
+	if status != 200 {
+		return
+	}
+	if err = json.Unmarshal(res, &rawBlock); err != nil {
+		return
+	}
 	data, err := hex.DecodeString(rawBlock.Raw[2:])
 	if err != nil {
-		panic(err)
+		return
 	}
-	header := innerRlp.Header{}
+	header := block2.Header{}
 	err = rlp.DecodeBytes(data, &header)
 	if err != nil {
 		return
@@ -238,57 +247,43 @@ func (i *DB) generateSeed(parentID common.Hash) (seed []byte, err error) {
 }
 
 type Candidate struct {
-	Master    common.Address
-	Endorsor  common.Address
+	Master    thor.Address
+	Endorsor  thor.Address
 	Indentity []byte
 	Active    bool
 }
 
-func listAllCandidates(thorClient *thorgo.Thor, blockNumber uint64) ([]Candidate, error) {
+func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]Candidate, error) {
 	gas := uint64(3000000)
-	gasPrice := "100000000"
-	caller := common.HexToAddress("0x6d95e6dca01d109882fe1726a2fb9865fa41e7aa")
-	provedWork := "1000"
-	gasPayer := common.HexToAddress("0xd3ae78222beadb038203be21ed5ce7c9b1bff602")
-	expiration := uint64(1000)
-	blockRef := "0x00000000851caf3c"
-	authorityContract := common.HexToAddress("0x841a6556c524d47030762eb14dc4af897e605d9b")
+	caller := thor.MustParseAddress("0x6d95e6dca01d109882fe1726a2fb9865fa41e7aa")
+	gasPayer := thor.MustParseAddress("0xd3ae78222beadb038203be21ed5ce7c9b1bff602")
+	authorityContract := thor.MustParseAddress("0x841a6556c524d47030762eb14dc4af897e605d9b")
 
 	contract, _ := hex.DecodeString(AuthorityListAll)
-	clauses := [2]*transaction.Clause{
-		transaction.NewClause(nil).WithData(contract),
-		transaction.NewClause(&authorityContract).WithData(common.Hex2Bytes("6f0470aa")),
+	clauses := [2]accounts2.Clause{
+		{
+			To:    nil,
+			Value: nil,
+			Data:  hexutil.Encode(contract),
+		},
+		{
+			To:   &authorityContract,
+			Data: "0x6f0470aa",
+		},
 	}
 
-	url := fmt.Sprintf("/accounts/*?revision=%d", blockNumber)
-
-	type InspectRequest struct {
-		Gas        *uint64               `json:"gas,omitempty"`
-		GasPrice   *string               `json:"gasPrice,omitempty"`
-		Caller     *common.Address       `json:"caller,omitempty"`
-		ProvedWork *string               `json:"provedWork,omitempty"`
-		GasPayer   *common.Address       `json:"gasPayer,omitempty"`
-		Expiration *uint64               `json:"expiration,omitempty"`
-		BlockRef   *string               `json:"blockRef,omitempty"`
-		Clauses    []*transaction.Clause `json:"clauses"`
+	body := &accounts2.BatchCallData{
+		Gas:      gas,
+		Caller:   &caller,
+		GasPayer: &gasPayer,
+		Clauses:  clauses[:],
 	}
-	body := InspectRequest{
-		Gas:        &gas,
-		GasPrice:   &gasPrice,
-		Caller:     &caller,
-		ProvedWork: &provedWork,
-		GasPayer:   &gasPayer,
-		Expiration: &expiration,
-		BlockRef:   &blockRef,
-		Clauses:    clauses[:],
-	}
-
-	response, err := client.Post(thorClient.Client(), url, body, new([]client.InspectResponse))
+	response, err := thorClient.InspectClauses(body, thorclient.Revision(blockID.String()))
 	if err != nil {
 		return nil, err
 	}
 
-	data := (*response)[1].Data[2:]
+	data := response[1].Data[2:]
 
 	valueType, _ := big.NewInt(0).SetString(data[:64], 16)
 	if valueType.Cmp(big.NewInt(32)) != 0 {
@@ -300,9 +295,9 @@ func listAllCandidates(thorClient *thorgo.Thor, blockNumber uint64) ([]Candidate
 
 	candidates := make([]Candidate, amount.Uint64(), amount.Uint64())
 	for index := uint64(0); index < amount.Uint64(); index++ {
-		master := common.HexToAddress(data[24:64])
+		master := thor.MustParseAddress(data[24:64])
 		data = data[64:]
-		endorsor := common.HexToAddress(data[24:64])
+		endorsor := thor.MustParseAddress(data[24:64])
 		data = data[64:]
 		identity, _ := hex.DecodeString(data[:64])
 		data = data[64:]
@@ -326,21 +321,21 @@ func listAllCandidates(thorClient *thorgo.Thor, blockNumber uint64) ([]Candidate
 	return candidates, nil
 }
 
-func shuffleCandidates(candidates []Candidate, seed []byte, blockNumber uint64) []common.Address {
+func shuffleCandidates(candidates []Candidate, seed []byte, blockNumber uint32) []thor.Address {
 	var num [4]byte
-	binary.BigEndian.PutUint32(num[:], uint32(blockNumber))
+	binary.BigEndian.PutUint32(num[:], blockNumber)
 	var list []struct {
-		addr common.Address
-		hash common.Hash
+		addr thor.Address
+		hash thor.Bytes32
 	}
 	for _, p := range candidates {
 		if p.Active {
 			list = append(list, struct {
-				addr common.Address
-				hash common.Hash
+				addr thor.Address
+				hash thor.Bytes32
 			}{
 				p.Master,
-				innerRlp.Blake2b(seed, num[:], p.Master.Bytes()),
+				thor.Blake2b(seed, num[:], p.Master.Bytes()),
 			})
 		}
 	}
@@ -349,7 +344,7 @@ func shuffleCandidates(candidates []Candidate, seed []byte, blockNumber uint64) 
 		return bytes.Compare(list[i].hash.Bytes(), list[j].hash.Bytes()) < 0
 	})
 
-	shuffled := make([]common.Address, 0, len(list))
+	shuffled := make([]thor.Address, 0, len(list))
 	for _, t := range list {
 		shuffled = append(shuffled, t.addr)
 	}
@@ -362,18 +357,23 @@ func (i *DB) appendSlotStats(
 	writeAPI api.WriteAPIBlocking,
 ) {
 	blockTime := time.Unix(int64(block.ExpandedBlock.Timestamp), 0).UTC()
-	prevBlock, ok := i.prevBlock.Load().(*client.ExpandedBlock)
+	prevBlock, ok := i.prevBlock.Load().(*blocks.JSONExpandedBlock)
 
 	epoch := block.ExpandedBlock.Number / 180
 	if ok {
-		candidates, err := listAllCandidates(i.thor, prevBlock.Number)
+		candidates, err := listAllCandidates(i.thor, prevBlock.ID)
 		if err != nil {
 			return
 		}
 		seed, _ := i.generateSeed(prevBlock.ID)
 		shuffledCandidates := shuffleCandidates(candidates, seed, prevBlock.Number)
 
-		genesisBlockTimestamp := i.thor.Client().GenesisBlock().Timestamp
+		genesis, err := i.thor.Block("genesis")
+		if err != nil {
+			return
+		}
+
+		genesisBlockTimestamp := genesis.Timestamp
 		slots := ((block.ExpandedBlock.Timestamp - genesisBlockTimestamp) / 10) + 1
 		flags["slots_per_block"] = slots
 
@@ -441,7 +441,7 @@ func (i *DB) appendSlotStats(
 
 	// if blockTime is within the 15 mins, call to chain for the real finalized block
 	if time.Since(blockTime) < time.Minute*3 {
-		finalized, err := i.thor.Blocks.Finalized()
+		finalized, err := i.thor.Block("finalized")
 		if err != nil {
 			slog.Error("failed to get finalized block", "error", err)
 			flags["finalized"] = esitmatedFinalized
@@ -459,7 +459,7 @@ func (i *DB) appendSlotStats(
 	}
 }
 
-func (i *DB) appendEpochStats(block *client.ExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
+func (i *DB) appendEpochStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
 	epoch := block.Number / 180
 	blockInEpoch := block.Number % 180
 
@@ -475,7 +475,7 @@ func (i *DB) appendEpochStats(block *client.ExpandedBlock, flags map[string]inte
 		map[string]interface{}{
 			//"block_in_epoch": blockInEpoch,
 			"utilization": float64(block.GasUsed) * 100 / float64(block.GasLimit),
-			"epoch":       strconv.FormatUint(epoch, 10),
+			"epoch":       strconv.FormatUint(uint64(epoch), 10),
 		},
 		time.Unix(int64(block.Timestamp), 0),
 	)

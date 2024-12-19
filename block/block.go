@@ -1,11 +1,11 @@
 package block
 
 import (
-	"github.com/darrenvechain/thor-go-sdk/client"
-	"github.com/vechain/thorflux/rlp"
+	"github.com/vechain/thor/v2/api/blocks"
+	"github.com/vechain/thor/v2/block"
 )
 
 type Block struct {
-	ExpandedBlock *client.ExpandedBlock
-	RawHeader     *rlp.Header
+	ExpandedBlock *blocks.JSONExpandedBlock
+	RawHeader     *block.Header
 }
