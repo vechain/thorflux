@@ -307,7 +307,7 @@ func (i *DB) appendSlotStats(
 			p := influxdb2.NewPoint(
 				"recent_slots",
 				map[string]string{"chain_tag": string(i.chainTag)},
-				map[string]interface{}{"filled": value, "epoch": epoch, "proposer": proposer},
+				map[string]interface{}{"filled": value, "epoch": epoch, "proposer": proposer, "block_number": block.ExpandedBlock.Number},
 				slotTime,
 			)
 			if err := writeAPI.WritePoint(context.Background(), p); err != nil {
