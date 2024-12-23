@@ -57,21 +57,21 @@ services:
     depends_on:
       - plugin-builder
 
-#  thorflux:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: thorflux
-#    depends_on:
-#      influxdb:
-#        condition: service_healthy
-#    networks:
-#        - monitoring
-#    environment:
-#      - THOR_URL=https://mainnet.vechain.org
-#      - INFLUX_URL=http://influxdb:8086
-#      - INFLUX_TOKEN=admin-token
-#      - THOR_START_BLOCK=19804000
+  thorflux:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: thorflux
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    networks:
+        - monitoring
+    environment:
+      - THOR_URL=https://mainnet.vechain.org
+      - INFLUX_URL=http://influxdb:8086
+      - INFLUX_TOKEN=admin-token
+      - THOR_START_BLOCK=20442262
 
 volumes:
   plugin-dist:
