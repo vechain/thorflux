@@ -9,8 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/darrenvechain/thor-go-sdk/thorgo"
 	"github.com/kouhin/envflag"
+	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/sync"
 )
@@ -32,13 +32,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	thor, err := thorgo.FromURL(thorURL)
+	thor := thorclient.New(thorURL)
+	chainTag, err := thor.ChainTag()
 	if err != nil {
-		slog.Error("failed to create thor client", "error", err)
+		slog.Error("failed to get chain tag", "error", err)
 		os.Exit(1)
 	}
 
-	influx, err := influxdb.New(thor, influxURL, influxToken, thor.Client().ChainTag())
+	influx, err := influxdb.New(thor, influxURL, influxToken, chainTag)
 	if err != nil {
 		slog.Error("failed to create influxdb", "error", err)
 		os.Exit(1)
@@ -60,7 +61,7 @@ func main() {
 	syncer.Index()
 }
 
-func parseFlags() (string, string, string, uint64, error) {
+func parseFlags() (string, string, string, uint32, error) {
 	if err := envflag.Parse(); err != nil {
 		return "", "", "", 0, err
 	}
@@ -82,7 +83,7 @@ func parseFlags() (string, string, string, uint64, error) {
 
 	startBlock := *startBlockFlag
 
-	return thorURL, influxURL, influxToken, startBlock, nil
+	return thorURL, influxURL, influxToken, uint32(startBlock), nil
 }
 
 func exitContext() context.Context {

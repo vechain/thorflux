@@ -68,10 +68,10 @@ services:
     networks:
         - monitoring
     environment:
-      - THOR_URL=http://mainnet.vechain.org
+      - THOR_URL=https://mainnet.vechain.org
       - INFLUX_URL=http://influxdb:8086
       - INFLUX_TOKEN=admin-token
-      - THOR_START_BLOCK=19804000
+      - THOR_START_BLOCK=20442262
 
 volumes:
   plugin-dist:

@@ -30,6 +30,79 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "filterable": true,
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 32,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "_time"
+          }
+        ]
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "import \"array\"\n\nempty_slots = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"filled\" and r[\"_value\"] == 0)\n  |> group() // Ensure all data is in one table\n  |> tableFind(fn: (key) => true) // Get the table\n  |> getColumn(column: \"_time\") // Extract the \"_time\" column as an array\n\nproposors = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"proposer\")\n  |> filter(fn: (r) => contains(set: empty_slots , value: r[\"_time\"]))\n\nblocks = from(bucket: \"vechain\")\n   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n   |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\")\n   |> filter(fn: (r) => contains(set: empty_slots , value: r[\"_time\"]))\n\njoin(tables: {proposors: proposors, blocks: blocks}, on: [\"_time\"])\n    |> keep(columns: [\"_value_proposors\", \"_value_blocks\", \"_time\"])\n    |> map(fn: (r) => ({ r with block: r._value_blocks }))\n    |> map(fn: (r) => ({ r with proposer: r._value_proposors }))\n    |> keep(columns: [\"proposer\", \"block\", \"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Missed Slots",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "default": true,
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
             "mode": "thresholds"
           },
           "mappings": [],
@@ -50,7 +123,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 0
+        "y": 15
       },
       "id": 20,
       "options": {
@@ -70,7 +143,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -113,7 +186,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 0
+        "y": 15
       },
       "id": 23,
       "options": {
@@ -133,7 +206,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -176,7 +249,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 0
+        "y": 15
       },
       "id": 24,
       "options": {
@@ -196,7 +269,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -239,7 +312,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 8
+        "y": 23
       },
       "id": 13,
       "options": {
@@ -259,7 +332,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -301,7 +374,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 8
+        "y": 23
       },
       "id": 14,
       "options": {
@@ -321,7 +394,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -364,7 +437,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 8
+        "y": 23
       },
       "id": 22,
       "options": {
@@ -384,7 +457,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -404,18 +477,13 @@
         "type": "influxdb",
         "uid": "P951FEA4DE68E13C5"
       },
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
       "gridPos": {
         "h": 15,
         "w": 18,
         "x": 0,
-        "y": 16
+        "y": 31
       },
       "id": 31,
-      "options": {},
       "pluginVersion": "1.0.0",
       "targets": [
         {
@@ -458,10 +526,9 @@
         "h": 8,
         "w": 18,
         "x": 0,
-        "y": 31
+        "y": 46
       },
       "id": 26,
-      "options": {},
       "pluginVersion": "1.0.0",
       "targets": [
         {
@@ -525,8 +592,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -541,7 +607,7 @@
         "h": 8,
         "w": 18,
         "x": 0,
-        "y": 39
+        "y": 54
       },
       "id": 10,
       "options": {
@@ -652,7 +718,7 @@
         "h": 8,
         "w": 18,
         "x": 0,
-        "y": 47
+        "y": 62
       },
       "id": 15,
       "options": {
@@ -758,7 +824,7 @@
         "h": 8,
         "w": 18,
         "x": 0,
-        "y": 55
+        "y": 70
       },
       "id": 1,
       "options": {
@@ -896,7 +962,7 @@
         "h": 8,
         "w": 18,
         "x": 0,
-        "y": 63
+        "y": 78
       },
       "id": 27,
       "options": {
@@ -952,7 +1018,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 71
+        "y": 86
       },
       "id": 25,
       "options": {
@@ -972,7 +1038,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -1018,7 +1084,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 71
+        "y": 86
       },
       "id": 21,
       "options": {
@@ -1038,7 +1104,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -1089,7 +1155,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 71
+        "y": 86
       },
       "id": 16,
       "options": {
@@ -1109,7 +1175,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -1150,7 +1216,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 79
+        "y": 94
       },
       "id": 12,
       "options": {
@@ -1170,7 +1236,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -1210,7 +1276,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 79
+        "y": 94
       },
       "id": 9,
       "options": {
@@ -1230,7 +1296,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.3.0",
+      "pluginVersion": "11.2.0",
       "targets": [
         {
           "datasource": {
@@ -1307,7 +1373,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 79
+        "y": 94
       },
       "id": 11,
       "options": {
@@ -1400,7 +1466,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 87
+        "y": 102
       },
       "id": 3,
       "options": {
@@ -1493,7 +1559,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 87
+        "y": 102
       },
       "id": 5,
       "options": {
@@ -1586,7 +1652,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 95
+        "y": 110
       },
       "id": 28,
       "options": {
@@ -1678,7 +1744,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 95
+        "y": 110
       },
       "id": 4,
       "options": {
@@ -1770,7 +1836,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 103
+        "y": 118
       },
       "id": 8,
       "options": {
@@ -1864,7 +1930,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 103
+        "y": 118
       },
       "id": 30,
       "options": {
@@ -1956,7 +2022,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 111
+        "y": 126
       },
       "id": 29,
       "options": {
@@ -2074,7 +2140,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 119
+        "y": 134
       },
       "id": 2,
       "options": {
@@ -2113,21 +2179,20 @@
       "type": "timeseries"
     }
   ],
-  "preload": false,
-  "refresh": "10s",
-  "schemaVersion": 40,
+  "refresh": "5m",
+  "schemaVersion": 39,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "2024-10-13T00:03:39.290Z",
-    "to": "2024-10-13T00:06:19.302Z"
+    "from": "now-7d",
+    "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "InfluxDB Stats",
   "uid": "bdw67xl69siyo1",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }
