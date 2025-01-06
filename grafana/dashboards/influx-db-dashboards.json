@@ -18,7 +18,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
   "links": [],
   "panels": [
     {
@@ -822,7 +821,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -870,7 +870,7 @@
     },
     {
       "datasource": {
-        "default": false,
+        "default": true,
         "type": "influxdb",
         "uid": "P951FEA4DE68E13C5"
       },
@@ -888,7 +888,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "import \"date\"\n\nfrom(bucket:\"vechain\")\n  |> range(start: date.sub(d:5h, from:v.timeRangeStop), stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\")",
+          "query": "import \"date\"\n\nblocks = from(bucket: \"vechain\")\n  |> range(start: date.sub(d: 5h, from: v.timeRangeStop), stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"block_number\")\n\nepochs = from(bucket: \"vechain\")\n  |> range(start: date.sub(d: 5h, from: v.timeRangeStop), stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"epoch\")\n\njoin(tables: {blocks: blocks, epochs: epochs}, on: [\"_time\"])\n  |> map(fn: (r) => ({\n      _value: r._value_blocks,\n      filled: r.filled_blocks,\n      proposer: r.proposer_blocks,\n      epoch: r._value_epochs\n  }))\n  |> keep(columns: [\"_value\", \"filled\", \"proposer\", \"epoch\"])\n",
           "refId": "A"
         }
       ],
@@ -989,7 +989,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2233,15 +2234,15 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "5m",
+  "refresh": "",
   "schemaVersion": 39,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-3d",
-    "to": "now"
+    "from": "2024-12-24T12:00:00.000Z",
+    "to": "2024-12-24T17:00:00.000Z"
   },
   "timepicker": {},
   "timezone": "",
