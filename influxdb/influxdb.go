@@ -215,7 +215,7 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 	if ok {
 		gap = float64(block.Timestamp - prev.Timestamp)
 	}
-	flags["block_mine_gap"] = (gap - 10) / 10
+	flags["block_mine_gap"] = (gap - 10) * 100
 }
 
 func (i *DB) appendB3trStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) {

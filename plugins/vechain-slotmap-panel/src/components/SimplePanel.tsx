@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import { PanelProps } from '@grafana/data';
 import { useTheme2 } from '@grafana/ui';
 import { css } from '@emotion/css';
@@ -13,7 +13,7 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
       return { epochs: [], maxSlots: DEFAULT_SLOTS_PER_EPOCH };
     }
 
-    const epochField = data.series[0].fields.find(f => f.name === 'epoch');
+    const epochField = data.series[0].fields.find(f => f.name === '_value');
     const filledField = data.series[0].fields.find(f => f.name === 'filled');
     const proposerField = data.series[0].fields.find(f => f.name === 'proposer');
 
@@ -27,7 +27,7 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
     // First pass: group by epoch and find max slots
     for (let i = 0; i < epochField.values.length; i++) {
       const epoch = epochField.values[i];
-      const filled = filledField.values[i];
+      const filled = parseInt(filledField.values[i]);
       const proposer = proposerField.values[i];
 
       if (!epochData[epoch]) {
@@ -72,7 +72,9 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
     };
   };
 
-  const { epochs, maxSlots } = processData();
+  const { epochs, maxSlots } = useMemo(() => {
+    return processData();
+  }, [data.series])
 
   const getSlotNumber = (epoch: number, slotIndex: number) => {
     return (epoch * maxSlots) + slotIndex;
