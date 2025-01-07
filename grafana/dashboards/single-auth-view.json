@@ -18,9 +18,74 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
   "links": [],
   "panels": [
+    {
+      "datasource": {
+        "default": true,
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-text"
+            },
+            "inspect": false,
+            "minWidth": 50
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"1\" and r.proposer == \"${proposer}\")\n  |> limit(n: 1000)\n  |> map(fn: (r) => ({ r with slot: r._value}))\n  |> keep(columns: [\"slot\", \"_time\"])\n  ",
+          "refId": "A"
+        }
+      ],
+      "title": "Fillet Slots",
+      "type": "table"
+    },
     {
       "datasource": {
         "default": true,
@@ -48,7 +113,7 @@
       "gridPos": {
         "h": 8,
         "w": 6,
-        "x": 0,
+        "x": 12,
         "y": 0
       },
       "id": 1,
@@ -110,7 +175,7 @@
       "gridPos": {
         "h": 8,
         "w": 6,
-        "x": 6,
+        "x": 18,
         "y": 0
       },
       "id": 2,
@@ -144,6 +209,72 @@
       ],
       "title": "Filled Slots",
       "type": "stat"
+    },
+    {
+      "datasource": {
+        "default": true,
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-text"
+            },
+            "inspect": false,
+            "minWidth": 50
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"0\" and r.proposer == \"${proposer}\")\n  |> map(fn: (r) => ({ r with slot: r._value}))\n  |> keep(columns: [\"slot\", \"_time\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Missed Slots",
+      "type": "table"
     }
   ],
   "schemaVersion": 39,
@@ -152,9 +283,9 @@
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "0x00bf49206a6c1020074770e42bb4780437b4f1a3",
-          "value": "0x00bf49206a6c1020074770e42bb4780437b4f1a3"
+          "selected": true,
+          "text": "0x117683ddb6d2254084257617a9d54faf5dee0f67",
+          "value": "0x117683ddb6d2254084257617a9d54faf5dee0f67"
         },
         "datasource": {
           "type": "influxdb",
@@ -179,13 +310,13 @@
     ]
   },
   "time": {
-    "from": "now-90d",
+    "from": "now-30d",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Single Authority View",
   "uid": "fe8vud5hhircwd",
-  "version": 6,
+  "version": 1,
   "weekStart": ""
 }
