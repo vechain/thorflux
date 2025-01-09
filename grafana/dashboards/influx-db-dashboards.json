@@ -903,7 +903,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "import \"date\"\n\nfrom(bucket: \"vechain\")\n  |> range(start: date.sub(d: 5h, from: v.timeRangeStop), stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"epoch\")\n  |> group()\n  |> sort()",
+          "query": "import \"date\"\n\nfrom(bucket: \"vechain\")\n  |> range(start: date.sub(d: 5h, from: v.timeRangeStop), stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"epoch\")\n  |> group()\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
