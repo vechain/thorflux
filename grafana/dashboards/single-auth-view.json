@@ -284,6 +284,76 @@
       ],
       "title": "Missed Slots",
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "P951FEA4DE68E13C5"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 25
+              },
+              {
+                "color": "dark-red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "P951FEA4DE68E13C5"
+          },
+          "query": "a = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"0\")\n  |> group()\n  |> count()\n      |> map(\n        fn: (r) => ({\n            _join: 0,\n            _value_a: r._value\n        }),\n    )\n\nb = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"1\")\n  |> group()\n  |> count()\n      |> map(\n        fn: (r) => ({\n            _join: 0,\n            _value_b: r._value\n        }),\n    )\n\njoin(tables: {a: a, b: b}, on: [\"_join\"])\n  |> drop(columns: [\"_join\"])\n  |> map(\n        fn: (r) => ({\n            _value: float(v: r._value_a) / float(v: r._value_b) * 100.0\n        }),\n    )\n\n\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Missed/Filled slots %",
+      "type": "stat"
     }
   ],
   "preload": false,
