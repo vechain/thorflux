@@ -18,6 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -30,7 +31,7 @@
         "defaults": {
           "color": {
             "fixedColor": "green",
-            "mode": "fixed"
+            "mode": "thresholds"
           },
           "custom": {
             "align": "auto",
@@ -40,6 +41,7 @@
             "inspect": false,
             "minWidth": 50
           },
+          "displayName": "time",
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -70,9 +72,10 @@
           ],
           "show": false
         },
+        "frameIndex": 2,
         "showHeader": true
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -83,7 +86,7 @@
           "refId": "A"
         }
       ],
-      "title": "Fillet Slots",
+      "title": "Filled Slots",
       "type": "table"
     },
     {
@@ -98,12 +101,17 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
               }
             ]
           }
@@ -134,7 +142,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -196,7 +204,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -230,6 +238,7 @@
             "inspect": false,
             "minWidth": 50
           },
+          "displayName": "time",
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -262,7 +271,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "11.2.0",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -277,13 +286,13 @@
       "type": "table"
     }
   ],
-  "schemaVersion": 39,
+  "preload": false,
+  "schemaVersion": 40,
   "tags": [],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": true,
           "text": "0x117683ddb6d2254084257617a9d54faf5dee0f67",
           "value": "0x117683ddb6d2254084257617a9d54faf5dee0f67"
         },
@@ -292,10 +301,8 @@
           "uid": "P951FEA4DE68E13C5"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"vechain\", tag: \"proposer\")",
-        "hide": 0,
         "includeAll": false,
         "label": "Proposer",
-        "multi": false,
         "name": "proposer",
         "options": [],
         "query": {
@@ -303,8 +310,6 @@
         },
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       }
     ]
