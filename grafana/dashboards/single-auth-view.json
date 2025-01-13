@@ -41,7 +41,6 @@
             "inspect": false,
             "minWidth": 50
           },
-          "displayName": "time",
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -82,7 +81,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"1\" and r.proposer == \"${proposer}\")\n  |> limit(n: 1000)\n  |> map(fn: (r) => ({ r with slot: r._value}))\n  |> keep(columns: [\"slot\", \"_time\"])\n  ",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"1\" and r.proposer == \"${proposer}\")\n  |> limit(n: 1000)\n  |> map(fn: (r) => ({ slot: r._value, time: r._time}))\n  |> keep(columns: [\"slot\", \"time\"])\n  ",
           "refId": "A"
         }
       ],
@@ -238,7 +237,6 @@
             "inspect": false,
             "minWidth": 50
           },
-          "displayName": "time",
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -278,7 +276,7 @@
             "type": "influxdb",
             "uid": "P951FEA4DE68E13C5"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"0\" and r.proposer == \"${proposer}\")\n  |> map(fn: (r) => ({ r with slot: r._value}))\n  |> keep(columns: [\"slot\", \"_time\"])",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"0\" and r.proposer == \"${proposer}\")\n  |> map(fn: (r) => ({ slot: r._value, time: r._time}))\n  |> keep(columns: [\"slot\", \"time\"])",
           "refId": "A"
         }
       ],
