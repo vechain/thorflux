@@ -210,10 +210,10 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 	flags["block_gas_limit"] = block.GasLimit
 	flags["block_gas_usage"] = float64(block.GasUsed) * 100 / float64(block.GasLimit)
 	flags["storage_size"] = block.Size
-	gap := uint64(10)
+	gap := float64(10)
 	prev, ok := i.prevBlock.Load().(*blocks.JSONExpandedBlock)
 	if ok {
-		gap = block.Timestamp - prev.Timestamp
+		gap = float64(block.Timestamp - prev.Timestamp)
 	}
 	flags["block_mine_gap"] = (gap - 10) / 10
 }
@@ -306,8 +306,8 @@ func (i *DB) appendSlotStats(
 
 			p := influxdb2.NewPoint(
 				"recent_slots",
-				map[string]string{"chain_tag": string(i.chainTag)},
-				map[string]interface{}{"filled": value, "epoch": epoch, "proposer": proposer, "block_number": block.ExpandedBlock.Number},
+				map[string]string{"chain_tag": string(i.chainTag), "filled": fmt.Sprintf("%d", value), "proposer": proposer.String()},
+				map[string]interface{}{"epoch": epoch, "block_number": block.ExpandedBlock.Number},
 				slotTime,
 			)
 			if err := writeAPI.WritePoint(context.Background(), p); err != nil {

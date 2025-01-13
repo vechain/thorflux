@@ -3,3 +3,5 @@ vendor
 volumes
 compose.yaml
 README.md
+Dockerfile
+grafana.Dockerfile

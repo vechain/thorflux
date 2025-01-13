@@ -6,9 +6,9 @@ services:
   plugin-builder:
     build:
       context: .
-      dockerfile: Dockerfile.plugins
+      dockerfile: grafana.Dockerfile
     volumes:
-      - plugin-dist:/plugins
+      - grafana-plugin-dist:/plugins
 
   influxdb:
     image: influxdb:2
@@ -52,10 +52,11 @@ services:
       - ${PWD}/grafana/data-sources.yaml:/etc/grafana/provisioning/datasources/grafana-data-sources.yaml:ro
       - ${PWD}/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml:ro
       - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - plugin-dist:/var/lib/grafana/plugins
+      - grafana-plugin-dist:/var/lib/grafana/plugins
       - ${PWD}/volumes/grafana:/var/lib/grafana
     depends_on:
-      - plugin-builder
+      plugin-builder:
+        condition: service_started
 
   thorflux:
     build:
@@ -66,7 +67,7 @@ services:
       influxdb:
         condition: service_healthy
     networks:
-        - monitoring
+      - monitoring
     environment:
       - THOR_URL=https://mainnet.vechain.org
       - INFLUX_URL=http://influxdb:8086
@@ -74,4 +75,4 @@ services:
       - THOR_START_BLOCK=20442262
 
 volumes:
-  plugin-dist:
+  grafana-plugin-dist:
