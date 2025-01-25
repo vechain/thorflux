@@ -72,7 +72,7 @@ services:
       - THOR_URL=https://mainnet.vechain.org
       - INFLUX_URL=http://influxdb:8086
 #      - INFLUX_TOKEN=admin-token
-      - THOR_START_BLOCK=20442262
+      - THOR_BLOCKS=60480
       - INFLUX_USERNAME=admin
       - INFLUX_PASSWORD=password
       - INFLUX_ORG=vechain

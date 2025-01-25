@@ -19,7 +19,8 @@ var (
 	defaultThorURL  = "http://localhost:8669"
 	defaultInfluxDB = "http://localhost:8086"
 	thorFlag        = flag.String("thor-url", defaultThorURL, "thor node URL, (env var: THOR_URL)")
-	startBlockFlag  = flag.Uint64("thor-start-block", 0, "start block number, (env var: THOR_START_BLOCK)")
+	//startBlockFlag  = flag.Uint64("thor-start-block", 0, "start block number, (env var: THOR_START_BLOCK)")
+	blocksFlag      = flag.Uint64("thor-blocks", 360*24*7, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
 	influxUrlFlag   = flag.String("influx-url", defaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
 	influxTokenFlag = flag.String("influx-token", "", "influxdb auth token, (env var: INFLUX_TOKEN)")
 	influxOrg       = flag.String("influx-org", "vechain", "influxdb organization, (env var: INFLUX_ORG)")
@@ -27,7 +28,7 @@ var (
 )
 
 func main() {
-	thorURL, influxURL, influxToken, startBlock, err := parseFlags()
+	thorURL, influxURL, influxToken, blocks, err := parseFlags()
 	if err != nil {
 		slog.Error("failed to parse flags", "error", err)
 		flag.PrintDefaults()
@@ -52,11 +53,17 @@ func main() {
 		slog.Error("failed to get latest block from DB", "error", err)
 		os.Exit(1)
 	}
+	best, err := thor.Block("best")
+	if err != nil {
+		slog.Error("failed to get best block from thor", "error", err)
+		os.Exit(1)
+	}
+	startBlock := best.Number - blocks
 	if prev > startBlock {
 		startBlock = prev
 	}
 
-	slog.Info("stating block sync", "start", startBlock)
+	slog.Info("stating block sync", "start", startBlock, "best", best.Number, "blocks", best.Number-startBlock)
 
 	ctx := exitContext()
 	syncer := sync.New(thor, influx, startBlock, ctx)
@@ -83,9 +90,9 @@ func parseFlags() (string, string, string, uint32, error) {
 		slog.Warn("influxdb URL not set via flag or env, using default", "url", defaultInfluxDB)
 	}
 
-	startBlock := *startBlockFlag
+	blocks := *blocksFlag
 
-	return thorURL, influxURL, influxToken, uint32(startBlock), nil
+	return thorURL, influxURL, influxToken, uint32(blocks), nil
 }
 
 func exitContext() context.Context {
