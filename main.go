@@ -22,6 +22,8 @@ var (
 	startBlockFlag  = flag.Uint64("thor-start-block", 0, "start block number, (env var: THOR_START_BLOCK)")
 	influxUrlFlag   = flag.String("influx-url", defaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
 	influxTokenFlag = flag.String("influx-token", "", "influxdb auth token, (env var: INFLUX_TOKEN)")
+	influxOrg       = flag.String("influx-org", "vechain", "influxdb organization, (env var: INFLUX_ORG)")
+	influxBucket    = flag.String("influx-bucket", "vechain", "influxdb bucket, (env var: INFLUX_BUCKET)")
 )
 
 func main() {
@@ -39,7 +41,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	influx, err := influxdb.New(thor, influxURL, influxToken, chainTag)
+	influx, err := influxdb.New(thor, influxURL, influxToken, chainTag, *influxOrg, *influxBucket)
 	if err != nil {
 		slog.Error("failed to create influxdb", "error", err)
 		os.Exit(1)

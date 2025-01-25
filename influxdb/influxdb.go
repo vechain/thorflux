@@ -32,9 +32,11 @@ type DB struct {
 	prevBlock  atomic.Value
 	candidates *authority.List
 	genesis    *blocks.JSONCollapsedBlock
+	bucket     string
+	org        string
 }
 
-func New(thor *thorclient.Client, url, token string, chainTag byte) (*DB, error) {
+func New(thor *thorclient.Client, url, token string, chainTag byte, org string, bucket string) (*DB, error) {
 	influx := influxdb2.NewClient(url, token)
 
 	_, err := influx.Ping(context.Background())
@@ -56,17 +58,19 @@ func New(thor *thorclient.Client, url, token string, chainTag byte) (*DB, error)
 		chainTag:   chainTag,
 		candidates: authority.NewList(thor),
 		genesis:    genesis,
+		bucket:     bucket,
+		org:        org,
 	}, nil
 }
 
 // Latest returns the latest block number stored in the database
 func (i *DB) Latest() (uint32, error) {
-	queryAPI := i.client.QueryAPI("vechain")
-	query := `from(bucket: "vechain")
-	  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)
-	  |> filter(fn: (r) => r["_measurement"] == "block_stats")
-	  |> filter(fn: (r) => r["_field"] == "block_number")
-	  |> last()`
+	queryAPI := i.client.QueryAPI(i.org)
+	query := fmt.Sprintf(`from(bucket: "%s")
+		|> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)
+		|> filter(fn: (r) => r["_measurement"] == "block_stats")
+		|> filter(fn: (r) => r["_field"] == "block_number")
+		|> last()`, i.bucket)
 	res, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		return 0, err
@@ -99,7 +103,7 @@ func (i *DB) WriteBlock(block *block.Block) {
 		slog.Info("🪣 saving results to bucket", "number", block.ExpandedBlock.Number)
 	}
 
-	writeAPI := i.client.WriteAPIBlocking("vechain", "vechain")
+	writeAPI := i.client.WriteAPIBlocking(i.org, i.bucket)
 
 	tags := map[string]string{
 		"chain_tag":    string(i.chainTag),
