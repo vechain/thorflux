@@ -25,7 +25,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -102,7 +102,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_mine_gap\")\n  |> filter(fn: (r) => r[\"_value\"] != 0)\n  |> drop(columns: [\"chain_tag\", \"signer\"])",
           "refId": "A"
@@ -114,7 +114,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -174,7 +174,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"blocks_slots_percentage\")\n  |> group(columns: [\"blocks_slots_percentage\"])\n  |> last()",
           "refId": "A"
@@ -186,7 +186,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -235,7 +235,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket:\"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n    r._measurement == \"block_stats\" \n  )\n  |> keep(columns: [\"signer\"])\n  |> group()\n  |> distinct(column: \"signer\")\n  |> count()",
           "refId": "A"
@@ -248,7 +248,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -298,7 +298,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group(columns: [\"epoch\"])\n  |> last()",
           "refId": "A"
@@ -311,7 +311,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -361,7 +361,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group(columns: [\"epoch\"])\n  |> last()\n  |> map(fn: (r) => ({r with _value: r._value - uint(v:1)}))\n",
           "refId": "A"
@@ -374,7 +374,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -424,7 +424,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group(columns: [\"epoch\"])\n  |> last()\n  |> map(fn: (r) => ({r with _value: r._value - uint(v:2)}))",
           "refId": "A"
@@ -436,7 +436,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -485,7 +485,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: 0, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"slots_per_block\")\n  |> group(columns: [\"slots_per_block\"])\n  |> last()",
           "refId": "A"
@@ -498,7 +498,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -548,7 +548,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"best_block_number\")\n  |> group(columns: [\"best_block_number\"])\n  |> last()",
           "refId": "A"
@@ -561,7 +561,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -611,7 +611,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"justified_block\")\n  |> group(columns: [\"justified_block\"])\n  |> last()",
           "refId": "A"
@@ -623,7 +623,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -673,7 +673,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"finalized\")\n  |> group(columns: [\"finalized\"])\n  |> last()",
           "refId": "A"
@@ -685,7 +685,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -735,7 +735,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"current_epoch\")\n  |> group(columns: [\"current_epoch\"])\n  |> last()",
           "refId": "A"
@@ -747,7 +747,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {},
@@ -781,7 +781,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "import \"date\"\na = from(bucket:\"vechain\")\n  |> range(start: date.sub(d:5h, from:v.timeRangeStop), stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"blockspace_utilization\" and r._field == \"epoch\")\n\nb = from(bucket:\"vechain\")\n  |> range(start: date.sub(d:5h, from:v.timeRangeStop), stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"blockspace_utilization\" and r._field == \"utilization\")\n\njoin(tables: {a: a, b: b}, on: [\"_time\"])\n  |> drop(columns: [\"_time\"])\n  |> duplicate(column: \"_value_a\", as: \"epoch\")\n  |> duplicate(column: \"_value_b\", as: \"_value\")\n  |> drop(columns: [\"_value_a\"])\n  |> drop(columns: [\"_value_b\"])\n  \n\n\n\n\n",
           "refId": "A"
@@ -793,7 +793,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "description": "Finalisation",
       "fieldConfig": {
@@ -875,7 +875,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"current_epoch\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")\n",
           "refId": "A"
@@ -883,7 +883,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "hide": false,
           "query": "\nfrom(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"finalized\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
@@ -892,7 +892,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "hide": false,
           "query": "\nfrom(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
@@ -905,7 +905,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "description": "Liveliness Chart",
       "fieldConfig": {
@@ -987,7 +987,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"liveliness\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
@@ -999,7 +999,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1080,7 +1080,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_gas_usage\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
@@ -1093,7 +1093,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1187,7 +1187,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_txs\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
@@ -1195,7 +1195,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "hide": false,
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_clauses\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
@@ -1208,7 +1208,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1289,7 +1289,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"b3tr_gas_percent\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
@@ -1301,7 +1301,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1420,7 +1420,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "b = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"total_clauses\")\n  |> group(columns: [\"_field\"])\n  |> map(fn: (r) => ({r with epoch: uint(v:uint(v: r.block_number) / uint(v:180))}))\n  |> duplicate(column: \"epoch\", as: \"tag\")\n  |> group(columns: [\"epoch\"])\n  |> sum()\n  |> group(columns: [\"tag\"])\n  |> duplicate(column: \"_value\", as: \"total_clauses\")\n  |> drop(columns: [\"_value\"])\n\na = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"total_txs\")\n  |> group(columns: [\"_field\"])\n  |> map(fn: (r) => ({r with epoch: uint(v:uint(v: r.block_number) / uint(v:180))}))\n  |> duplicate(column: \"epoch\", as: \"tag\")\n  |> group(columns: [\"epoch\"])\n  |> sum()\n  |> group(columns: [\"tag\"])\n  |> duplicate(column: \"_value\", as: \"total_txs\")\n  |> drop(columns: [\"_value\"])\n\njoin(tables: {b:b, a:a}, on: [\"epoch\"])",
           "refId": "A"
@@ -1433,7 +1433,7 @@
       "datasource": {
         "default": false,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1515,7 +1515,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"b3tr_gas_percent\")\n  |> group(columns: [\"_field\"])\n  |> map(fn: (r) => ({r with epoch: uint(v:uint(v: r.block_number) / uint(v:180))}))\n  |> duplicate(column: \"epoch\", as: \"tag\")\n  |> group(columns: [\"epoch\"])\n  |> sum()\n  |> group(columns: [\"tag\"])\n  |> duplicate(column: \"_value\", as: \"b3tr_gas_percent\")\n  |> drop(columns: [\"_value\"])",
           "refId": "A"
@@ -1528,7 +1528,7 @@
       "datasource": {
         "default": false,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1608,7 +1608,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_gas_used\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
@@ -1620,7 +1620,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1700,7 +1700,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"storage_size\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
@@ -1712,7 +1712,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1793,7 +1793,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"block_gas_used\")\n  |> group(columns: [\"_field\"])\n  |> map(fn: (r) => ({r with epoch: uint(v:uint(v: r.block_number) / uint(v:180))}))\n  |> duplicate(column: \"epoch\", as: \"tag\")\n  |> group(columns: [\"epoch\"])\n  |> sum()\n  |> group(columns: [\"tag\"])\n  |> duplicate(column: \"_value\", as: \"block_gas_used\")\n  |> drop(columns: [\"_value\"])",
           "refId": "A"
@@ -1806,7 +1806,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1886,7 +1886,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_clauses\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
@@ -1894,7 +1894,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "hide": false,
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"b3tr_total_clauses\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
@@ -1907,7 +1907,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "P951FEA4DE68E13C5"
+        "uid": "eea2frhqbiuwwa"
       },
       "fieldConfig": {
         "defaults": {
@@ -1987,7 +1987,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "P951FEA4DE68E13C5"
+            "uid": "eea2frhqbiuwwa"
           },
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"storage_size\")\n  |> group(columns: [\"_field\"])\n  |> map(fn: (r) => ({r with epoch: uint(v:uint(v: r.block_number) / uint(v:180))}))\n  |> duplicate(column: \"epoch\", as: \"tag\")\n  |> group(columns: [\"epoch\"])\n  |> sum()\n  |> group(columns: [\"tag\"])\n  |> duplicate(column: \"_value\", as: \"storage_size\")\n  |> drop(columns: [\"_value\"])",
           "refId": "A"

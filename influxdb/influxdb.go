@@ -95,9 +95,25 @@ func (i *DB) Latest() (uint32, error) {
 	return 0, nil
 }
 
+// ResolveFork deletes all the entries in the bucket that has a block time GREATER than the forked block
+func (i *DB) ResolveFork(block *block.Block) {
+	start := time.Unix(int64(block.ExpandedBlock.Timestamp), 0).Add(time.Second)
+	stop := time.Now().Add(time.Hour * 24)
+	err := i.client.DeleteAPI().DeleteWithName(context.Background(), i.org, i.bucket, start, stop, "")
+	if err != nil {
+		slog.Error("failed to delete blocks", "error", err)
+		panic(err)
+	}
+}
+
 // WriteBlock writes a block to the database
 func (i *DB) WriteBlock(block *block.Block) {
 	defer i.prevBlock.Store(block.ExpandedBlock)
+	if block.ForkDetected {
+		slog.Warn("fork detected", "block", block.ExpandedBlock.Number)
+		i.ResolveFork(block)
+		return
+	}
 
 	if block.ExpandedBlock.Number%1000 == 0 {
 		slog.Info("🪣 saving results to bucket", "number", block.ExpandedBlock.Number)
