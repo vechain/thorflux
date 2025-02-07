@@ -59,7 +59,7 @@ func (s *Sync) sync() {
 			prev := s.previous()
 			prevTime := time.Unix(int64(prev.Timestamp), 0).UTC()
 			if time.Now().UTC().Sub(prevTime) < 10*time.Second {
-				time.Sleep(10 * time.Second)
+				time.Sleep(time.Until(prevTime.Add(10 * time.Second)))
 				continue
 			}
 			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
