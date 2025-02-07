@@ -19,20 +19,20 @@ import (
 	"github.com/vechain/thorflux/influxdb"
 )
 
-const querySize = 500
+const querySize = 200
 
 type Sync struct {
 	thor      *thorclient.Client
 	influx    *influxdb.DB
-	prev      *atomic.Uint32
+	prev      *atomic.Value
 	blockChan chan *blockType.Block
 	context   context.Context
 }
 
-func New(thor *thorclient.Client, influx *influxdb.DB, start uint32, ctx context.Context) *Sync {
-	prev := &atomic.Uint32{}
-	prev.Store(start - 1)
-	blockChan := make(chan *blockType.Block, 5000)
+func New(thor *thorclient.Client, influx *influxdb.DB, start *blocks.JSONExpandedBlock, ctx context.Context) *Sync {
+	prev := &atomic.Value{}
+	prev.Store(start)
+	blockChan := make(chan *blockType.Block, 2000)
 	return &Sync{thor: thor, influx: influx, prev: prev, blockChan: blockChan, context: ctx}
 }
 
@@ -44,6 +44,10 @@ func (s *Sync) Index() {
 	s.sync()
 }
 
+func (s *Sync) previous() *blocks.JSONExpandedBlock {
+	return s.prev.Load().(*blocks.JSONExpandedBlock)
+}
+
 // sync fetches blocks one by one and ensures we are always 6 blocks behind to avoid forks
 func (s *Sync) sync() {
 	for {
@@ -52,23 +56,48 @@ func (s *Sync) sync() {
 			slog.Info("sync - context done")
 			return
 		default:
-
-			blockNumber := s.prev.Load() + 1
-			block, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", blockNumber))
+			prev := s.previous()
+			prevTime := time.Unix(int64(prev.Timestamp), 0).UTC()
+			if time.Now().UTC().Sub(prevTime) < 10*time.Second {
+				time.Sleep(time.Until(prevTime.Add(10 * time.Second)))
+				continue
+			}
+			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
 			if err != nil {
 				slog.Error("failed to fetch block", "error", err)
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			blockTime := time.Unix(int64(block.Timestamp), 0).UTC()
-			diff := time.Now().UTC().Sub(blockTime)
-			if diff < 60*time.Second {
-				time.Sleep(60*time.Second - diff)
+
+			if next.ParentID != prev.ID { // fork detected
+				slog.Warn("fork detected", "prev", prev.Number, "next", next.Number)
+
+				var (
+					finalized *blocks.JSONExpandedBlock
+				)
+
+				for {
+					finalized, err = s.thor.ExpandedBlock("finalized")
+					if err != nil {
+						slog.Error("failed to fetch finalized block", "error", err)
+						time.Sleep(5 * time.Second)
+						continue
+					}
+					break
+				}
+
+				s.blockChan <- &blockType.Block{
+					ExpandedBlock: finalized,
+					ForkDetected:  true,
+				}
+				s.prev.Store(finalized)
+				continue
 			}
-			slog.Info("✅ fetched block", "block", block.Number)
+
+			slog.Info("✅ fetched block", "block", next.Number)
 
 			rawBlock := blocks.JSONRawBlockSummary{}
-			rawBytes, status, err := s.thor.RawHTTPClient().RawHTTPGet("/blocks/" + fmt.Sprintf("%d", blockNumber) + "?raw=true")
+			rawBytes, status, err := s.thor.RawHTTPClient().RawHTTPGet("/blocks/" + fmt.Sprintf("%d", next.Number) + "?raw=true")
 			if err != nil || status != 200 {
 				slog.Error("failed to fetch raw block", "error", err)
 				time.Sleep(5 * time.Second)
@@ -87,10 +116,11 @@ func (s *Sync) sync() {
 			header := block2.Header{}
 			err = rlp.DecodeBytes(data, &header)
 
-			s.prev.Store(block.Number)
+			s.prev.Store(next)
 			s.blockChan <- &blockType.Block{
-				ExpandedBlock: block,
+				ExpandedBlock: next,
 				RawHeader:     &header,
+				ForkDetected:  false,
 			}
 		}
 	}
@@ -108,13 +138,13 @@ func (s *Sync) fastSync() {
 				slog.Info("fast sync complete")
 				return
 			}
-			slog.Info("🔬 fetching blocks", "prev", s.prev.Load())
-			blocks, err := s.fetchBlocksAsync(querySize, s.prev.Load()+1)
+			slog.Info("🔬 fetching blocks", "prev", s.previous().Number)
+			blocks, err := s.fetchBlocksAsync(querySize, s.previous().Number+1)
 			if err != nil {
 				slog.Error("failed to fetch blocks", "error", err)
 				time.Sleep(5 * time.Second)
 			} else {
-				s.prev.Store(s.prev.Load() + querySize)
+				s.prev.Store(blocks[len(blocks)-1].ExpandedBlock)
 				for _, block := range blocks {
 					s.blockChan <- block
 				}
@@ -129,7 +159,7 @@ func (s *Sync) shouldQuit() bool {
 		slog.Error("failed to get best block", "error", err)
 		return false
 	}
-	if best.Number-s.prev.Load() > 1000 {
+	if best.Number-s.previous().Number > 1000 {
 		return false
 	}
 	return true

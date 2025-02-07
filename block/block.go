@@ -8,4 +8,5 @@ import (
 type Block struct {
 	ExpandedBlock *blocks.JSONExpandedBlock
 	RawHeader     *block.Header
+	ForkDetected  bool
 }

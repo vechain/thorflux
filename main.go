@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -62,11 +63,16 @@ func main() {
 	if prev > startBlock {
 		startBlock = prev
 	}
+	block, err := thor.ExpandedBlock(fmt.Sprintf("%d", startBlock))
+	if err != nil {
+		slog.Error("failed to get block from thor", "block", startBlock, "error", err)
+		os.Exit(1)
+	}
 
 	slog.Info("stating block sync", "start", startBlock, "best", best.Number, "blocks", best.Number-startBlock)
 
 	ctx := exitContext()
-	syncer := sync.New(thor, influx, startBlock, ctx)
+	syncer := sync.New(thor, influx, block, ctx)
 	syncer.Index()
 }
 
