@@ -87,7 +87,7 @@ func (s *Sync) sync() {
 				}
 
 				s.blockChan <- &blockType.Block{
-					ExpandedBlock: next,
+					ExpandedBlock: finalized,
 					ForkDetected:  true,
 				}
 				s.prev.Store(finalized)
