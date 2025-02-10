@@ -8,7 +8,7 @@ on:
 jobs:
   publish-docker-image:
     name: Publish Docker Image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
 
       - name: Checkout Repo
