@@ -69,21 +69,26 @@ func (i *DB) Latest() (uint32, error) {
 	query := fmt.Sprintf(`from(bucket: "%s")
 		|> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)
 		|> filter(fn: (r) => r["_measurement"] == "block_stats")
-		|> filter(fn: (r) => r["_field"] == "block_number")
+		|> filter(fn: (r) => r["_field"] == "best_block_number")
 		|> last()`, i.bucket)
 	res, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
+		slog.Warn("failed to query latest block", "error", err)
 		return 0, err
 	}
 	defer res.Close()
 
 	if res.Next() {
-		blockNum, ok := res.Record().Value().(uint32)
-		if !ok {
-			slog.Warn("failed to cast block number to uint64")
+		blockNum := res.Record().ValueByKey("block_number")
+		if blockNum == nil {
 			return 0, nil
 		}
-		return blockNum, nil
+		slog.Info("found latest in flux", "result", blockNum)
+		num, err := strconv.ParseUint(blockNum.(string), 10, 32)
+		if err != nil {
+			return 0, err
+		}
+		return uint32(num), nil
 	}
 
 	err = res.Err()
