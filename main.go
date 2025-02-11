@@ -69,7 +69,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("stating block sync", "start", startBlock, "best", best.Number, "blocks", best.Number-startBlock)
+	slog.Info("starting block sync",
+		"start", startBlock,
+		"best", best.Number,
+		"prev", prev,
+		"blocks-flag", blocks,
+		"missing-blocks", best.Number-startBlock,
+	)
 
 	ctx := exitContext()
 	syncer := sync.New(thor, influx, block, ctx)

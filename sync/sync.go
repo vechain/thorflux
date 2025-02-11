@@ -38,9 +38,9 @@ func New(thor *thorclient.Client, influx *influxdb.DB, start *blocks.JSONExpande
 
 func (s *Sync) Index() {
 	go s.writeBlocks()
-	slog.Info("starting fast sync", "prev", s.prev.Load())
+	slog.Info("starting fast sync", "prev", s.previous().Number)
 	s.fastSync()
-	slog.Info("fast sync complete, starting regular sync", "prev", s.prev.Load())
+	slog.Info("fast sync complete, starting regular sync", "prev", s.previous().Number)
 	s.sync()
 }
 
