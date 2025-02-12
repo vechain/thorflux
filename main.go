@@ -20,7 +20,6 @@ var (
 	defaultThorURL  = "http://localhost:8669"
 	defaultInfluxDB = "http://localhost:8086"
 	thorFlag        = flag.String("thor-url", defaultThorURL, "thor node URL, (env var: THOR_URL)")
-	//startBlockFlag  = flag.Uint64("thor-start-block", 0, "start block number, (env var: THOR_START_BLOCK)")
 	blocksFlag      = flag.Uint64("thor-blocks", 360*24*7, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
 	influxUrlFlag   = flag.String("influx-url", defaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
 	influxTokenFlag = flag.String("influx-token", "", "influxdb auth token, (env var: INFLUX_TOKEN)")
@@ -35,6 +34,13 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
+	slog.Info("starting thorflux",
+		"thor-url", thorURL,
+		"influx-url", influxURL,
+		"influx-org", *influxOrg,
+		"influx-bucket", *influxBucket,
+		"blocks", blocks,
+	)
 
 	thor := thorclient.New(thorURL)
 	chainTag, err := thor.ChainTag()
@@ -73,7 +79,6 @@ func main() {
 		"start", startBlock,
 		"best", best.Number,
 		"prev", prev,
-		"blocks-flag", blocks,
 		"missing-blocks", best.Number-startBlock,
 	)
 
