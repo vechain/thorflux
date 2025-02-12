@@ -70,7 +70,8 @@ func (i *DB) Latest() (uint32, error) {
 		|> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)
 		|> filter(fn: (r) => r["_measurement"] == "block_stats")
 		|> filter(fn: (r) => r["_field"] == "best_block_number")
-		|> last()`, i.bucket)
+        |> group()
+        |> last()`, i.bucket)
 	res, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		slog.Warn("failed to query latest block", "error", err)
