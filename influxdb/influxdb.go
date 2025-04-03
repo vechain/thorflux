@@ -182,7 +182,7 @@ func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]int
 
 	for _, t := range txs {
 		clauseCount += len(t.Clauses)
-		coef := t.GasPriceCoef
+		coef := *t.GasPriceCoef
 		coefs = append(coefs, float64(coef))
 		coefCount[float64(coef)]++
 		sum += int(coef)
@@ -242,6 +242,14 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 		gap = float64(block.Timestamp - prev.Timestamp)
 	}
 	flags["block_mine_gap"] = (gap - 10) / 10
+
+	// New code to capture block base fee in wei.
+	// Since block.ExpandedBlock.BaseFee is a *big.Int, we'll store its string representation.
+	if block.BaseFeePerGas != nil {
+		flags["block_base_fee"] = (*big.Int)(block.BaseFeePerGas).String()
+	} else {
+		flags["block_base_fee"] = "0"
+	}
 }
 
 func (i *DB) appendB3trStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) {

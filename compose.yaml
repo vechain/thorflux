@@ -69,10 +69,10 @@ services:
     networks:
       - monitoring
     environment:
-      - THOR_URL=https://mainnet.vechain.org
+      - THOR_URL=https://galactica.green.dev.node.vechain.org
       - INFLUX_URL=http://influxdb:8086
-#      - INFLUX_TOKEN=admin-token
-      - THOR_BLOCKS=60480
+      - INFLUX_TOKEN=admin-token
+      - THOR_BLOCKS=1350
       - INFLUX_USERNAME=admin
       - INFLUX_PASSWORD=password
       - INFLUX_ORG=vechain

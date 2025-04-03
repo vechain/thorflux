@@ -19,5 +19,5 @@ docker compose up
 
 ```bash
 docker compose up
-go run . --thor-url=https://mainnet.vechain.org --influx-token=admin-token --start-block=18800000
+go run . --thor-url=https://mainnet.vechain.org --influx-token=admin-token --thor-block=1024
 ```

@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine3.20 as builder
+FROM golang:1.23-alpine3.20 as builder
 
 # Install dependencies
 RUN apk add --no-cache make gcc musl-dev linux-headers
