@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
-	"sort"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -156,76 +155,49 @@ func (i *DB) WriteBlock(block *block.Block) {
 	}
 }
 
-type coefStats struct {
-	Average float64
-	Max     float64
-	Min     float64
-	Mode    float64
-	Median  float64
-	Total   int
-}
-
 func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) (total, success, failed int) {
 	txs := block.Transactions
-	clauseCount := 0
-	vetTransferCount := 0
-	vetTransfersAmount := new(big.Float)
-	eventCount := 0
 
-	stats := coefStats{
-		Total: len(txs),
-	}
-
-	coefs := make([]float64, 0, len(txs))
-	coefCount := make(map[float64]int)
-	sum := 0
+	priorityFeeStat := priorityFeeStats{}
+	txStat := txStats{vetTransfersAmount: &big.Float{}}
+	coefStat := coefStats{Total: len(txs), coefCount: map[float64]int{}}
 
 	for _, t := range txs {
-		clauseCount += len(t.Clauses)
-		coef := *t.GasPriceCoef
-		coefs = append(coefs, float64(coef))
-		coefCount[float64(coef)]++
-		sum += int(coef)
+		txStat.processTx(t)
+		coefStat.processTx(t)
+		priorityFeeStat.processTx(t)
+
 		for _, o := range t.Outputs {
-			vetTransferCount += len(o.Transfers)
-			eventCount += len(o.Events)
-			for _, tr := range o.Transfers {
-				amount := (*big.Int)(tr.Amount)
-				amountFloat := new(big.Float).SetInt(amount)
-				vetTransfersAmount.Add(vetTransfersAmount, amountFloat)
+			txStat.processOutput(o)
+
+			for _, transf := range o.Transfers {
+				txStat.processTransf(transf)
 			}
 		}
 	}
 
-	if len(coefs) > 0 {
-		sort.Slice(coefs, func(i, j int) bool { return coefs[i] < coefs[j] })
-		stats.Min = coefs[0]
-		stats.Max = coefs[len(coefs)-1]
-		stats.Median = coefs[len(coefs)/2]
-		stats.Average = float64(sum) / float64(len(coefs))
+	coefStat.finalizeCalc()
 
-		mode := float64(0)
-		maxCount := 0
-		for coef, count := range coefCount {
-			if count > maxCount {
-				mode = float64(coef)
-				maxCount = count
-			}
-		}
-		stats.Mode = mode
+	flags["total_txs"] = len(txs)
+	flags["total_clauses"] = txStat.clauseCount
+	flags["vet_transfers"] = txStat.vetTransferCount
+	flags["vet_transfers_amount"] = txStat.vetTransfersAmount
+	flags["validator_rewards"] = txStat.totalRewards
+
+	flags["coef_average"] = coefStat.Average
+	flags["coef_max"] = coefStat.Max
+	flags["coef_min"] = coefStat.Min
+	flags["coef_mode"] = coefStat.Mode
+	flags["coef_median"] = coefStat.Median
+
+	// If we have at least one valid transaction for candlestick, add the candlestick fields.
+	if priorityFeeStat.candlestickCount > 0 {
+		flags["priority_fee_open"] = priorityFeeStat.openFee
+		flags["priority_fee_close"] = priorityFeeStat.closeFee
+		flags["priority_fee_high"] = priorityFeeStat.highFee
+		flags["priority_fee_low"] = priorityFeeStat.lowFee
+		flags["candlestick_tx_count"] = priorityFeeStat.candlestickCount
 	}
-
-	vetAmount, _ := vetTransfersAmount.Quo(vetTransfersAmount, big.NewFloat(1e18)).Float64()
-
-	flags["total_txs"] = stats.Total
-	flags["total_clauses"] = clauseCount
-	flags["coef_average"] = stats.Average
-	flags["coef_max"] = stats.Max
-	flags["coef_min"] = stats.Min
-	flags["coef_mode"] = stats.Mode
-	flags["coef_median"] = stats.Median
-	flags["vet_transfers"] = vetTransferCount
-	flags["vet_transfers_amount"] = vetAmount
 
 	return
 }
