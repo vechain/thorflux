@@ -7,6 +7,12 @@ This is a simple tool to send VeChain Thor data to an influxDB instance.
 
 ## Quick Start
 
+1. Local Run
+
+```bash
+make run
+```
+
 1. Docker Only
 
 ```bash

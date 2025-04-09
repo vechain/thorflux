@@ -2,6 +2,7 @@ package influxdb
 
 import (
 	"github.com/vechain/thor/v2/api/blocks"
+	"github.com/vechain/thor/v2/tx"
 	"sort"
 )
 
@@ -18,6 +19,10 @@ type coefStats struct {
 }
 
 func (s *coefStats) processTx(t *blocks.JSONEmbeddedTx) {
+	if t.Type != tx.TypeLegacy {
+		return
+	}
+	
 	coef := *t.GasPriceCoef
 	s.coefs = append(s.coefs, float64(coef))
 	s.coefCount[float64(coef)]++
