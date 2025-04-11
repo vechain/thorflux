@@ -1,2 +1,4 @@
 vendor
 volumes
+.idea/
+.vscode/
