@@ -58,25 +58,25 @@ services:
       plugin-builder:
         condition: service_started
 
-  thorflux:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: thorflux
-    depends_on:
-      influxdb:
-        condition: service_healthy
-    networks:
-      - monitoring
-    environment:
-      - THOR_URL=https://mainnet.vechain.org
-      - INFLUX_URL=http://influxdb:8086
-#      - INFLUX_TOKEN=admin-token
-      - THOR_BLOCKS=60480
-      - INFLUX_USERNAME=admin
-      - INFLUX_PASSWORD=password
-      - INFLUX_ORG=vechain
-      - INFLUX_BUCKET=vechain
+#  thorflux:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: thorflux
+#    depends_on:
+#      influxdb:
+#        condition: service_healthy
+#    networks:
+#      - monitoring
+#    environment:
+#      - THOR_URL=http://host.docker.internal:8669
+#      - INFLUX_URL=http://influxdb:8086
+##      - INFLUX_TOKEN=admin-token
+#      - THOR_BLOCKS=200
+#      - INFLUX_USERNAME=admin
+#      - INFLUX_PASSWORD=password
+#      - INFLUX_ORG=vechain
+#      - INFLUX_BUCKET=vechain
 
 volumes:
   grafana-plugin-dist:

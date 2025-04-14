@@ -6,16 +6,21 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/vechain/thor/v2/tx"
 	"log/slog"
 	"math/big"
+	"math/rand/v2"
 	"sort"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum/rlp"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
+	//thorAccounts "github.com/vechain/thor/v2/api/accounts"
 	"github.com/vechain/thor/v2/api/blocks"
 	block2 "github.com/vechain/thor/v2/block"
 	"github.com/vechain/thor/v2/thor"
@@ -148,6 +153,7 @@ func (i *DB) WriteBlock(block *block.Block) {
 	i.appendB3trStats(block.ExpandedBlock, flags)
 	i.appendSlotStats(block, flags, writeAPI)
 	i.appendEpochStats(block.ExpandedBlock, flags, writeAPI)
+	i.appendHayabusaEpochStats(block.ExpandedBlock, flags, writeAPI)
 
 	p := influxdb2.NewPoint("block_stats", tags, flags, time.Unix(int64(block.ExpandedBlock.Timestamp), 0))
 
@@ -183,9 +189,9 @@ func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]int
 	for _, t := range txs {
 		clauseCount += len(t.Clauses)
 		coef := t.GasPriceCoef
-		coefs = append(coefs, float64(coef))
-		coefCount[float64(coef)]++
-		sum += int(coef)
+		coefs = append(coefs, float64(*coef))
+		coefCount[float64(*coef)]++
+		sum += int(*coef)
 		for _, o := range t.Outputs {
 			vetTransferCount += len(o.Transfers)
 			eventCount += len(o.Events)
@@ -412,4 +418,89 @@ func (i *DB) appendEpochStats(block *blocks.JSONExpandedBlock, flags map[string]
 	if err := writeAPI.WritePoint(context.Background(), heatmapPoint); err != nil {
 		slog.Error("Failed to write heatmap point", "error", err)
 	}
+}
+
+func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
+	epoch := block.Number / 180
+	blockInEpoch := block.Number % 180
+	chainTag, err := i.thor.ChainTag()
+
+	flags["epoch"] = epoch
+	flags["block_in_epoch"] = blockInEpoch
+
+	parsedABI, err := abi.JSON(strings.NewReader(accounts.StakerAbi))
+	if err != nil {
+		slog.Error("Failed to write hayabusa epoch stats", "error", err)
+	}
+
+	totalStakedVet, err := i.fetchStake(parsedABI, block, chainTag, "totalStake")
+	if err != nil {
+		slog.Error("Failed to fetch total stake for hayabusa", "error", err)
+	}
+
+	println("total staked is ", totalStakedVet.String())
+
+	totalActiveVet, err := i.fetchStake(parsedABI, block, chainTag, "activeStake")
+	if err != nil {
+		slog.Error("Failed to fetch active stake for hayabusa", "error", err)
+	}
+	totalQueuedVet := big.NewInt(0).Sub(totalStakedVet, totalActiveVet)
+
+	println("total active is ", totalActiveVet.String())
+
+	println("total queued is", totalQueuedVet.String())
+
+	// Prepare data for heatmap
+	heatmapPoint := influxdb2.NewPoint(
+		"hayabusa_validators",
+		map[string]string{
+			"chain_tag": string(i.chainTag),
+		},
+		map[string]interface{}{
+			"total_staked":  totalStakedVet.Int64(),
+			"active_staked": totalActiveVet.Int64(),
+			"queued_staked": totalQueuedVet.Int64(),
+			"epoch":         strconv.FormatUint(uint64(epoch), 10),
+		},
+		time.Unix(int64(block.Timestamp), 0),
+	)
+
+	if err := writeAPI.WritePoint(context.Background(), heatmapPoint); err != nil {
+		slog.Error("Failed to write heatmap point", "error", err)
+	}
+}
+
+func (i *DB) fetchStake(parsedAbi abi.ABI, block *blocks.JSONExpandedBlock, chainTag byte, functionName string) (*big.Int, error) {
+	methodData, err := parsedAbi.Pack(functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	stakeTx := new(tx.Builder).GasPriceCoef(255).
+		BlockRef(tx.NewBlockRef(block.Number)).
+		Expiration(1000).
+		ChainTag(chainTag).
+		Gas(10e6).
+		Nonce(rand.Uint64()).
+		Clause(
+			tx.NewClause(&accounts.StakerContract).WithData(methodData),
+		).Build()
+
+	stake, err := i.thor.InspectTxClauses(stakeTx, &accounts.Caller)
+	if err != nil {
+		return nil, err
+	}
+	stakeParsed, err := thor.ParseBytes32(stake[0].Data)
+	if err != nil {
+		return nil, err
+	}
+	println(big.NewInt(0).SetBytes(stakeParsed.Bytes()).String())
+
+	println("this is response")
+	staked := big.NewInt(0).SetBytes(stakeParsed.Bytes())
+	stakedVet := big.NewInt(0).Div(staked, big.NewInt(1e18))
+	stakedVet = stakedVet.Div(stakedVet, big.NewInt(1e7))
+
+	println("this is response2", stakedVet.String())
+	return stakedVet, nil
 }
