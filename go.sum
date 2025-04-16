@@ -142,6 +142,10 @@ github.com/vechain/goleveldb v1.0.1-0.20220809091043-51eb019c8655 h1:CbHcWpCi7wO
 github.com/vechain/goleveldb v1.0.1-0.20220809091043-51eb019c8655/go.mod h1:RRCYJbIwD5jmqPI9XoAFR0OcDxqUctll6zUj/+B4S48=
 github.com/vechain/thor/v2 v2.2.2-0.20250401085738-7864fd22af70 h1:26Y4BCEIEwSP4pxVtWWZZgUo2Dtsubf22HVTm6WLv0A=
 github.com/vechain/thor/v2 v2.2.2-0.20250401085738-7864fd22af70/go.mod h1:0a/ADXhpiBXsoyRv8EWCjzMGL9CkwWvfzoAP7qwDYjQ=
+github.com/vechain/thor/v2 v2.2.2-0.20250403090551-39512efb7515 h1:u5NUqhtEhHcr5WyPqwFKP3L1SDxLNQXJekte+Rn4mV4=
+github.com/vechain/thor/v2 v2.2.2-0.20250403090551-39512efb7515/go.mod h1:0a/ADXhpiBXsoyRv8EWCjzMGL9CkwWvfzoAP7qwDYjQ=
+github.com/vechain/thor/v2 v2.2.2-0.20250411130028-5a673b70a71d h1:fiaMNjeTABn+7smwlW0asVtYhPwkHkkrfnM1Z4VWlZM=
+github.com/vechain/thor/v2 v2.2.2-0.20250411130028-5a673b70a71d/go.mod h1:0a/ADXhpiBXsoyRv8EWCjzMGL9CkwWvfzoAP7qwDYjQ=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=

@@ -8,7 +8,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.7
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
-	github.com/vechain/thor/v2 v2.2.2-0.20250401085738-7864fd22af70
+	github.com/vechain/thor/v2 v2.2.2-0.20250411130028-5a673b70a71d
 )
 
 require (

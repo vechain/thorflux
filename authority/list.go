@@ -7,6 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+
+	"math/big"
+	"sort"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	accounts2 "github.com/vechain/thor/v2/api/accounts"
@@ -15,8 +20,6 @@ import (
 	"github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
-	"math/big"
-	"sort"
 )
 
 type List struct {
@@ -101,12 +104,20 @@ func (l *List) Init(revision thor.Bytes32) error {
 	return nil
 }
 
-func (l *List) Shuffled(prev *blocks.JSONExpandedBlock) []thor.Address {
+func (l *List) Shuffled(prev *blocks.JSONExpandedBlock) ([]thor.Address, error) {
 	seed, err := l.generateSeed(prev.ID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return shuffleCandidates(l.candidates, seed, prev.Number)
+	block, err := l.thor.Block(strconv.FormatUint((uint64)(prev.Number+1), 10))
+	if err != nil {
+		return nil, err
+	}
+	nextBlockCandidates, err := listAllCandidates(l.thor, block.ID)
+	if err != nil {
+		return nil, err
+	}
+	return shuffleCandidates(l.candidates, nextBlockCandidates, seed, prev.Number), nil
 }
 
 func (l *List) generateSeed(parentID thor.Bytes32) (seed []byte, err error) {
@@ -210,7 +221,12 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 	return candidates, nil
 }
 
-func shuffleCandidates(candidates []Candidate, seed []byte, blockNumber uint32) []thor.Address {
+func shuffleCandidates(candidates []Candidate, nextBlockCandidates []Candidate, seed []byte, blockNumber uint32) []thor.Address {
+	nextCandidates := make(map[thor.Address]Candidate)
+	for _, p := range nextBlockCandidates {
+		nextCandidates[p.Master] = p
+	}
+
 	var num [4]byte
 	binary.BigEndian.PutUint32(num[:], blockNumber)
 	var list []struct {
@@ -218,7 +234,8 @@ func shuffleCandidates(candidates []Candidate, seed []byte, blockNumber uint32) 
 		hash thor.Bytes32
 	}
 	for _, p := range candidates {
-		if p.Active {
+		nextCandidate, ok := nextCandidates[p.Master]
+		if p.Active || (ok && nextCandidate.Active) {
 			list = append(list, struct {
 				addr thor.Address
 				hash thor.Bytes32
