@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"math/big"
 	"strconv"
 	"sync/atomic"
@@ -222,7 +223,12 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 
 		flags["block_base_fee"] = baseFee.String()
 		totalBurnt := big.NewInt(0).Mul(baseFee, big.NewInt((int64)(len(block.Transactions))))
-		flags["block_total_burnt"] = totalBurnt
+		totalBurntFloat := new(big.Float).SetInt(totalBurnt)
+		divisor := new(big.Float).SetFloat64(math.Pow10(13))
+		totalBurntFloat.Quo(totalBurntFloat, divisor)
+		totalBurntFinal, _ := totalBurntFloat.Float64()
+		slog.Info("TotalBurnt", "burnt", totalBurntFinal)
+		flags["block_total_burnt"] = totalBurntFinal
 
 		totalTip := big.NewInt(0)
 		for _, transaction := range block.Transactions {
