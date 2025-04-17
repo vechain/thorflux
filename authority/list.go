@@ -109,15 +109,7 @@ func (l *List) Shuffled(prev *blocks.JSONExpandedBlock) ([]thor.Address, error) 
 	if err != nil {
 		return nil, err
 	}
-	block, err := l.thor.Block(strconv.FormatUint((uint64)(prev.Number+1), 10))
-	if err != nil {
-		return nil, err
-	}
-	nextBlockCandidates, err := listAllCandidates(l.thor, block.ID)
-	if err != nil {
-		return nil, err
-	}
-	return shuffleCandidates(l.candidates, nextBlockCandidates, seed, prev.Number), nil
+	return shuffleCandidates(l.candidates, seed, prev.Number), nil
 }
 
 func (l *List) generateSeed(parentID thor.Bytes32) (seed []byte, err error) {
@@ -221,12 +213,7 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 	return candidates, nil
 }
 
-func shuffleCandidates(candidates []Candidate, nextBlockCandidates []Candidate, seed []byte, blockNumber uint32) []thor.Address {
-	nextCandidates := make(map[thor.Address]Candidate)
-	for _, p := range nextBlockCandidates {
-		nextCandidates[p.Master] = p
-	}
-
+func shuffleCandidates(candidates []Candidate, seed []byte, blockNumber uint32) []thor.Address {
 	var num [4]byte
 	binary.BigEndian.PutUint32(num[:], blockNumber)
 	var list []struct {
@@ -234,8 +221,7 @@ func shuffleCandidates(candidates []Candidate, nextBlockCandidates []Candidate, 
 		hash thor.Bytes32
 	}
 	for _, p := range candidates {
-		nextCandidate, ok := nextCandidates[p.Master]
-		if p.Active || (ok && nextCandidate.Active) {
+		if p.Active {
 			list = append(list, struct {
 				addr thor.Address
 				hash thor.Bytes32
