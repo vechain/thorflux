@@ -65,7 +65,12 @@ func main() {
 		slog.Error("failed to get best block from thor", "error", err)
 		os.Exit(1)
 	}
-	startBlock := best.Number - blocks
+	var startBlock uint32
+	if blocks > best.Number {
+		startBlock = 0
+	} else {
+		startBlock = best.Number - blocks
+	}
 	if prev > startBlock {
 		startBlock = prev
 	}
