@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"math/big"
 	"sort"
@@ -115,6 +114,9 @@ func (l *List) Shuffled(prev *blocks.JSONExpandedBlock) ([]thor.Address, error) 
 func (l *List) generateSeed(parentID thor.Bytes32) (seed []byte, err error) {
 	blockNum := binary.BigEndian.Uint32(parentID[:]) + 1
 	epoch := blockNum / 8640
+	if epoch <= 1 {
+		return
+	}
 	seedNum := (epoch - 1) * 8640
 
 	seedBlock, err := l.thor.Block(fmt.Sprintf("%d", seedNum))

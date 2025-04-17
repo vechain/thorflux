@@ -227,7 +227,6 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 		divisor := new(big.Float).SetFloat64(math.Pow10(13))
 		totalBurntFloat.Quo(totalBurntFloat, divisor)
 		totalBurntFinal, _ := totalBurntFloat.Float64()
-		slog.Info("TotalBurnt", "burnt", totalBurntFinal)
 		flags["block_total_burnt"] = totalBurntFinal
 
 		totalTip := big.NewInt(0)
@@ -321,6 +320,10 @@ func (i *DB) appendSlotStats(
 			slog.Error("Failed to write recent slot point", "error", err)
 		}
 
+		shuffledCandidates, err := i.candidates.Shuffled(prevBlock)
+		if err != nil {
+			slog.Error("Error shuffling", "err", err.Error())
+		}
 		for a := startSlot; a < slotsSinceLastBlock-1; a++ {
 			rawTime := prevBlock.Timestamp + a*10
 			slotTime := time.Unix(int64(rawTime), 0)
@@ -330,12 +333,6 @@ func (i *DB) appendSlotStats(
 				value = 1
 			} else {
 				slog.Warn("EMPTY SLOT", "number", block.ExpandedBlock.Number)
-				// shuffling the proposer for the block is expensive, only do it if we missed a slot. Otherwise, the signer is he proposer
-				shuffledCandidates, err := i.candidates.Shuffled(prevBlock)
-				if err != nil {
-					slog.Error("Error shuffling", "err", err.Error())
-					//panic("Error shufling critical error")
-				}
 				if int(a) >= len(shuffledCandidates) {
 					slog.Error("Out of bounds", "shuffleCandidates", shuffledCandidates)
 					proposer = thor.Address{}
