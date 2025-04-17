@@ -15,14 +15,14 @@ var StakerAbi = `[
     "inputs": [
       {
         "indexed": true,
-        "internalType": "address",
-        "name": "endorsor",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
       },
       {
         "indexed": true,
         "internalType": "address",
-        "name": "master",
+        "name": "delegator",
         "type": "address"
       },
       {
@@ -30,6 +30,87 @@ var StakerAbi = `[
         "internalType": "uint256",
         "name": "stake",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "autoRenew",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "multiplier",
+        "type": "uint8"
+      }
+    ],
+    "name": "DelegationAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "autoRenew",
+        "type": "bool"
+      }
+    ],
+    "name": "DelegationUpdatedAutoRenew",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "stake",
+        "type": "uint256"
+      }
+    ],
+    "name": "DelegationWithdrawn",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "endorsor",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
       },
       {
         "indexed": false,
@@ -52,15 +133,9 @@ var StakerAbi = `[
       },
       {
         "indexed": true,
-        "internalType": "address",
-        "name": "master",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "stake",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
       },
       {
         "indexed": false,
@@ -86,6 +161,12 @@ var StakerAbi = `[
         "internalType": "address",
         "name": "master",
         "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
       },
       {
         "indexed": false,
@@ -120,9 +201,9 @@ var StakerAbi = `[
       },
       {
         "indexed": true,
-        "internalType": "address",
-        "name": "master",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
       },
       {
         "indexed": false,
@@ -145,9 +226,9 @@ var StakerAbi = `[
       },
       {
         "indexed": true,
-        "internalType": "address",
-        "name": "master",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
       },
       {
         "indexed": false,
@@ -164,16 +245,31 @@ var StakerAbi = `[
     "type": "fallback"
   },
   {
-    "inputs": [],
-    "name": "activeStake",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "autoRenew",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint8",
+        "name": "multiplier",
+        "type": "uint8"
       }
     ],
-    "stateMutability": "view",
+    "name": "addDelegation",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -202,14 +298,19 @@ var StakerAbi = `[
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "master",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
     "name": "decreaseStake",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -217,9 +318,9 @@ var StakerAbi = `[
     "name": "firstActive",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "bytes32",
         "name": "",
-        "type": "address"
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",
@@ -230,9 +331,9 @@ var StakerAbi = `[
     "name": "firstQueued",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "bytes32",
         "name": "",
-        "type": "address"
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",
@@ -241,9 +342,9 @@ var StakerAbi = `[
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "master",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
       }
     ],
     "name": "get",
@@ -267,6 +368,11 @@ var StakerAbi = `[
         "internalType": "uint8",
         "name": "",
         "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -275,23 +381,47 @@ var StakerAbi = `[
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
+      },
+      {
         "internalType": "address",
-        "name": "master",
+        "name": "delegator",
         "type": "address"
       }
     ],
-    "name": "getWithdraw",
+    "name": "getDelegation",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
       },
       {
         "internalType": "bool",
         "name": "",
         "type": "bool"
-      },
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getWithdraw",
+    "outputs": [
       {
         "internalType": "uint256",
         "name": "",
@@ -304,9 +434,9 @@ var StakerAbi = `[
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "master",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
       }
     ],
     "name": "increaseStake",
@@ -317,17 +447,30 @@ var StakerAbi = `[
   {
     "inputs": [
       {
-        "internalType": "address",
+        "internalType": "bytes32",
         "name": "prev",
-        "type": "address"
+        "type": "bytes32"
       }
     ],
     "name": "next",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "bytes32",
         "name": "",
-        "type": "address"
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "queuedStake",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -349,9 +492,9 @@ var StakerAbi = `[
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "master",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
       },
       {
         "internalType": "bool",
@@ -367,12 +510,53 @@ var StakerAbi = `[
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
+      },
+      {
         "internalType": "address",
-        "name": "master",
+        "name": "delegator",
         "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "name": "updateDelegatorAutoRenew",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
       }
     ],
     "name": "withdraw",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "delegator",
+        "type": "address"
+      }
+    ],
+    "name": "withdrawDelegation",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -383,7 +567,451 @@ var StakerAbi = `[
   }
 ]`
 
+var ExtensionAbi = `
+[
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "blake2b256",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "num",
+        "type": "uint256"
+      }
+    ],
+    "name": "blockTime",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "num",
+        "type": "uint256"
+      }
+    ],
+    "name": "blockSigner",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "num",
+        "type": "uint256"
+      }
+    ],
+    "name": "blockTotalScore",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "txGasPayer",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "txExpiration",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "txID",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "txProvedWork",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "num",
+        "type": "uint256"
+      }
+    ],
+    "name": "blockID",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "txBlockRef",
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  }
+]`
+
+var EnergyAbi = `[
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_spender",
+        "type": "address"
+      },
+      {
+        "name": "_value",
+        "type": "uint256"
+      }
+    ],
+    "name": "approve",
+    "outputs": [
+      {
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFrom",
+    "outputs": [
+      {
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_owner",
+        "type": "address"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "name": "balance",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transfer",
+    "outputs": [
+      {
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "name": "_amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "move",
+    "outputs": [
+      {
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "totalBurned",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [
+      {
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "name": "_spender",
+        "type": "address"
+      }
+    ],
+    "name": "allowance",
+    "outputs": [
+      {
+        "name": "remaining",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "_from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "_to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "_value",
+        "type": "uint256"
+      }
+    ],
+    "name": "Transfer",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "name": "_spender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "name": "_value",
+        "type": "uint256"
+      }
+    ],
+    "name": "Approval",
+    "type": "event"
+  }
+]`
+
 var StakerContract = thor.MustParseAddress("0x00000000000000000000000000005374616b6572")
+var ExtensionContract = thor.MustParseAddress("0x0000000000000000000000457874656e73696f6e")
+var EnergyContract = thor.MustParseAddress("0x0000000000000000000000000000456e65726779")
 var Caller = thor.MustParseAddress("0x00000000000000000000000000005374616b6572")
 
 type ContractInfo struct {
