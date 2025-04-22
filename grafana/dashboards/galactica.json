@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 4,
   "links": [],
   "panels": [
     {
@@ -741,6 +741,15 @@
         }
       ],
       "title": "Tips per signer",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "_value {_start=\"[\\d\\-:. +UTC]*\", _stop=\"[\\d\\-:. +UTC]*\", signer=\"([\\dxabcdef]*)\"}",
+            "renamePattern": "$1"
+          }
+        }
+      ],
       "type": "timeseries"
     }
   ],
