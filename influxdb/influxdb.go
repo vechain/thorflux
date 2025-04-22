@@ -6,10 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/vechain/thorflux/pos"
 	"log/slog"
 	"math/big"
 	"sort"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -148,6 +151,8 @@ func (i *DB) WriteBlock(block *block.Block) {
 	i.appendB3trStats(block.ExpandedBlock, flags)
 	i.appendSlotStats(block, flags, writeAPI)
 	i.appendEpochStats(block.ExpandedBlock, flags, writeAPI)
+	i.appendHayabusaEpochStats(block.ExpandedBlock, flags, writeAPI)
+	i.appendHayabusaEpochGasStats(block.ExpandedBlock, flags, writeAPI)
 
 	p := influxdb2.NewPoint("block_stats", tags, flags, time.Unix(int64(block.ExpandedBlock.Timestamp), 0))
 
@@ -183,9 +188,9 @@ func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]int
 	for _, t := range txs {
 		clauseCount += len(t.Clauses)
 		coef := t.GasPriceCoef
-		coefs = append(coefs, float64(coef))
-		coefCount[float64(coef)]++
-		sum += int(coef)
+		coefs = append(coefs, float64(*coef))
+		coefCount[float64(*coef)]++
+		sum += int(*coef)
 		for _, o := range t.Outputs {
 			vetTransferCount += len(o.Transfers)
 			eventCount += len(o.Events)
@@ -259,6 +264,9 @@ func (i *DB) appendB3trStats(block *blocks.JSONExpandedBlock, flags map[string]i
 func (i *DB) generateSeed(parentID thor.Bytes32) (seed []byte, err error) {
 	blockNum := binary.BigEndian.Uint32(parentID[:]) + 1
 	epoch := blockNum / 8640
+	if epoch <= 1 {
+		return
+	}
 	seedNum := (epoch - 1) * 8640
 
 	seedBlock, err := i.thor.Block(fmt.Sprintf("%d", seedNum))
@@ -412,4 +420,177 @@ func (i *DB) appendEpochStats(block *blocks.JSONExpandedBlock, flags map[string]
 	if err := writeAPI.WritePoint(context.Background(), heatmapPoint); err != nil {
 		slog.Error("Failed to write heatmap point", "error", err)
 	}
+}
+
+func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
+
+	epoch := block.Number / 180
+	blockInEpoch := block.Number % 180
+	chainTag, err := i.thor.ChainTag()
+	posData := pos.PoSDataExtractor{
+		Thor: i.thor,
+	}
+
+	flags["epoch"] = epoch
+	flags["block_in_epoch"] = blockInEpoch
+
+	parsedABI, err := abi.JSON(strings.NewReader(accounts.StakerAbi))
+	if err != nil {
+		slog.Error("Failed to write hayabusa epoch stats", "error", err)
+	}
+
+	totalStakedVet, err := posData.FetchAmount(parsedABI, block, chainTag, "totalStake", accounts.StakerContract)
+	if err != nil {
+		slog.Error("Failed to fetch total stake for hayabusa", "error", err)
+	}
+
+	if totalStakedVet == nil || totalStakedVet.Cmp(big.NewInt(0)) <= 0 {
+		return
+	}
+
+	totalQueuedVet, err := posData.FetchAmount(parsedABI, block, chainTag, "queuedStake", accounts.StakerContract)
+	if err != nil {
+		slog.Error("Failed to fetch active stake for hayabusa", "error", err)
+	}
+
+	parsedExtensionABI, err := abi.JSON(strings.NewReader(accounts.ExtensionAbi))
+	if err != nil {
+		slog.Error("Failed to parse extension abi", "error", err)
+	}
+	totalCirculatingVet, err := posData.FetchAmount(parsedExtensionABI, block, chainTag, "totalSupply", accounts.ExtensionContract)
+	if err != nil {
+		slog.Error("Failed to fetch total circulating VET", "error", err)
+	}
+
+	var candidates []*pos.Candidate
+	if blockInEpoch == 0 || len(candidates) == 0 {
+		candidates, err = posData.ExtractCandidates(block, chainTag)
+		if err != nil {
+			slog.Error("Error while fetching validators", "error", err)
+		}
+	}
+
+	expectedValidator := &thor.Address{}
+	if candidates != nil && len(candidates) > 0 {
+		expectedValidator, err = i.expectedValidator(candidates, block)
+		if err != nil {
+			slog.Error("Cannot extract expected validator", "error", err)
+		}
+	}
+
+	// Prepare data for heatmap
+	heatmapPoint := influxdb2.NewPoint(
+		"hayabusa_validators",
+		map[string]string{
+			"chain_tag": string(i.chainTag),
+		},
+		map[string]interface{}{
+			"total_stake":     big.NewInt(0).Add(totalStakedVet, totalQueuedVet).Int64(),
+			"active_stake":    totalStakedVet.Int64(),
+			"queued_stake":    totalQueuedVet.Int64(),
+			"circulating_vet": totalCirculatingVet.Int64(),
+			"next_validator":  expectedValidator.String(),
+			"epoch":           strconv.FormatUint(uint64(epoch), 10),
+		},
+		time.Unix(int64(block.Timestamp), 0),
+	)
+
+	if err := writeAPI.WritePoint(context.Background(), heatmapPoint); err != nil {
+		slog.Error("Failed to write heatmap point", "error", err)
+	}
+}
+
+func (i *DB) appendHayabusaEpochGasStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
+
+	epoch := block.Number / 180
+	blockInEpoch := block.Number % 180
+	chainTag, err := i.thor.ChainTag()
+	posData := pos.PoSDataExtractor{
+		Thor: i.thor,
+	}
+
+	flags["epoch"] = epoch
+	flags["block_in_epoch"] = blockInEpoch
+
+	parsedABI, err := abi.JSON(strings.NewReader(accounts.EnergyAbi))
+	if err != nil {
+		slog.Error("Failed to parse energy abi", "error", err)
+	}
+
+	parentBlock, err := i.thor.ExpandedBlock(block.ParentID.String())
+	if err != nil {
+		slog.Error("Failed to fetch parent block", "error", err)
+	}
+
+	totalSupply, err := posData.FetchAmount(parsedABI, block, chainTag, "totalSupply", accounts.EnergyContract)
+	if err != nil {
+		slog.Error("Failed to fetch energy total supply", "error", err)
+	}
+
+	parentTotalSupply, err := posData.FetchAmount(parsedABI, parentBlock, chainTag, "totalSupply", accounts.EnergyContract)
+	if err != nil {
+		slog.Error("Failed to fetch energy total supply", "error", err)
+	}
+
+	totalBurned, err := posData.FetchAmount(parsedABI, block, chainTag, "totalBurned", accounts.EnergyContract)
+	if err != nil {
+		slog.Error("Failed to fetch energy total burned", "error", err)
+	}
+
+	parentTotalBurned, err := posData.FetchAmount(parsedABI, parentBlock, chainTag, "totalBurned", accounts.EnergyContract)
+	if err != nil {
+		slog.Error("Failed to fetch energy total burned", "error", err)
+	}
+
+	if parentTotalSupply == nil || parentTotalSupply.Cmp(big.NewInt(0)) <= 0 || parentTotalBurned == nil || parentTotalBurned.Cmp(big.NewInt(0)) <= 0 {
+		return
+	}
+
+	vthoIssued := big.NewInt(0).Sub(totalSupply, parentTotalSupply)
+	vthoBurned := big.NewInt(0).Sub(totalBurned, parentTotalBurned)
+
+	if vthoBurned == nil || vthoBurned.Cmp(big.NewInt(0)) == 0 {
+		return
+	}
+
+	issuedBurnedRatio, exact := new(big.Rat).Quo(new(big.Rat).SetInt(big.NewInt(0).Abs(vthoIssued)), new(big.Rat).SetInt(big.NewInt(0).Abs(vthoBurned))).Float64()
+	if !exact {
+		slog.Warn("issued burned ration is truncated")
+	}
+
+	validatorsShare := big.NewInt(0).Mul(vthoIssued, big.NewInt(3))
+	validatorsShare = validatorsShare.Div(validatorsShare, big.NewInt(10))
+
+	delegatorsShare := big.NewInt(0).Mul(vthoIssued, big.NewInt(7))
+	delegatorsShare = delegatorsShare.Div(delegatorsShare, big.NewInt(10))
+
+	// Prepare data for heatmap
+	heatmapPoint := influxdb2.NewPoint(
+		"hayabusa_gas",
+		map[string]string{
+			"chain_tag": string(i.chainTag),
+		},
+		map[string]interface{}{
+			"vtho_issued":         vthoIssued.Int64(),
+			"vtho_burned":         vthoBurned.Int64(),
+			"issued_burned_ratio": issuedBurnedRatio,
+			"validators_share":    validatorsShare.Int64(),
+			"delegators_share":    delegatorsShare.Int64(),
+			"epoch":               strconv.FormatUint(uint64(epoch), 10),
+		},
+		time.Unix(int64(block.Timestamp), 0),
+	)
+
+	if err := writeAPI.WritePoint(context.Background(), heatmapPoint); err != nil {
+		slog.Error("Failed to write heatmap point", "error", err)
+	}
+}
+
+func (i *DB) expectedValidator(candidates []*pos.Candidate, currentBlock *blocks.JSONExpandedBlock) (*thor.Address, error) {
+
+	seed, err := i.generateSeed(currentBlock.ID)
+	if err != nil {
+		return nil, err
+	}
+	return pos.ExpectedValidator(candidates, currentBlock, seed)
 }
