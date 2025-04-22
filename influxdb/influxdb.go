@@ -549,11 +549,12 @@ func (i *DB) appendHayabusaEpochGasStats(block *blocks.JSONExpandedBlock, flags 
 	vthoIssued := big.NewInt(0).Sub(totalSupply, parentTotalSupply)
 	vthoBurned := big.NewInt(0).Sub(totalBurned, parentTotalBurned)
 
+	vthoBurnedDivider := vthoBurned
 	if vthoBurned == nil || vthoBurned.Cmp(big.NewInt(0)) == 0 {
-		return
+		vthoBurnedDivider = big.NewInt(1)
 	}
 
-	issuedBurnedRatio, exact := new(big.Rat).Quo(new(big.Rat).SetInt(big.NewInt(0).Abs(vthoIssued)), new(big.Rat).SetInt(big.NewInt(0).Abs(vthoBurned))).Float64()
+	issuedBurnedRatio, exact := new(big.Rat).Quo(new(big.Rat).SetInt(big.NewInt(0).Abs(vthoIssued)), new(big.Rat).SetInt(vthoBurnedDivider)).Float64()
 	if !exact {
 		slog.Warn("issued burned ration is truncated")
 	}
