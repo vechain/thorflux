@@ -133,13 +133,10 @@ func (i *DB) WriteBlock(block *block.Block) {
 		"block_number": strconv.FormatUint(uint64(block.ExpandedBlock.Number), 10),
 	}
 
-	if i.candidates.ShouldReset(block.ExpandedBlock) {
-		i.candidates.Invalidate()
-		if err := i.candidates.Init(block.ExpandedBlock.ID); err != nil {
-			slog.Error("failed to init candidates", "error", err)
-		} else {
-			slog.Info("candidates reset", "length", i.candidates.Len())
-		}
+	if err := i.candidates.Init(block.ExpandedBlock.ID); err != nil {
+		slog.Error("failed to init candidates", "error", err)
+	} else {
+		slog.Info("candidates reset", "length", i.candidates.Len())
 	}
 
 	flags := map[string]interface{}{}
