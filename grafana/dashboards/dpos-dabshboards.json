@@ -29,74 +29,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "id": 8,
-      "options": {
-        "displayMode": "gradient",
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
-        "maxVizHeight": 300,
-        "minVizHeight": 16,
-        "minVizWidth": 8,
-        "namePlacement": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showUnfilled": true,
-        "sizing": "auto",
-        "valueMode": "color"
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "query": "// Define bucket ranges\nbucket1 = 1000000000000000.0\nbucket2 = 10000000000000000.0 \nbucket3 = 100000000000000000.0\nbucket4 = 1000000000000000000.0\nbucket5 = 10000000000000000000.0\nbucket6 = 100000000000000000000.0\n\nfrom(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> map(fn: (r) => ({\n      _time: now(),\n      _value: r._value,\n      bucket: \n        if float(v: r._value) < bucket2 then \"1e15-1e16\"\n        else if float(v: r._value) < bucket3 then \"1e16 - 1e17\"\n        else if float(v: r._value) < bucket4 then \"1e17 - 1e18\" \n        else if float(v: r._value) < bucket5 then \"1e18 - 1e19\"\n        else if float(v: r._value) < bucket6 then \"1e19 - 1e20\"\n        else \"≥1e20\"\n    }))\n  |> group(columns: [\"bucket\"])\n  |> count()\n  |> rename(columns: {_value: \"\"})\n  |> yield(name: \"count\")",
-          "refId": "A"
-        }
-      ],
-      "title": "Stakers by stake",
-      "type": "bargauge"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
           },
           "custom": {
             "axisBorderShow": false,
@@ -104,16 +37,28 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "fillOpacity": 80,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
             "lineWidth": 1,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -137,102 +82,37 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 12,
+        "w": 24,
+        "x": 0,
         "y": 0
       },
-      "id": 6,
+      "id": 1,
       "options": {
-        "barRadius": 0,
-        "barWidth": 0.97,
-        "fullHighlight": false,
-        "groupWidth": 0.7,
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": false
+          "showLegend": true
         },
-        "orientation": "auto",
-        "showValue": "auto",
-        "stacking": "none",
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
           "sort": "none"
-        },
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 0
+        }
       },
-      "pluginVersion": "11.6.0",
+      "pluginVersion": "11.6.1",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"auto_renew\")\n  |> group(columns: [\"_value\"])\n  |> count(column: \"staker\")\n  |> map(fn: (r) => ({\n      _time: now(),\n      category: if r._value then \"Auto Renew Enabled\" else \"Auto Renew Disabled\",\n      count: r.staker\n    }))\n  |> drop(columns: [\"_value\", \"staker\"])",
-          "refId": "A"
-        }
-      ],
-      "title": "Auto renew stakers",
-      "type": "barchart"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.6.0",
-      "targets": [
-        {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"circulating_vet\" or r[\"_field\"] == \"total_stake\")\n  |> last()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({\n    _time: r._time,\n    _value: float(v: r.total_stake) / float(v: r.circulating_vet) * 100.0\n  }))",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_validators\" and r[\"_field\"] != \"circulating_vet\")\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
-      "title": "Staked Vet %",
-      "type": "stat"
+      "title": "Staked VET",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -310,14 +190,14 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "11.6.0",
+      "pluginVersion": "11.6.1",
       "targets": [
         {
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"period\")\n  |> group(columns: [\"_value\"])\n  |> count(column: \"staker\")\n  |> map(fn: (r) => ({\n      _time: now(),\n      _value: r._value,  // Keep the original value for sorting\n      period_label: string(v: r._value) + \" days\",\n      count: r.staker\n    }))\n  |> sort(columns: [\"_value\"])\n  |> drop(columns: [\"_value\"])",
           "refId": "A"
         }
       ],
-      "title": "Stakers by Period",
+      "title": "Stakers by period",
       "type": "barchart"
     },
     {
@@ -328,7 +208,134 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 8
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.1",
+      "targets": [
+        {
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"circulating_vet\" or r[\"_field\"] == \"total_stake\")\n  |> last()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({\n    _time: r._time,\n    _value: float(v: r.total_stake) / float(v: r.circulating_vet) * 100.0\n  }))",
+          "refId": "A"
+        }
+      ],
+      "title": "Staked Vet %",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 8,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.6.1",
+      "targets": [
+        {
+          "query": "// Define bucket ranges\nbucketInterval = 115000000000000000\nminStake = 25000000000000000\ndivisor = 1000000000\nbucket1 = minStake + bucketInterval\nbucket2 = bucket1 + bucketInterval\nbucket3 = bucket2 + bucketInterval\nbucket4 = bucket3 + bucketInterval\n\nfrom(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> map(fn: (r) => ({\n      _time: now(),\n      _value: r._value,\n      bucket: \n        if float(v: r._value)/float(v: divisor) < bucket1 then \"1. 25 - 140 M\"\n        else if float(v: r._value)/float(v: divisor) < bucket2 then \"2. 140 - 255 M\"\n        else if float(v: r._value)/float(v: divisor) < bucket3 then \"3. 255 - 370 M\"\n        else if float(v: r._value)/float(v: divisor) < bucket4 then \"4. 370 - 485 M\" \n        else \"5. 485 - 600 M\"\n    }))\n  |> group(columns: [\"bucket\"])\n  |> count()\n  |> rename(columns: {_value: \"\"})\n  |> yield(name: \"count\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Stakers by stake",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
           },
           "custom": {
             "axisBorderShow": false,
@@ -336,28 +343,16 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 80,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -381,37 +376,42 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 18,
-        "x": 0,
+        "w": 6,
+        "x": 12,
         "y": 16
       },
-      "id": 1,
+      "id": 6,
       "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
           "sort": "none"
-        }
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
       },
-      "pluginVersion": "11.6.0",
+      "pluginVersion": "11.6.1",
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
-          },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_validators\" and r[\"_field\"] != \"circulating_vet\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"auto_renew\")\n  |> group(columns: [\"_value\"])\n  |> count(column: \"staker\")\n  |> map(fn: (r) => ({\n      _time: now(),\n      category: if r._value then \"Auto Renew Enabled\" else \"Auto Renew Disabled\",\n      count: r.staker\n    }))\n  |> drop(columns: [\"_value\", \"staker\"])",
           "refId": "A"
         }
       ],
-      "title": "Staked VET",
-      "type": "timeseries"
+      "title": "Auto renew stakers",
+      "type": "barchart"
     },
     {
       "datasource": {
@@ -490,7 +490,7 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "11.6.0",
+      "pluginVersion": "11.6.1",
       "targets": [
         {
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"filled\"] == \"1\")\n  |> group(columns: [\"proposer\"])\n  |> count()\n  |> map(fn: (r) => ({\n    _name: r.proposer,\n    _value: r._value\n  }))",
@@ -588,7 +588,7 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
-      "pluginVersion": "11.6.0",
+      "pluginVersion": "11.6.1",
       "targets": [
         {
           "datasource": {
@@ -662,7 +662,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.6.0",
+      "pluginVersion": "11.6.1",
       "targets": [
         {
           "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"next_validator\")\n  |> last()",
@@ -687,5 +687,5 @@
   "timezone": "browser",
   "title": "DPoS",
   "uid": "beihq5w2e794wf",
-  "version": 2
+  "version": 3
 }
