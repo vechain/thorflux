@@ -6,15 +6,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/vechain/thorflux/pos"
 	"log/slog"
 	"math/big"
-	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/vechain/thorflux/pos"
 
 	"github.com/ethereum/go-ethereum/rlp"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -153,6 +153,7 @@ func (i *DB) WriteBlock(block *block.Block) {
 	i.appendEpochStats(block.ExpandedBlock, flags, writeAPI)
 	i.appendHayabusaEpochStats(block.ExpandedBlock, flags, writeAPI)
 	i.appendHayabusaEpochGasStats(block.ExpandedBlock, flags, writeAPI)
+	i.appendStakerStats(block.ExpandedBlock, writeAPI)
 
 	p := influxdb2.NewPoint("block_stats", tags, flags, time.Unix(int64(block.ExpandedBlock.Timestamp), 0))
 
@@ -161,76 +162,39 @@ func (i *DB) WriteBlock(block *block.Block) {
 	}
 }
 
-type coefStats struct {
-	Average float64
-	Max     float64
-	Min     float64
-	Mode    float64
-	Median  float64
-	Total   int
-}
-
 func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) (total, success, failed int) {
 	txs := block.Transactions
-	clauseCount := 0
-	vetTransferCount := 0
-	vetTransfersAmount := new(big.Float)
-	eventCount := 0
-
-	stats := coefStats{
-		Total: len(txs),
-	}
-
-	coefs := make([]float64, 0, len(txs))
-	coefCount := make(map[float64]int)
-	sum := 0
+	txStat := txStats{vetTransfersAmount: &big.Float{}}
+	coefStat := coefStats{Total: len(txs), coefCount: map[float64]int{}}
 
 	for _, t := range txs {
-		clauseCount += len(t.Clauses)
-		coef := t.GasPriceCoef
-		coefs = append(coefs, float64(*coef))
-		coefCount[float64(*coef)]++
-		sum += int(*coef)
+		txStat.processTx(t)
+		coefStat.processTx(t)
+
 		for _, o := range t.Outputs {
-			vetTransferCount += len(o.Transfers)
-			eventCount += len(o.Events)
+			txStat.processOutput(o)
+
 			for _, tr := range o.Transfers {
-				amount := (*big.Int)(tr.Amount)
-				amountFloat := new(big.Float).SetInt(amount)
-				vetTransfersAmount.Add(vetTransfersAmount, amountFloat)
+				txStat.processTransf(tr)
 			}
 		}
 	}
 
-	if len(coefs) > 0 {
-		sort.Slice(coefs, func(i, j int) bool { return coefs[i] < coefs[j] })
-		stats.Min = coefs[0]
-		stats.Max = coefs[len(coefs)-1]
-		stats.Median = coefs[len(coefs)/2]
-		stats.Average = float64(sum) / float64(len(coefs))
+	coefStat.finalizeCalc()
 
-		mode := float64(0)
-		maxCount := 0
-		for coef, count := range coefCount {
-			if count > maxCount {
-				mode = float64(coef)
-				maxCount = count
-			}
-		}
-		stats.Mode = mode
-	}
+	coefStat.finalizeCalc()
 
-	vetAmount, _ := vetTransfersAmount.Quo(vetTransfersAmount, big.NewFloat(1e18)).Float64()
+	flags["total_txs"] = len(txs)
+	flags["total_clauses"] = txStat.clauseCount
+	flags["vet_transfers"] = txStat.vetTransferCount
+	flags["vet_transfers_amount"] = txStat.vetTransfersAmount
+	flags["validator_rewards"] = txStat.totalRewards
 
-	flags["total_txs"] = stats.Total
-	flags["total_clauses"] = clauseCount
-	flags["coef_average"] = stats.Average
-	flags["coef_max"] = stats.Max
-	flags["coef_min"] = stats.Min
-	flags["coef_mode"] = stats.Mode
-	flags["coef_median"] = stats.Median
-	flags["vet_transfers"] = vetTransferCount
-	flags["vet_transfers_amount"] = vetAmount
+	flags["coef_average"] = coefStat.Average
+	flags["coef_max"] = coefStat.Max
+	flags["coef_min"] = coefStat.Min
+	flags["coef_mode"] = coefStat.Mode
+	flags["coef_median"] = coefStat.Median
 
 	return
 }
@@ -423,7 +387,6 @@ func (i *DB) appendEpochStats(block *blocks.JSONExpandedBlock, flags map[string]
 }
 
 func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
-
 	epoch := block.Number / 180
 	blockInEpoch := block.Number % 180
 	chainTag, err := i.thor.ChainTag()
@@ -501,7 +464,6 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 }
 
 func (i *DB) appendHayabusaEpochGasStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
-
 	epoch := block.Number / 180
 	blockInEpoch := block.Number % 180
 	chainTag, err := i.thor.ChainTag()
@@ -587,10 +549,42 @@ func (i *DB) appendHayabusaEpochGasStats(block *blocks.JSONExpandedBlock, flags 
 }
 
 func (i *DB) expectedValidator(candidates []*pos.Candidate, currentBlock *blocks.JSONExpandedBlock) (*thor.Address, error) {
-
 	seed, err := i.generateSeed(currentBlock.ID)
 	if err != nil {
 		return nil, err
 	}
 	return pos.ExpectedValidator(candidates, currentBlock, seed)
+}
+
+func (i *DB) appendStakerStats(block *blocks.JSONExpandedBlock, writeAPI api.WriteAPIBlocking) {
+	stakerStats := NewStakerStats()
+	txs := block.Transactions
+
+	for _, tx := range txs {
+		for _, output := range tx.Outputs {
+			for _, event := range output.Events {
+				stakerStats.processEvent(event)
+			}
+		}
+	}
+
+	for _, staker := range stakerStats.AddStaker {
+		p := influxdb2.NewPoint(
+			"staker_stats",
+			map[string]string{
+				"chain_tag": string(i.chainTag),
+				"staker":    staker.Master.String(),
+			},
+			map[string]any{
+				"period":        staker.Period,
+				"auto_renew":    staker.AutoRenew,
+				"staked_amount": staker.Stake,
+			},
+			time.Unix(int64(block.Timestamp), 0),
+		)
+
+		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+			slog.Error("Failed to write point", "error", err)
+		}
+	}
 }
