@@ -4,6 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math/big"
+	"math/rand/v2"
+	"sort"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	thorAccounts "github.com/vechain/thor/v2/api/accounts"
 	"github.com/vechain/thor/v2/api/blocks"
@@ -11,10 +16,6 @@ import (
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/tx"
 	"github.com/vechain/thorflux/accounts"
-	"math/big"
-	"math/rand/v2"
-	"sort"
-	"strings"
 )
 
 type PoSDataExtractor struct {
@@ -140,12 +141,18 @@ func (posData *PoSDataExtractor) getCandidate(getData string, address thor.Addre
 		return nil, err
 	}
 	status := big.NewInt(0).SetBytes(statusBytes.Bytes())
+	autoRenewBytes, err := thor.ParseBytes32(getData[322:386])
+	if err != nil {
+		return nil, err
+	}
+	autoRenew := autoRenewBytes.Bytes()[31] != 0
 	candidate := Candidate{
-		Master:   address,
-		Endorsor: endorsor,
-		Stake:    *stake,
-		Weight:   *weight,
-		Status:   *status,
+		Master:    address,
+		Endorsor:  endorsor,
+		Stake:     *stake,
+		Weight:    *weight,
+		Status:    *status,
+		AutoRenew: autoRenew,
 	}
 	return &candidate, nil
 }

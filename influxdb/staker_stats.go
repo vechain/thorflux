@@ -9,17 +9,18 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/vechain/thor/v2/api/blocks"
 	"github.com/vechain/thor/v2/thor"
+	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/accounts"
+	"github.com/vechain/thorflux/pos"
 )
 
 const (
-	validatorQueuedEventName           = "ValidatorQueued"
-	validatorUpdatedAutoRenewEventName = "ValidatorUpdatedAutoRenew"
+	validatorQueuedEventName = "ValidatorQueued"
 )
 
 type stakerStats struct {
-	AddStaker  []addStakerEvent
-	ExitStaker []exitStakerEvent
+	AddStaker     []addStakerEvent
+	StakersStatus []stakerStatus
 }
 
 type addStakerEvent struct {
@@ -30,16 +31,18 @@ type addStakerEvent struct {
 	AutoRenew bool
 }
 
-type exitStakerEvent struct {
+type stakerStatus struct {
 	Endorsor  thor.Address
 	Master    thor.Address
+	Status    *big.Int
 	AutoRenew bool
+	Stake     *big.Int
 }
 
 func NewStakerStats() *stakerStats {
 	return &stakerStats{
-		AddStaker:  make([]addStakerEvent, 0),
-		ExitStaker: make([]exitStakerEvent, 0),
+		AddStaker:     make([]addStakerEvent, 0),
+		StakersStatus: make([]stakerStatus, 0),
 	}
 }
 
@@ -52,20 +55,13 @@ func (s *stakerStats) processEvent(event *blocks.JSONEvent) error {
 	if err != nil {
 		return err
 	}
-	addValidatorTopic := parsedABI.Events[validatorQueuedEventName].Id()
-	exitValidatorTopic := parsedABI.Events[validatorUpdatedAutoRenewEventName].Id()
 
+	addValidatorTopic := parsedABI.Events[validatorQueuedEventName].Id()
 	validatorAddedEvent := thor.MustParseBytes32(addValidatorTopic.Hex())
-	validatorExitedEvent := thor.MustParseBytes32(exitValidatorTopic.Hex())
 
 	if event.Topics[0] == validatorAddedEvent {
 		collectValidatorAddedEvent(s, event)
 	}
-
-	if event.Topics[0] == validatorExitedEvent {
-		collectValidatorExitedEvent(s, event)
-	}
-
 	return nil
 }
 
@@ -92,17 +88,27 @@ func collectValidatorAddedEvent(s *stakerStats, event *blocks.JSONEvent) {
 	})
 }
 
-func collectValidatorExitedEvent(s *stakerStats, event *blocks.JSONEvent) {
-	endorsorAddress := thor.BytesToAddress(event.Topics[1].Bytes())
-	masterAddress := thor.BytesToAddress(event.Topics[2].Bytes())
+func (s *stakerStats) CollectActiveStakers(client *thorclient.Client, block *blocks.JSONExpandedBlock) error {
+	posData := pos.PoSDataExtractor{
+		Thor: client,
+	}
+	chainTag, err := client.ChainTag()
+	if err != nil {
+		return err
+	}
 
-	data := event.Data[2:]
-	hexData, _ := hex.DecodeString(data[:64])
-	autoRenew := hexData[len(hexData)-1] != 0
-
-	s.ExitStaker = append(s.ExitStaker, exitStakerEvent{
-		Endorsor:  endorsorAddress,
-		Master:    masterAddress,
-		AutoRenew: autoRenew,
-	})
+	candidates, err := posData.ExtractCandidates(block, chainTag)
+	if err != nil {
+		return err
+	}
+	for _, candidate := range candidates {
+		s.StakersStatus = append(s.StakersStatus, stakerStatus{
+			Endorsor:  candidate.Endorsor,
+			Master:    candidate.Master,
+			Status:    &candidate.Status,
+			Stake:     &candidate.Stake,
+			AutoRenew: candidate.AutoRenew,
+		})
+	}
+	return nil
 }
