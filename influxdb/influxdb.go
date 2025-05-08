@@ -164,23 +164,24 @@ func (i *DB) WriteBlock(block *block.Block) {
 
 func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) (total, success, failed int) {
 	txs := block.Transactions
+
+	priorityFeeStat := priorityFeeStats{}
 	txStat := txStats{vetTransfersAmount: &big.Float{}}
 	coefStat := coefStats{Total: len(txs), coefCount: map[float64]int{}}
 
 	for _, t := range txs {
 		txStat.processTx(t)
 		coefStat.processTx(t)
+		priorityFeeStat.processTx(t)
 
 		for _, o := range t.Outputs {
 			txStat.processOutput(o)
 
-			for _, tr := range o.Transfers {
-				txStat.processTransf(tr)
+			for _, transf := range o.Transfers {
+				txStat.processTransf(transf)
 			}
 		}
 	}
-
-	coefStat.finalizeCalc()
 
 	coefStat.finalizeCalc()
 
@@ -195,6 +196,15 @@ func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]int
 	flags["coef_min"] = coefStat.Min
 	flags["coef_mode"] = coefStat.Mode
 	flags["coef_median"] = coefStat.Median
+
+	// If we have at least one valid transaction for candlestick, add the candlestick fields.
+	if priorityFeeStat.candlestickCount > 0 {
+		flags["priority_fee_open"] = priorityFeeStat.openFee
+		flags["priority_fee_close"] = priorityFeeStat.closeFee
+		flags["priority_fee_high"] = priorityFeeStat.highFee
+		flags["priority_fee_low"] = priorityFeeStat.lowFee
+		flags["candlestick_tx_count"] = priorityFeeStat.candlestickCount
+	}
 
 	return
 }
@@ -211,6 +221,14 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 		gap = float64(block.Timestamp - prev.Timestamp)
 	}
 	flags["block_mine_gap"] = (gap - 10) / 10
+
+	// New code to capture block base fee in wei.
+	// Since block.ExpandedBlock.BaseFee is a *big.Int, we'll store its string representation.
+	if block.BaseFeePerGas != nil {
+		flags["block_base_fee"] = (*big.Int)(block.BaseFeePerGas).String()
+	} else {
+		flags["block_base_fee"] = "0"
+	}
 }
 
 func (i *DB) appendB3trStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) {

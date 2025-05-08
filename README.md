@@ -7,6 +7,12 @@ This is a simple tool to send VeChain Thor data to an influxDB instance.
 
 ## Quick Start
 
+1. Local Run
+
+```bash
+make run
+```
+
 1. Docker Only
 
 ```bash
@@ -19,5 +25,5 @@ docker compose up
 
 ```bash
 docker compose up
-go run . --thor-url=https://mainnet.vechain.org --influx-token=admin-token --start-block=18800000
+go run . --thor-url=https://mainnet.vechain.org --influx-token=admin-token --thor-block=1024
 ```
