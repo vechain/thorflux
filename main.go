@@ -61,6 +61,7 @@ func main() {
 		os.Exit(1)
 	}
 	best, err := thor.Block("best")
+	slog.Warn(fmt.Sprintf("best block is %d", best.Number))
 	if err != nil {
 		slog.Error("failed to get best block from thor", "error", err)
 		os.Exit(1)

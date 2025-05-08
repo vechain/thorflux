@@ -1,8 +1,9 @@
 package influxdb
 
 import (
-	"github.com/vechain/thor/v2/api/blocks"
 	"math/big"
+
+	"github.com/vechain/thor/v2/api/blocks"
 )
 
 type txStats struct {
