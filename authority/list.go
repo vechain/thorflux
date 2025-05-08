@@ -7,6 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"math/big"
+	"sort"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	accounts2 "github.com/vechain/thor/v2/api/accounts"
@@ -15,8 +19,6 @@ import (
 	"github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
-	"math/big"
-	"sort"
 )
 
 type List struct {
@@ -101,17 +103,20 @@ func (l *List) Init(revision thor.Bytes32) error {
 	return nil
 }
 
-func (l *List) Shuffled(prev *blocks.JSONExpandedBlock) []thor.Address {
+func (l *List) Shuffled(prev *blocks.JSONExpandedBlock) ([]thor.Address, error) {
 	seed, err := l.generateSeed(prev.ID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return shuffleCandidates(l.candidates, seed, prev.Number)
+	return shuffleCandidates(l.candidates, seed, prev.Number), nil
 }
 
 func (l *List) generateSeed(parentID thor.Bytes32) (seed []byte, err error) {
 	blockNum := binary.BigEndian.Uint32(parentID[:]) + 1
 	epoch := blockNum / 8640
+	if epoch <= 1 {
+		return
+	}
 	seedNum := (epoch - 1) * 8640
 
 	seedBlock, err := l.thor.Block(fmt.Sprintf("%d", seedNum))

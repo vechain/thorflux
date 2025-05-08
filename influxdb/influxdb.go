@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -136,13 +137,10 @@ func (i *DB) WriteBlock(block *block.Block) {
 		"block_number": strconv.FormatUint(uint64(block.ExpandedBlock.Number), 10),
 	}
 
-	if i.candidates.ShouldReset(block.ExpandedBlock) {
-		i.candidates.Invalidate()
-		if err := i.candidates.Init(block.ExpandedBlock.ID); err != nil {
-			slog.Error("failed to init candidates", "error", err)
-		} else {
-			slog.Info("candidates reset", "length", i.candidates.Len())
-		}
+	if err := i.candidates.Init(block.ExpandedBlock.ID); err != nil {
+		slog.Error("failed to init candidates", "error", err)
+	} else {
+		slog.Info("candidates reset", "length", i.candidates.Len())
 	}
 
 	flags := map[string]interface{}{}
@@ -225,7 +223,21 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 	// New code to capture block base fee in wei.
 	// Since block.ExpandedBlock.BaseFee is a *big.Int, we'll store its string representation.
 	if block.BaseFeePerGas != nil {
-		flags["block_base_fee"] = (*big.Int)(block.BaseFeePerGas).String()
+		baseFee := (*big.Int)(block.BaseFeePerGas)
+
+		flags["block_base_fee"] = baseFee.String()
+		totalBurnt := big.NewInt(0).Mul(baseFee, big.NewInt((int64)(len(block.Transactions))))
+		totalBurntFloat := new(big.Float).SetInt(totalBurnt)
+		divisor := new(big.Float).SetFloat64(math.Pow10(13))
+		totalBurntFloat.Quo(totalBurntFloat, divisor)
+		totalBurntFinal, _ := totalBurntFloat.Float64()
+		flags["block_total_burnt"] = totalBurntFinal
+
+		totalTip := big.NewInt(0)
+		for _, transaction := range block.Transactions {
+			totalTip.Add(totalTip, (*big.Int)(transaction.Reward))
+		}
+		flags["block_total_total_tip"] = totalTip
 	} else {
 		flags["block_base_fee"] = "0"
 	}
@@ -305,8 +317,21 @@ func (i *DB) appendSlotStats(
 			startSlot = slotsSinceLastBlock - detailedSlotWindow
 		}
 		proposer := block.ExpandedBlock.Signer
+		p := influxdb2.NewPoint(
+			"recent_slots",
+			map[string]string{"chain_tag": string(i.chainTag), "filled": "1", "proposer": proposer.String()},
+			map[string]interface{}{"epoch": epoch, "block_number": block.ExpandedBlock.Number},
+			time.Unix(int64(block.ExpandedBlock.Timestamp), 0),
+		)
+		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+			slog.Error("Failed to write recent slot point", "error", err)
+		}
 
-		for a := startSlot; a < slotsSinceLastBlock; a++ {
+		shuffledCandidates, err := i.candidates.Shuffled(prevBlock)
+		if err != nil {
+			slog.Error("Error shuffling", "err", err.Error())
+		}
+		for a := startSlot; a < slotsSinceLastBlock-1; a++ {
 			rawTime := prevBlock.Timestamp + a*10
 			slotTime := time.Unix(int64(rawTime), 0)
 			isFilled := a == slotsSinceLastBlock-1
@@ -315,9 +340,12 @@ func (i *DB) appendSlotStats(
 				value = 1
 			} else {
 				slog.Warn("EMPTY SLOT", "number", block.ExpandedBlock.Number)
-				// shuffling the proposer for the block is expensive, only do it if we missed a slot. Otherwise, the signer is he proposer
-				shuffledCandidates := i.candidates.Shuffled(prevBlock)
-				proposer = shuffledCandidates[a]
+				if int(a) >= len(shuffledCandidates) {
+					slog.Error("Out of bounds", "shuffleCandidates", shuffledCandidates)
+					proposer = thor.Address{}
+				} else {
+					proposer = shuffledCandidates[a]
+				}
 			}
 
 			p := influxdb2.NewPoint(
