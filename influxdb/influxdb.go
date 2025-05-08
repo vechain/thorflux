@@ -559,8 +559,12 @@ func (i *DB) expectedValidator(candidates []*pos.Candidate, currentBlock *blocks
 
 func (i *DB) appendStakerStats(block *blocks.JSONExpandedBlock, writeAPI api.WriteAPIBlocking) {
 	stakerStats := NewStakerStats()
-	txs := block.Transactions
 
+	if err := stakerStats.CollectActiveStakers(i.thor, block); err != nil {
+		slog.Error("Failed to collect active stakers", "error", err)
+	}
+
+	txs := block.Transactions
 	for _, tx := range txs {
 		for _, output := range tx.Outputs {
 			for _, event := range output.Events {
@@ -571,7 +575,7 @@ func (i *DB) appendStakerStats(block *blocks.JSONExpandedBlock, writeAPI api.Wri
 
 	for _, staker := range stakerStats.AddStaker {
 		p := influxdb2.NewPoint(
-			"staker_stats",
+			"queued_stakers",
 			map[string]string{
 				"chain_tag": string(i.chainTag),
 				"staker":    staker.Master.String(),
@@ -580,6 +584,26 @@ func (i *DB) appendStakerStats(block *blocks.JSONExpandedBlock, writeAPI api.Wri
 				"period":        staker.Period,
 				"auto_renew":    staker.AutoRenew,
 				"staked_amount": staker.Stake,
+			},
+			time.Unix(int64(block.Timestamp), 0),
+		)
+
+		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+			slog.Error("Failed to write point", "error", err)
+		}
+	}
+
+	for _, staker := range stakerStats.StakersStatus {
+		p := influxdb2.NewPoint(
+			"stakers_status",
+			map[string]string{
+				"chain_tag": string(i.chainTag),
+				"staker":    staker.Master.String(),
+			},
+			map[string]any{
+				"auto_renew":    staker.AutoRenew,
+				"status":        staker.Status.Uint64(),
+				"staked_amount": staker.Stake.Uint64(),
 			},
 			time.Unix(int64(block.Timestamp), 0),
 		)
