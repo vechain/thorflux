@@ -203,6 +203,8 @@ func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]int
 		flags["priority_fee_low"] = priorityFeeStat.lowFee
 		flags["candlestick_tx_count"] = priorityFeeStat.candlestickCount
 	}
+	flags["legacy_txs"] = txStat.legacyCount
+	flags["dyn_fee_txs"] = txStat.dynamicFeeCount
 
 	return
 }

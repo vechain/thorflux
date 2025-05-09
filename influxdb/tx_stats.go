@@ -4,9 +4,12 @@ import (
 	"math/big"
 
 	"github.com/vechain/thor/v2/api/blocks"
+	"github.com/vechain/thor/v2/tx"
 )
 
 type txStats struct {
+	legacyCount        int
+	dynamicFeeCount    int
 	clauseCount        int
 	vetTransferCount   int
 	eventCount         int
@@ -21,6 +24,12 @@ func (s *txStats) processTx(t *blocks.JSONEmbeddedTx) {
 		// Convert Reward to float64 (in Wei) using big.Float for precision.
 		rewardFloat, _ := new(big.Float).SetInt((*big.Int)(t.Reward)).Float64()
 		s.totalRewards += rewardFloat
+	}
+
+	if t.Type == tx.TypeLegacy {
+		s.legacyCount++
+	} else if t.Type == tx.TypeDynamicFee {
+		s.dynamicFeeCount++
 	}
 }
 
