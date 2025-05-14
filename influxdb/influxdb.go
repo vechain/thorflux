@@ -187,7 +187,7 @@ func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]int
 	flags["total_clauses"] = txStat.clauseCount
 	flags["vet_transfers"] = txStat.vetTransferCount
 	flags["vet_transfers_amount"] = txStat.vetTransfersAmount
-	flags["validator_rewards"] = txStat.totalRewards
+	flags["validator_rewards"] = txStat.totalRewards / math.Pow10(18)
 
 	flags["coef_average"] = coefStat.Average
 	flags["coef_max"] = coefStat.Max
@@ -230,7 +230,7 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 		flags["block_base_fee"] = baseFee.String()
 		totalBurnt := big.NewInt(0).Mul(baseFee, big.NewInt((int64)(len(block.Transactions))))
 		totalBurntFloat := new(big.Float).SetInt(totalBurnt)
-		divisor := new(big.Float).SetFloat64(math.Pow10(13))
+		divisor := new(big.Float).SetFloat64(math.Pow10(18))
 		totalBurntFloat.Quo(totalBurntFloat, divisor)
 		totalBurntFinal, _ := totalBurntFloat.Float64()
 		flags["block_total_burnt"] = totalBurntFinal

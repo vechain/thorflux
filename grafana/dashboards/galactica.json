@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 7,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -74,7 +74,7 @@
           "refId": "A"
         }
       ],
-      "title": "Total burned * 10^13",
+      "title": "Total burned * 10^18",
       "type": "stat"
     },
     {
@@ -260,7 +260,7 @@
           "refId": "A"
         }
       ],
-      "title": "Tips per block",
+      "title": "Tips per block/10^18",
       "transformations": [
         {
           "id": "renameByRegex",
@@ -363,6 +363,15 @@
         }
       ],
       "title": "Blocks Produced By Signer",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "_value {_start=\"[\\d\\-:. +UTC]*\", _stop=\"[\\d\\-:. +UTC]*\", signer=\"([\\dxabcdef]*)\"}",
+            "renamePattern": "$1"
+          }
+        }
+      ],
       "type": "timeseries"
     },
     {
@@ -773,7 +782,7 @@
           "refId": "A"
         }
       ],
-      "title": "Tips per signer",
+      "title": "Tips per signer/10^18",
       "transformations": [
         {
           "id": "renameByRegex",
