@@ -74,7 +74,7 @@
           "refId": "A"
         }
       ],
-      "title": "Total burned * 10^13",
+      "title": "Total burned * 10^18",
       "type": "stat"
     },
     {

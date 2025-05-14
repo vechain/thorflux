@@ -230,7 +230,7 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 		flags["block_base_fee"] = baseFee.String()
 		totalBurnt := big.NewInt(0).Mul(baseFee, big.NewInt((int64)(len(block.Transactions))))
 		totalBurntFloat := new(big.Float).SetInt(totalBurnt)
-		divisor := new(big.Float).SetFloat64(math.Pow10(13))
+		divisor := new(big.Float).SetFloat64(math.Pow10(18))
 		totalBurntFloat.Quo(totalBurntFloat, divisor)
 		totalBurntFinal, _ := totalBurntFloat.Float64()
 		flags["block_total_burnt"] = totalBurntFinal
