@@ -187,7 +187,7 @@ func (i *DB) appendTxStats(block *blocks.JSONExpandedBlock, flags map[string]int
 	flags["total_clauses"] = txStat.clauseCount
 	flags["vet_transfers"] = txStat.vetTransferCount
 	flags["vet_transfers_amount"] = txStat.vetTransfersAmount
-	flags["validator_rewards"] = txStat.totalRewards
+	flags["validator_rewards"] = txStat.totalRewards / math.Pow10(18)
 
 	flags["coef_average"] = coefStat.Average
 	flags["coef_max"] = coefStat.Max
