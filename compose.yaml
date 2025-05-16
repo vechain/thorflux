@@ -13,6 +13,7 @@ services:
   influxdb:
     image: influxdb:2
     container_name: influxdb
+    restart: unless-stopped
     hostname: influxdb
     networks:
       - monitoring
@@ -38,6 +39,7 @@ services:
     user: "0"
     image: grafana/grafana:latest
     container_name: grafana
+    restart: unless-stopped
     networks:
       - monitoring
     ports:
@@ -63,6 +65,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: thorflux
+    restart: unless-stopped
     depends_on:
       influxdb:
         condition: service_healthy
