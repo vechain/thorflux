@@ -43,20 +43,11 @@ else
 		-p "$INFLUX_USERNAME:$INFLUX_PASSWORD" \
 		-o "$INFLUX_ORG"
 
-	RAW_RESPONSE=$(influx auth create \
+	ALL_ACCESS_TOKEN=$(influx auth create \
 		--org "$INFLUX_ORG" \
 		--read-buckets \
 		--write-buckets \
-		--description "thorflux-api-token" \
-		--json)
-
-	if ! echo "$RAW_RESPONSE" | jq -e . >/dev/null 2>&1; then
-		echo "Error: Failed to create InfluxDB All Access token or invalid JSON response."
-		echo "Response: $RAW_RESPONSE"
-		exit 1
-	fi
-
-	ALL_ACCESS_TOKEN=$(echo "$RAW_RESPONSE" | jq -r '.token')
+		--description "thorflux-api-token" | awk 'NR==2 {print $3}')
 
 	if [[ -z "$ALL_ACCESS_TOKEN" ]]; then
 		echo "Error: All Access token not generated."
