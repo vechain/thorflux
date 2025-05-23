@@ -34,10 +34,6 @@ RUN go build -o thorflux
 
 FROM alpine:3.20
 
-RUN wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
-    mv jq-linux64 /usr/local/bin/jq && \
-    chmod +x /usr/local/bin/jq
-
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/thorflux /app/thorflux
 COPY --from=builder /app/influxcli/influx /usr/local/bin/influx
