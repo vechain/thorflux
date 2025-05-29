@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"math/rand/v2"
 	"sort"
@@ -36,6 +37,29 @@ func (posData *PoSDataExtractor) FetchAmount(parsedAbi abi.ABI, block *blocks.JS
 	stakedVet := big.NewInt(0).Div(staked, big.NewInt(1e18))
 
 	return stakedVet, nil
+}
+
+func (posData *PoSDataExtractor) FetchStakeWeight(parsedAbi abi.ABI, block *blocks.JSONExpandedBlock, chainTag byte, functionName string, contractAddress thor.Address) (*big.Int, *big.Int, error) {
+	stake, err := posData.inspectClause(parsedAbi, block, chainTag, functionName, contractAddress)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	stakeParsed, err := thor.ParseBytes32(stake[0].Data[2:66])
+	if err != nil {
+		return nil, nil, err
+	}
+	weightParsed, err := thor.ParseBytes32(stake[0].Data[66:])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	staked := big.NewInt(0).SetBytes(stakeParsed.Bytes())
+	stakedVet := big.NewInt(0).Div(staked, big.NewInt(1e18))
+	weight := big.NewInt(0).SetBytes(weightParsed.Bytes())
+	weightVet := big.NewInt(0).Div(weight, big.NewInt(1e18))
+
+	return stakedVet, weightVet, nil
 }
 
 func (posData *PoSDataExtractor) inspectClause(parsedAbi abi.ABI, block *blocks.JSONExpandedBlock, chainTag byte, functionName string, contractAddress thor.Address, args ...any) ([]*thorAccounts.CallResult, error) {
@@ -206,4 +230,18 @@ func ExpectedValidator(candidates []*Candidate, currentBlock *blocks.JSONExpande
 		}
 	}
 	return &thor.Address{}, nil
+}
+
+func (posData *PoSDataExtractor) IsHayabusaFork() bool {
+	code, err := posData.Thor.AccountCode(&accounts.StakerContract)
+	if err != nil {
+		slog.Error("Failed to get contract code", "error", err)
+		return false
+	}
+
+	if len(code.Code) == 0 || code.Code == "0x" {
+		return false
+	}
+
+	return true
 }

@@ -21,9 +21,9 @@ var StakerAbi = `[
       },
       {
         "indexed": true,
-        "internalType": "address",
-        "name": "delegator",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "delegationID",
+        "type": "bytes32"
       },
       {
         "indexed": false,
@@ -53,14 +53,8 @@ var StakerAbi = `[
       {
         "indexed": true,
         "internalType": "bytes32",
-        "name": "validationID",
+        "name": "delegationID",
         "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "delegator",
-        "type": "address"
       },
       {
         "indexed": false,
@@ -78,14 +72,8 @@ var StakerAbi = `[
       {
         "indexed": true,
         "internalType": "bytes32",
-        "name": "validationID",
+        "name": "delegationID",
         "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "delegator",
-        "type": "address"
       },
       {
         "indexed": false,
@@ -252,11 +240,6 @@ var StakerAbi = `[
         "type": "bytes32"
       },
       {
-        "internalType": "address",
-        "name": "delegator",
-        "type": "address"
-      },
-      {
         "internalType": "bool",
         "name": "autoRenew",
         "type": "bool"
@@ -268,7 +251,13 @@ var StakerAbi = `[
       }
     ],
     "name": "addDelegation",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
     "stateMutability": "payable",
     "type": "function"
   },
@@ -355,6 +344,11 @@ var StakerAbi = `[
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
@@ -368,6 +362,84 @@ var StakerAbi = `[
         "internalType": "uint8",
         "name": "",
         "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "validationID",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getCompletedPeriods",
+    "outputs": [
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "delegationID",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getDelegation",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       },
       {
         "internalType": "bool",
@@ -386,27 +458,17 @@ var StakerAbi = `[
         "type": "bytes32"
       },
       {
-        "internalType": "address",
-        "name": "delegator",
-        "type": "address"
+        "internalType": "uint32",
+        "name": "stakingPeriod",
+        "type": "uint32"
       }
     ],
-    "name": "getDelegation",
+    "name": "getRewards",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      },
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -471,6 +533,11 @@ var StakerAbi = `[
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -480,6 +547,11 @@ var StakerAbi = `[
     "inputs": [],
     "name": "totalStake",
     "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "",
@@ -511,13 +583,8 @@ var StakerAbi = `[
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "validationID",
+        "name": "delegationID",
         "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "delegator",
-        "type": "address"
       },
       {
         "internalType": "bool",
@@ -525,7 +592,7 @@ var StakerAbi = `[
         "type": "bool"
       }
     ],
-    "name": "updateDelegatorAutoRenew",
+    "name": "updateDelegationAutoRenew",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -547,13 +614,8 @@ var StakerAbi = `[
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "validationID",
+        "name": "delegationID",
         "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "delegator",
-        "type": "address"
       }
     ],
     "name": "withdrawDelegation",

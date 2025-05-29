@@ -149,9 +149,17 @@ func (i *DB) WriteBlock(block *block.Block) {
 	i.appendB3trStats(block.ExpandedBlock, flags)
 	i.appendSlotStats(block, flags, writeAPI)
 	i.appendEpochStats(block.ExpandedBlock, flags, writeAPI)
-	i.appendHayabusaEpochStats(block.ExpandedBlock, flags, writeAPI)
-	i.appendHayabusaEpochGasStats(block.ExpandedBlock, flags, writeAPI)
-	i.appendStakerStats(block.ExpandedBlock, writeAPI)
+
+	posData := pos.PoSDataExtractor{
+		Thor: i.thor,
+	}
+	isHayabusa := posData.IsHayabusaFork()
+
+	if isHayabusa {
+		i.appendHayabusaEpochStats(block.ExpandedBlock, flags, writeAPI)
+		i.appendHayabusaEpochGasStats(block.ExpandedBlock, flags, writeAPI)
+		i.appendStakerStats(block.ExpandedBlock, writeAPI)
+	}
 
 	p := influxdb2.NewPoint("block_stats", tags, flags, time.Unix(int64(block.ExpandedBlock.Timestamp), 0))
 
@@ -450,7 +458,7 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 		slog.Error("Failed to write hayabusa epoch stats", "error", err)
 	}
 
-	totalStakedVet, err := posData.FetchAmount(parsedABI, block, chainTag, "totalStake", accounts.StakerContract)
+	totalStakedVet, totalWeightVet, err := posData.FetchStakeWeight(parsedABI, block, chainTag, "totalStake", accounts.StakerContract)
 	if err != nil {
 		slog.Error("Failed to fetch total stake for hayabusa", "error", err)
 	}
@@ -459,7 +467,7 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 		return
 	}
 
-	totalQueuedVet, err := posData.FetchAmount(parsedABI, block, chainTag, "queuedStake", accounts.StakerContract)
+	totalQueuedVet, totalQueuedWeight, err := posData.FetchStakeWeight(parsedABI, block, chainTag, "queuedStake", accounts.StakerContract)
 	if err != nil {
 		slog.Error("Failed to fetch active stake for hayabusa", "error", err)
 	}
@@ -498,7 +506,9 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 		map[string]interface{}{
 			"total_stake":     big.NewInt(0).Add(totalStakedVet, totalQueuedVet).Int64(),
 			"active_stake":    totalStakedVet.Int64(),
+			"active_weight":   totalWeightVet.Int64(),
 			"queued_stake":    totalQueuedVet.Int64(),
+			"queued_weight":   totalQueuedWeight.Int64(),
 			"circulating_vet": totalCirculatingVet.Int64(),
 			"next_validator":  expectedValidator.String(),
 			"epoch":           strconv.FormatUint(uint64(epoch), 10),

@@ -1010,7 +1010,7 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "next_validator",
+          "fields": "/.*/",
           "values": false
         },
         "showPercentChange": false,
