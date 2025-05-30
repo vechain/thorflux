@@ -131,6 +131,11 @@ func (i *DB) WriteBlock(block *block.Block) {
 
 	writeAPI := i.client.WriteAPIBlocking(i.org, i.bucket)
 
+	posData := pos.PoSDataExtractor{
+		Thor: i.thor,
+	}
+	isHayabusa := posData.IsHayabusaFork()
+
 	tags := map[string]string{
 		"chain_tag":    string(i.chainTag),
 		"signer":       block.ExpandedBlock.Signer.String(),
@@ -150,15 +155,13 @@ func (i *DB) WriteBlock(block *block.Block) {
 	i.appendSlotStats(block, flags, writeAPI)
 	i.appendEpochStats(block.ExpandedBlock, flags, writeAPI)
 
-	posData := pos.PoSDataExtractor{
-		Thor: i.thor,
-	}
-	isHayabusa := posData.IsHayabusaFork()
-
 	if isHayabusa {
 		i.appendHayabusaEpochStats(block.ExpandedBlock, flags, writeAPI)
 		i.appendHayabusaEpochGasStats(block.ExpandedBlock, flags, writeAPI)
 		i.appendStakerStats(block.ExpandedBlock, writeAPI)
+		flags["pos_active"] = strconv.FormatBool(posData.IsHayabusaActive())
+	} else {
+		flags["pos_active"] = strconv.FormatBool(isHayabusa)
 	}
 
 	p := influxdb2.NewPoint("block_stats", tags, flags, time.Unix(int64(block.ExpandedBlock.Timestamp), 0))
