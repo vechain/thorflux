@@ -45,6 +45,10 @@ func (posData *PoSDataExtractor) FetchStakeWeight(parsedAbi abi.ABI, block *bloc
 		return nil, nil, err
 	}
 
+	if len(stake[0].Data) < 130 {
+		return big.NewInt(0), big.NewInt(0), nil
+	}
+
 	stakeParsed, err := thor.ParseBytes32(stake[0].Data[2:66])
 	if err != nil {
 		return nil, nil, err
@@ -244,4 +248,26 @@ func (posData *PoSDataExtractor) IsHayabusaFork() bool {
 	}
 
 	return true
+}
+
+func (posData *PoSDataExtractor) IsHayabusaActive() bool {
+	posActiveTimeKey := thor.BytesToBytes32([]byte("hayabusa-energy-growth-stop-time"))
+	posActivated, err := posData.Thor.AccountStorage(&accounts.EnergyContract, &posActiveTimeKey)
+	if err != nil {
+		slog.Error("Failed to get pos activated time", "error", err)
+		return false
+	}
+
+	if len(posActivated.Value) == 0 || posActivated.Value == "0x" {
+		return false
+	}
+
+	posTime, err := thor.ParseBytes32(posActivated.Value)
+	if err != nil {
+		return false
+	}
+
+	posTimeParsed := big.NewInt(0).SetBytes(posTime.Bytes())
+
+	return posTimeParsed.Cmp(big.NewInt(0)) > 0
 }

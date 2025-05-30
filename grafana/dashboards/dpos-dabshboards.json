@@ -163,7 +163,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 10,
+        "w": 9,
         "x": 0,
         "y": 8
       },
@@ -228,8 +228,8 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 10,
+        "w": 3,
+        "x": 9,
         "y": 8
       },
       "id": 2,
@@ -258,6 +258,81 @@
         }
       ],
       "title": "Staked Vet %",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "false": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Inactive"
+                },
+                "true": {
+                  "color": "dark-green",
+                  "index": 0,
+                  "text": "Active"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 12,
+        "y": 8
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^pos_active$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and r[\"_field\"] == \"pos_active\")\n  |> drop(columns: [\"chain_tag\", \"block_number\", \"signer\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "PoS active",
       "type": "stat"
     },
     {
@@ -1020,7 +1095,7 @@
       "pluginVersion": "11.6.1",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"next_validator\")\n  |> last()",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"next_validator\")\n  |> last()\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
