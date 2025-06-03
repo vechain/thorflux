@@ -2,3 +2,4 @@ vendor
 volumes
 .idea/
 .vscode/
+thorflux.log

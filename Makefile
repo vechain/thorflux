@@ -6,7 +6,8 @@ start:
 debug-with-thor-port:
 	@echo "Debugging docker compose with Thor port: $(PORT)"
 	@docker compose up --build -d plugin-builder influxdb grafana --wait
-	@go run . --thor-url=http://127.0.0.1:$(PORT) --influx-token=admin-token --thor-blocks=15 --influx-url=http://127.0.0.1:8086 &
+	@nohup go run . --thor-url=http://127.0.0.1:$(PORT) --influx-token=admin-token --thor-blocks=15 --influx-url=http://127.0.0.1:8086 > thorflux.log 2>&1 &
+	@echo "Logs are being saved to thorflux.log"
 	@open http://localhost:3000/dashboards
 
 stop:
@@ -17,3 +18,5 @@ clean:
 	@echo "Cleaning up..."
 	@docker compose down --remove-orphans --volumes
 	@rm -rf ./volumes
+	-@pkill -f "go run"  # Kill any running go process, ignore if none exists
+	@rm -f thorflux.log
