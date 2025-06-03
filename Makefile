@@ -18,5 +18,5 @@ clean:
 	@echo "Cleaning up..."
 	@docker compose down --remove-orphans --volumes
 	@rm -rf ./volumes
-	-@pkill -f "go run"  # Kill any running go process, ignore if none exists
+	-@pkill -f "go run . --thor-url"  # Kill any running go process, ignore if none exists
 	@rm -f thorflux.log
