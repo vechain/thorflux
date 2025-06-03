@@ -34,8 +34,8 @@ func (posData *PoSDataExtractor) FetchAmount(parsedAbi abi.ABI, block *blocks.JS
 	}
 
 	staked := big.NewInt(0).SetBytes(stakeParsed.Bytes())
-	stakedFinney := big.NewInt(0).Div(staked, big.NewInt(1e15))
-	return stakedFinney, nil
+	staked.Div(staked, big.NewInt(1e15))
+	return staked, nil
 }
 
 func (posData *PoSDataExtractor) FetchStakeWeight(parsedAbi abi.ABI, block *blocks.JSONExpandedBlock, chainTag byte, functionName string, contractAddress thor.Address) (*big.Int, *big.Int, error) {
@@ -173,6 +173,8 @@ func (posData *PoSDataExtractor) getCandidate(getData string, address thor.Addre
 		return nil, err
 	}
 	autoRenew := autoRenewBytes.Bytes()[31] != 0
+	// online is the 7th returned value from get function (master, endorser, stake, weight, status, autoRenew, online, period),
+	// so we are processing 7h position of the returned value from 2 + (6 * 64) to 2 + (7 * 64)
 	onlineBytes, err := thor.ParseBytes32(getData[386:450])
 	if err != nil {
 		return nil, err

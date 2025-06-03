@@ -485,7 +485,7 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 	if err != nil {
 		slog.Error("Failed to fetch total circulating VET", "error", err)
 	}
-	totalCirculatingVet = big.NewInt(0).Div(totalCirculatingVet, big.NewInt(1e3))
+	totalCirculatingVet.Div(totalCirculatingVet, big.NewInt(1e3))
 
 	var candidates []*pos.Candidate
 	if blockInEpoch == 0 || len(candidates) == 0 {
