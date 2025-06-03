@@ -22,12 +22,12 @@ docker compose up
 go run . --thor-url=https://mainnet.vechain.org --influx-token=admin-token --thor-block=1024
 ```
 
-3. Debug mode along with a dynamic Thor port (like hayabusa-e2e tests)
+3. Debug mode along with a dynamic local Thor port (like hayabusa-e2e tests)
 
 - Extension of 3. Run the desired test in your e2e project and get the Thor port (i.e., 65253), then:
 
 ```bash
-make debug-with-thor-port PORT=65253
+make debug-with-local-thor-port PORT=65253
 ```
 
 4. Cleanup
