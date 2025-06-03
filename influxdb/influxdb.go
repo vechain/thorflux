@@ -393,15 +393,17 @@ func (i *DB) appendSlotStats(
 		}
 	}
 
-	currentEpoch := block.ExpandedBlock.Number / 180 * 180
+	currentEpoch := (block.ExpandedBlock.Number / 180) * 180
 	esitmatedFinalized := currentEpoch - 360
 	esitmatedJustified := currentEpoch - 180
 	flags["current_epoch"] = currentEpoch
 	flags["epoch"] = epoch
+	flags["current_block"] = block.ExpandedBlock.Number
 
 	// if blockTime is within the 15 mins, call to chain for the real finalized block
 	if time.Since(blockTime) < time.Minute*3 {
 		finalized, err := i.thor.Block("finalized")
+		justified, err := i.thor.Block("justified")
 		if err != nil {
 			slog.Error("failed to get finalized block", "error", err)
 			flags["finalized"] = esitmatedFinalized
@@ -409,7 +411,7 @@ func (i *DB) appendSlotStats(
 			flags["liveliness"] = (currentEpoch - esitmatedFinalized) / 180
 		} else {
 			flags["finalized"] = finalized.Number
-			flags["justified_block"] = finalized.Number + 180
+			flags["justified_block"] = justified.Number
 			flags["liveliness"] = (currentEpoch - finalized.Number) / 180
 		}
 	} else {
@@ -483,6 +485,7 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 	if err != nil {
 		slog.Error("Failed to fetch total circulating VET", "error", err)
 	}
+	totalCirculatingVet = big.NewInt(0).Div(totalCirculatingVet, big.NewInt(1e3))
 
 	var candidates []*pos.Candidate
 	if blockInEpoch == 0 || len(candidates) == 0 {
@@ -500,6 +503,13 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 		}
 	}
 
+	onlineValidators := 0
+	for _, candidate := range candidates {
+		if candidate.Online {
+			onlineValidators += 1
+		}
+	}
+
 	// Prepare data for heatmap
 	heatmapPoint := influxdb2.NewPoint(
 		"hayabusa_validators",
@@ -507,14 +517,15 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 			"chain_tag": string(i.chainTag),
 		},
 		map[string]interface{}{
-			"total_stake":     big.NewInt(0).Add(totalStakedVet, totalQueuedVet).Int64(),
-			"active_stake":    totalStakedVet.Int64(),
-			"active_weight":   totalWeightVet.Int64(),
-			"queued_stake":    totalQueuedVet.Int64(),
-			"queued_weight":   totalQueuedWeight.Int64(),
-			"circulating_vet": totalCirculatingVet.Int64(),
-			"next_validator":  expectedValidator.String(),
-			"epoch":           strconv.FormatUint(uint64(epoch), 10),
+			"total_stake":       big.NewInt(0).Add(totalStakedVet, totalQueuedVet).Int64(),
+			"active_stake":      totalStakedVet.Int64(),
+			"active_weight":     totalWeightVet.Int64(),
+			"queued_stake":      totalQueuedVet.Int64(),
+			"queued_weight":     totalQueuedWeight.Int64(),
+			"online_validators": onlineValidators,
+			"circulating_vet":   totalCirculatingVet.Int64(),
+			"next_validator":    expectedValidator.String(),
+			"epoch":             strconv.FormatUint(uint64(epoch), 10),
 		},
 		time.Unix(int64(block.Timestamp), 0),
 	)

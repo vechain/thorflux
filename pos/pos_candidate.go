@@ -13,6 +13,7 @@ type Candidate struct {
 	Weight    big.Int
 	Status    big.Int
 	AutoRenew bool
+	Online    bool
 }
 
 type Placement struct {
