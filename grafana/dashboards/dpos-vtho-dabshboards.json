@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -81,15 +81,17 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 24,
         "x": 0,
         "y": 0
       },
-      "id": 2,
+      "id": 3,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "last"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -103,11 +105,11 @@
       "pluginVersion": "11.6.0",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\")\n  |> filter(fn: (r) => r[\"_field\"] == \"issued_burned_ratio\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and (r[\"_field\"] == \"finalized\" or r[\"_field\"] == \"justified_block\" or r[\"_field\"] == \"liveliness\" or r[\"_field\"] == \"current_block\"))\n  |> drop(columns: [\"chain_tag\", \"block_number\", \"signer\"])",
           "refId": "A"
         }
       ],
-      "title": "VTHO - issued / burned",
+      "title": "Finalized / Justified / Liveness",
       "type": "timeseries"
     },
     {
@@ -173,7 +175,96 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 7
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\")\n  |> filter(fn: (r) => r[\"_field\"] == \"issued_burned_ratio\")\n  |> drop(columns: [\"chain_tag\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "VTHO - issued / burned (Finney)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 15
       },
       "id": 1,
       "options": {
@@ -200,7 +291,7 @@
           "refId": "A"
         }
       ],
-      "title": "Issued and burned VTHO",
+      "title": "Issued and burned VTHO (Finney)",
       "type": "timeseries"
     }
   ],
@@ -218,5 +309,5 @@
   "timezone": "browser",
   "title": "DPoS VTHO dashboard",
   "uid": "fej2gpm0ws9ogf",
-  "version": 2
+  "version": 1
 }
