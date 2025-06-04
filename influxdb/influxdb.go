@@ -403,21 +403,21 @@ func (i *DB) appendSlotStats(
 	// if blockTime is within the 15 mins, call to chain for the real finalized block
 	if time.Since(blockTime) < time.Minute*3 {
 		finalized, err := i.thor.Block("finalized")
-		justified, err := i.thor.Block("justified")
 		if err != nil {
 			slog.Error("failed to get finalized block", "error", err)
 			flags["finalized"] = esitmatedFinalized
 			flags["justified_block"] = esitmatedJustified
-			flags["liveliness"] = (currentEpoch - esitmatedFinalized) / 180
+			flags["liveness"] = (currentEpoch - esitmatedFinalized) / 180
 		} else {
+			justified, _ := i.thor.Block("justified")
 			flags["finalized"] = finalized.Number
 			flags["justified_block"] = justified.Number
-			flags["liveliness"] = (currentEpoch - finalized.Number) / 180
+			flags["liveness"] = (currentEpoch - finalized.Number) / 180
 		}
 	} else {
 		flags["finalized"] = esitmatedFinalized
 		flags["justified_block"] = esitmatedJustified
-		flags["liveliness"] = (currentEpoch - esitmatedFinalized) / 180
+		flags["liveness"] = (currentEpoch - esitmatedFinalized) / 180
 	}
 }
 
@@ -450,7 +450,7 @@ func (i *DB) appendEpochStats(block *blocks.JSONExpandedBlock, flags map[string]
 func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
 	epoch := block.Number / 180
 	blockInEpoch := block.Number % 180
-	chainTag, err := i.thor.ChainTag()
+	chainTag, _ := i.thor.ChainTag()
 	posData := pos.PoSDataExtractor{
 		Thor: i.thor,
 	}
@@ -496,7 +496,7 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 	}
 
 	expectedValidator := &thor.Address{}
-	if candidates != nil && len(candidates) > 0 {
+	if len(candidates) > 0 {
 		expectedValidator, err = i.expectedValidator(candidates, block)
 		if err != nil {
 			slog.Error("Cannot extract expected validator", "error", err)
@@ -538,7 +538,7 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 func (i *DB) appendHayabusaEpochGasStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
 	epoch := block.Number / 180
 	blockInEpoch := block.Number % 180
-	chainTag, err := i.thor.ChainTag()
+	chainTag, _ := i.thor.ChainTag()
 	posData := pos.PoSDataExtractor{
 		Thor: i.thor,
 	}
