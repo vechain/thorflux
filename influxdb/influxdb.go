@@ -6,16 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
 	"log/slog"
 	"math"
 	"math/big"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/vechain/thorflux/pos"
 
 	"github.com/ethereum/go-ethereum/rlp"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -24,9 +21,11 @@ import (
 	block2 "github.com/vechain/thor/v2/block"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
-	"github.com/vechain/thorflux/accounts"
+	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thorflux/authority"
 	"github.com/vechain/thorflux/block"
+	"github.com/vechain/thorflux/extension"
+	"github.com/vechain/thorflux/pos"
 )
 
 type DB struct {
@@ -131,7 +130,7 @@ func (i *DB) WriteBlock(block *block.Block) {
 
 	writeAPI := i.client.WriteAPIBlocking(i.org, i.bucket)
 
-	posData := pos.PoSDataExtractor{
+	posData := pos.DataExtractor{
 		Thor: i.thor,
 	}
 	isHayabusa := posData.IsHayabusaFork()
@@ -151,7 +150,6 @@ func (i *DB) WriteBlock(block *block.Block) {
 	flags := map[string]interface{}{}
 	i.appendBlockStats(block.ExpandedBlock, flags)
 	i.appendTxStats(block.ExpandedBlock, flags)
-	i.appendB3trStats(block.ExpandedBlock, flags)
 	i.appendSlotStats(block, flags, writeAPI)
 	i.appendEpochStats(block.ExpandedBlock, flags, writeAPI)
 
@@ -256,25 +254,13 @@ func (i *DB) appendBlockStats(block *blocks.JSONExpandedBlock, flags map[string]
 	}
 }
 
-func (i *DB) appendB3trStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}) {
-	b3trTxs, b3trClauses, b3trGas := accounts.B3trStats(block)
-	flags["b3tr_total_txs"] = b3trTxs
-	flags["b3tr_total_clauses"] = b3trClauses
-	flags["b3tr_gas_amount"] = b3trGas
-	if block.GasUsed > 0 {
-		flags["b3tr_gas_percent"] = float64(b3trGas) * 100 / float64(block.GasUsed)
-	} else {
-		flags["b3tr_gas_percent"] = float64(0)
-	}
-}
-
 func (i *DB) generateSeed(parentID thor.Bytes32) (seed []byte, err error) {
 	blockNum := binary.BigEndian.Uint32(parentID[:]) + 1
-	epoch := blockNum / 8640
+	epoch := blockNum / thor.SeederInterval
 	if epoch <= 1 {
 		return
 	}
-	seedNum := (epoch - 1) * 8640
+	seedNum := (epoch - 1) * thor.SeederInterval
 
 	seedBlock, err := i.thor.Block(fmt.Sprintf("%d", seedNum))
 	if err != nil {
@@ -450,46 +436,46 @@ func (i *DB) appendEpochStats(block *blocks.JSONExpandedBlock, flags map[string]
 func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
 	epoch := block.Number / 180
 	blockInEpoch := block.Number % 180
-	chainTag, _ := i.thor.ChainTag()
-	posData := pos.PoSDataExtractor{
+	posData := pos.DataExtractor{
 		Thor: i.thor,
 	}
+
+	staker, err := builtin.NewStaker(i.thor)
+	if err != nil {
+		slog.Error("Failed to create staker instance", "error", err)
+		return
+	}
+	staker = staker.Revision(block.ID.String())
+	ext, err := extension.New(i.thor)
+	if err != nil {
+		slog.Error("Failed to create extension instance", "error", err)
+		return
+	}
+	ext = ext.Revision(block.ID.String())
 
 	flags["epoch"] = epoch
 	flags["block_in_epoch"] = blockInEpoch
 
-	parsedABI, err := abi.JSON(strings.NewReader(accounts.StakerAbi))
-	if err != nil {
-		slog.Error("Failed to write hayabusa epoch stats", "error", err)
-	}
-
-	totalStakedVet, totalWeightVet, err := posData.FetchStakeWeight(parsedABI, block, chainTag, "totalStake", accounts.StakerContract)
+	totalStakedVet, totalWeightVet, err := staker.TotalStake()
 	if err != nil {
 		slog.Error("Failed to fetch total stake for hayabusa", "error", err)
 	}
-
 	if totalStakedVet == nil || totalStakedVet.Cmp(big.NewInt(0)) <= 0 {
 		return
 	}
-
-	totalQueuedVet, totalQueuedWeight, err := posData.FetchStakeWeight(parsedABI, block, chainTag, "queuedStake", accounts.StakerContract)
+	totalQueuedVet, totalQueuedWeight, err := staker.QueuedStake()
 	if err != nil {
 		slog.Error("Failed to fetch active stake for hayabusa", "error", err)
 	}
-
-	parsedExtensionABI, err := abi.JSON(strings.NewReader(accounts.ExtensionAbi))
-	if err != nil {
-		slog.Error("Failed to parse extension abi", "error", err)
-	}
-	totalCirculatingVet, err := posData.FetchAmount(parsedExtensionABI, block, chainTag, "totalSupply", accounts.ExtensionContract)
+	totalCirculatingVet, err := ext.TotalSupply()
 	if err != nil {
 		slog.Error("Failed to fetch total circulating VET", "error", err)
 	}
 	totalCirculatingVet.Div(totalCirculatingVet, big.NewInt(1e3))
 
-	var candidates []*pos.Candidate
+	var candidates map[thor.Bytes32]*builtin.Validator
 	if blockInEpoch == 0 || len(candidates) == 0 {
-		candidates, err = posData.ExtractCandidates(block, chainTag)
+		candidates, err = posData.ExtractCandidates(staker)
 		if err != nil {
 			slog.Error("Error while fetching validators", "error", err)
 		}
@@ -538,43 +524,32 @@ func (i *DB) appendHayabusaEpochStats(block *blocks.JSONExpandedBlock, flags map
 func (i *DB) appendHayabusaEpochGasStats(block *blocks.JSONExpandedBlock, flags map[string]interface{}, writeAPI api.WriteAPIBlocking) {
 	epoch := block.Number / 180
 	blockInEpoch := block.Number % 180
-	chainTag, _ := i.thor.ChainTag()
-	posData := pos.PoSDataExtractor{
-		Thor: i.thor,
-	}
 
 	flags["epoch"] = epoch
 	flags["block_in_epoch"] = blockInEpoch
 
-	parsedABI, err := abi.JSON(strings.NewReader(accounts.EnergyAbi))
+	energy, err := builtin.NewEnergy(i.thor)
 	if err != nil {
-		slog.Error("Failed to parse energy abi", "error", err)
+		slog.Error("Failed to create energy instance", "error", err)
+		return
 	}
 
-	parentBlock, err := i.thor.ExpandedBlock(block.ParentID.String())
-	if err != nil {
-		slog.Error("Failed to fetch parent block", "error", err)
-	}
-
-	totalSupply, err := posData.FetchAmount(parsedABI, block, chainTag, "totalSupply", accounts.EnergyContract)
+	totalSupply, err := energy.Revision(block.ID.String()).TotalSupply()
 	if err != nil {
 		slog.Error("Failed to fetch energy total supply", "error", err)
 	}
 
-	parentTotalSupply, err := posData.FetchAmount(parsedABI, parentBlock, chainTag, "totalSupply", accounts.EnergyContract)
+	parentTotalSupply, err := energy.Revision(block.ParentID.String()).TotalSupply()
 	if err != nil {
 		slog.Error("Failed to fetch energy total supply", "error", err)
 	}
 
-	totalBurned, err := posData.FetchAmount(parsedABI, block, chainTag, "totalBurned", accounts.EnergyContract)
+	totalBurned, err := energy.Revision(block.ID.String()).TotalBurned()
 	if err != nil {
 		slog.Error("Failed to fetch energy total burned", "error", err)
 	}
 
-	parentTotalBurned, err := posData.FetchAmount(parsedABI, parentBlock, chainTag, "totalBurned", accounts.EnergyContract)
-	if err != nil {
-		slog.Error("Failed to fetch energy total burned", "error", err)
-	}
+	parentTotalBurned, err := energy.Revision(block.ParentID.String()).TotalBurned()
 
 	if parentTotalSupply == nil || parentTotalSupply.Cmp(big.NewInt(0)) <= 0 || parentTotalBurned == nil || parentTotalBurned.Cmp(big.NewInt(0)) <= 0 {
 		return
@@ -621,8 +596,8 @@ func (i *DB) appendHayabusaEpochGasStats(block *blocks.JSONExpandedBlock, flags 
 	}
 }
 
-func (i *DB) expectedValidator(candidates []*pos.Candidate, currentBlock *blocks.JSONExpandedBlock) (*thor.Address, error) {
-	seed, err := i.generateSeed(currentBlock.ID)
+func (i *DB) expectedValidator(candidates map[thor.Bytes32]*builtin.Validator, currentBlock *blocks.JSONExpandedBlock) (*thor.Address, error) {
+	seed, err := i.generateSeed(currentBlock.ParentID)
 	if err != nil {
 		return nil, err
 	}
@@ -632,7 +607,13 @@ func (i *DB) expectedValidator(candidates []*pos.Candidate, currentBlock *blocks
 func (i *DB) appendStakerStats(block *blocks.JSONExpandedBlock, writeAPI api.WriteAPIBlocking) {
 	stakerStats := NewStakerStats()
 
-	if err := stakerStats.CollectActiveStakers(i.thor, block); err != nil {
+	staker, err := builtin.NewStaker(i.thor)
+	if err != nil {
+		slog.Error("Failed to create staker instance", "error", err)
+	}
+	staker = staker.Revision(block.ID.String())
+
+	if err := stakerStats.CollectActiveStakers(i.thor, staker); err != nil {
 		slog.Error("Failed to collect active stakers", "error", err)
 	}
 
@@ -674,7 +655,7 @@ func (i *DB) appendStakerStats(block *blocks.JSONExpandedBlock, writeAPI api.Wri
 			},
 			map[string]any{
 				"auto_renew":    staker.AutoRenew,
-				"status":        staker.Status.Uint64(),
+				"status":        staker.Status,
 				"staked_amount": staker.Stake.Uint64(),
 			},
 			time.Unix(int64(block.Timestamp), 0),
