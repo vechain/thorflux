@@ -1,17 +1,16 @@
-package influxdb
+package pos
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/vechain/thor/v2/api/blocks"
+	builtin2 "github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
-	"github.com/vechain/thor/v2/thorclient"
-	"github.com/vechain/thorflux/accounts"
-	"github.com/vechain/thorflux/pos"
+	"github.com/vechain/thor/v2/thorclient/builtin"
 )
 
 const (
@@ -32,9 +31,9 @@ type addStakerEvent struct {
 }
 
 type stakerStatus struct {
-	Endorsor  thor.Address
-	Master    thor.Address
-	Status    *big.Int
+	Endorsor  *thor.Address
+	Master    *thor.Address
+	Status    builtin.StakerStatus
 	AutoRenew bool
 	Stake     *big.Int
 }
@@ -51,7 +50,7 @@ func (s *stakerStats) processEvent(event *blocks.JSONEvent) error {
 		return nil
 	}
 
-	parsedABI, err := abi.JSON(strings.NewReader(accounts.StakerAbi))
+	parsedABI, err := abi.JSON(bytes.NewBuffer(builtin2.Staker.RawABI()))
 	if err != nil {
 		return err
 	}
@@ -88,16 +87,12 @@ func collectValidatorAddedEvent(s *stakerStats, event *blocks.JSONEvent) {
 	})
 }
 
-func (s *stakerStats) CollectActiveStakers(client *thorclient.Client, block *blocks.JSONExpandedBlock) error {
-	posData := pos.PoSDataExtractor{
-		Thor: client,
+func (s *stakerStats) CollectActiveStakers(staker *Staker, block *blocks.JSONExpandedBlock, active bool) error {
+	if !active {
+		s.StakersStatus = make([]stakerStatus, 0)
+		return nil
 	}
-	chainTag, err := client.ChainTag()
-	if err != nil {
-		return err
-	}
-
-	candidates, err := posData.ExtractCandidates(block, chainTag)
+	candidates, err := staker.GetValidators(block)
 	if err != nil {
 		return err
 	}
@@ -105,8 +100,8 @@ func (s *stakerStats) CollectActiveStakers(client *thorclient.Client, block *blo
 		s.StakersStatus = append(s.StakersStatus, stakerStatus{
 			Endorsor:  candidate.Endorsor,
 			Master:    candidate.Master,
-			Status:    &candidate.Status,
-			Stake:     &candidate.Stake,
+			Status:    candidate.Status,
+			Stake:     candidate.Stake,
 			AutoRenew: candidate.AutoRenew,
 		})
 	}

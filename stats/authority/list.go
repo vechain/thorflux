@@ -2,20 +2,21 @@ package authority
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-
+	"github.com/vechain/thorflux/types"
+	"log/slog"
 	"math/big"
 	"sort"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/rlp"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	accounts2 "github.com/vechain/thor/v2/api/accounts"
 	"github.com/vechain/thor/v2/api/blocks"
-	block2 "github.com/vechain/thor/v2/block"
 	"github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
@@ -39,6 +40,7 @@ func (l *List) ShouldReset(block *blocks.JSONExpandedBlock) bool {
 	}
 	candidateMap := make(map[thor.Address]bool)
 	for _, candidate := range l.candidates {
+		candidateMap[candidate.Endorsor] = true
 		candidateMap[candidate.Master] = true
 	}
 
@@ -103,47 +105,108 @@ func (l *List) Init(revision thor.Bytes32) error {
 	return nil
 }
 
-func (l *List) Shuffled(prev *blocks.JSONExpandedBlock) ([]thor.Address, error) {
-	seed, err := l.generateSeed(prev.ID)
-	if err != nil {
-		return nil, err
+func (l *List) Shuffled(prev *blocks.JSONExpandedBlock, seed []byte) ([]thor.Address, error) {
+	if len(l.candidates) == 0 {
+		if err := l.Init(prev.ID); err != nil {
+			return nil, fmt.Errorf("failed to initialize authority list: %w", err)
+		}
 	}
 	return shuffleCandidates(l.candidates, seed, prev.Number), nil
 }
 
-func (l *List) generateSeed(parentID thor.Bytes32) (seed []byte, err error) {
-	blockNum := binary.BigEndian.Uint32(parentID[:]) + 1
-	epoch := blockNum / 8640
-	if epoch <= 1 {
-		return
-	}
-	seedNum := (epoch - 1) * 8640
-
-	seedBlock, err := l.thor.Block(fmt.Sprintf("%d", seedNum))
-	if err != nil {
-		return
-	}
-	seedID := seedBlock.ID
-
-	rawBlock := blocks.JSONRawBlockSummary{}
-	res, status, err := l.thor.RawHTTPClient().RawHTTPGet("/blocks/" + hex.EncodeToString(seedID.Bytes()) + "?raw=true")
-	if status != 200 {
-		return
-	}
-	if err = json.Unmarshal(res, &rawBlock); err != nil {
-		return
-	}
-	data, err := hex.DecodeString(rawBlock.Raw[2:])
-	if err != nil {
-		return
-	}
-	header := block2.Header{}
-	err = rlp.DecodeBytes(data, &header)
-	if err != nil {
-		return
+func (l *List) Write(event *types.Event) error {
+	if event.DPOSActive {
+		return nil
 	}
 
-	return header.Beta()
+	block := event.Block
+	prev := event.Prev
+	chainTag := event.ChainTag
+	writeAPI := event.WriteAPI
+	epoch := block.Number / 180
+
+	if prev != nil {
+		// Process recent slots
+		slotsSinceLastBlock := (block.Timestamp - prev.Timestamp + 9) / 10
+
+		// Write detailed slot data for the last hour (360 slots)
+		const detailedSlotWindow = 360
+		startSlot := uint64(0)
+		if slotsSinceLastBlock > detailedSlotWindow {
+			startSlot = slotsSinceLastBlock - detailedSlotWindow
+		}
+		proposer := block.Signer
+		p := influxdb2.NewPoint(
+			"recent_slots",
+			map[string]string{"chain_tag": chainTag, "filled": "1", "proposer": proposer.String()},
+			map[string]interface{}{"epoch": epoch, "block_number": block.Number},
+			time.Unix(int64(block.Timestamp), 0),
+		)
+		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+			slog.Error("Failed to write recent slot point", "error", err)
+		}
+
+		shuffledCandidates, err := l.Shuffled(prev, event.Seed)
+		if err != nil {
+			slog.Error("Error shuffling", "err", err.Error())
+		}
+		for a := startSlot; a < slotsSinceLastBlock-1; a++ {
+			rawTime := prev.Timestamp + a*10
+			slotTime := time.Unix(int64(rawTime), 0)
+			isFilled := a == slotsSinceLastBlock-1
+			value := 0
+			if isFilled {
+				value = 1
+			} else {
+				slog.Warn("EMPTY SLOT", "number", block.Number)
+				if int(a) >= len(shuffledCandidates) {
+					slog.Error("Out of bounds", "shuffleCandidates", shuffledCandidates)
+					proposer = thor.Address{}
+				} else {
+					proposer = shuffledCandidates[a]
+				}
+			}
+
+			p := influxdb2.NewPoint(
+				"recent_slots",
+				map[string]string{"chain_tag": chainTag, "filled": fmt.Sprintf("%d", value), "proposer": proposer.String()},
+				map[string]interface{}{"epoch": epoch, "block_number": block.Number},
+				slotTime,
+			)
+			if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+				slog.Error("Failed to write recent slot point", "error", err)
+			}
+		}
+
+		// Aggregate older slot data
+		if slotsSinceLastBlock > detailedSlotWindow {
+			olderMissedSlots := slotsSinceLastBlock - detailedSlotWindow - 1
+			olderFilledSlots := 1 // The previous block
+			aggregateTime := time.Unix(int64(prev.Timestamp), 0)
+
+			p := influxdb2.NewPoint(
+				"aggregated_slots",
+				map[string]string{"chain_tag": chainTag},
+				map[string]interface{}{
+					"missed": olderMissedSlots,
+					"filled": olderFilledSlots,
+				},
+				aggregateTime,
+			)
+			if err := writeAPI.WritePoint(context.Background(), p); err != nil {
+				slog.Error("Failed to write aggregated slot point", "error", err)
+			}
+		}
+	}
+
+	if l.ShouldReset(block) {
+		slog.Info("Authority list reset", "block", block.ID, "number", block.Number)
+		if err := l.Init(block.ID); err != nil {
+			return fmt.Errorf("failed to initialize authority list: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]Candidate, error) {

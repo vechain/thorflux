@@ -1,4 +1,4 @@
-package influxdb
+package transactions
 
 import (
 	"github.com/vechain/thor/v2/api/blocks"

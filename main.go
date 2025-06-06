@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -13,7 +12,7 @@ import (
 	"github.com/kouhin/envflag"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/influxdb"
-	"github.com/vechain/thorflux/sync"
+	"github.com/vechain/thorflux/pubsub"
 )
 
 var (
@@ -43,54 +42,30 @@ func main() {
 	)
 
 	thor := thorclient.New(thorURL)
-	chainTag, err := thor.ChainTag()
-	if err != nil {
-		slog.Error("failed to get chain tag", "error", err)
-		os.Exit(1)
-	}
-
-	influx, err := influxdb.New(thor, influxURL, influxToken, chainTag, *influxOrg, *influxBucket)
+	influx, err := influxdb.New(influxURL, influxToken, *influxOrg, *influxBucket)
 	if err != nil {
 		slog.Error("failed to create influxdb", "error", err)
 		os.Exit(1)
 	}
 
-	prev, err := influx.Latest()
-	if err != nil {
-		slog.Error("failed to get latest block from DB", "error", err)
-		os.Exit(1)
-	}
-	best, err := thor.Block("best")
-	slog.Warn(fmt.Sprintf("best block is %d", best.Number))
-	if err != nil {
-		slog.Error("failed to get best block from thor", "error", err)
-		os.Exit(1)
-	}
-	var startBlock uint32
-	if blocks > best.Number {
-		startBlock = 0
-	} else {
-		startBlock = best.Number - blocks
-	}
-	if prev > startBlock {
-		startBlock = prev
-	}
-	block, err := thor.ExpandedBlock(fmt.Sprintf("%d", startBlock))
-	if err != nil {
-		slog.Error("failed to get block from thor", "block", startBlock, "error", err)
-		os.Exit(1)
-	}
-
-	slog.Info("starting block sync",
-		"start", startBlock,
-		"best", best.Number,
-		"prev", prev,
-		"missing-blocks", best.Number-startBlock,
-	)
-
 	ctx := exitContext()
-	syncer := sync.New(thor, influx, block, ctx)
-	syncer.Index()
+	publisher, blockChan, err := pubsub.New(thor, influx, blocks)
+	if err != nil {
+		slog.Error("failed to create publisher", "error", err)
+		os.Exit(1)
+	}
+	subscriber, err := pubsub.NewSubscriber(thor, influx, blockChan)
+	if err != nil {
+		slog.Error("failed to create subscriber", "error", err)
+		os.Exit(1)
+	}
+
+	go publisher.Publish(ctx)
+	go subscriber.Subscribe(ctx)
+
+	slog.Info("thorflux started")
+
+	<-ctx.Done()
 }
 
 func parseFlags() (string, string, string, uint32, error) {
