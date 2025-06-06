@@ -42,13 +42,7 @@ func main() {
 	)
 
 	thor := thorclient.New(thorURL)
-	chainTag, err := thor.ChainTag()
-	if err != nil {
-		slog.Error("failed to get chain tag", "error", err)
-		os.Exit(1)
-	}
-
-	influx, err := influxdb.New(thor, influxURL, influxToken, chainTag, *influxOrg, *influxBucket)
+	influx, err := influxdb.New(influxURL, influxToken, *influxOrg, *influxBucket)
 	if err != nil {
 		slog.Error("failed to create influxdb", "error", err)
 		os.Exit(1)

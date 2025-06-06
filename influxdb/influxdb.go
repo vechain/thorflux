@@ -5,30 +5,19 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
-	"github.com/vechain/thor/v2/api/blocks"
-	"github.com/vechain/thor/v2/thorclient"
-	"github.com/vechain/thorflux/stats/authority"
-	"github.com/vechain/thorflux/stats/pos"
 )
 
 type DB struct {
-	thor       *thorclient.Client
-	client     influxdb2.Client
-	chainTag   byte
-	prevBlock  *atomic.Pointer[blocks.JSONExpandedBlock] // Pointer to the previous block, used for slot calculations
-	candidates *authority.List
-	genesis    *blocks.JSONCollapsedBlock
-	staker     *pos.Staker
-	bucket     string
-	org        string
+	client influxdb2.Client
+	bucket string
+	org    string
 }
 
-func New(thor *thorclient.Client, url, token string, chainTag byte, org string, bucket string) (*DB, error) {
+func New(url, token string, org string, bucket string) (*DB, error) {
 	influx := influxdb2.NewClient(url, token)
 
 	_, err := influx.Ping(context.Background())
@@ -38,30 +27,10 @@ func New(thor *thorclient.Client, url, token string, chainTag byte, org string, 
 		return nil, err
 	}
 
-	staker, err := pos.NewStaker(thor)
-	if err != nil {
-		slog.Error("failed to create staker instance", "error", err)
-		return nil, err
-	}
-
-	genesis, err := thor.Block("0")
-	if err != nil {
-		slog.Error("failed to get genesis block", "error", err)
-		return nil, err
-	}
-
-	prevBlock := &atomic.Pointer[blocks.JSONExpandedBlock]{}
-
 	return &DB{
-		thor:       thor,
-		client:     influx,
-		chainTag:   chainTag,
-		candidates: authority.NewList(thor),
-		genesis:    genesis,
-		bucket:     bucket,
-		org:        org,
-		staker:     staker,
-		prevBlock:  prevBlock,
+		client: influx,
+		bucket: bucket,
+		org:    org,
 	}, nil
 }
 
