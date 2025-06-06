@@ -105,7 +105,7 @@
       "pluginVersion": "11.6.0",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and (r[\"_field\"] == \"finalized\" or r[\"_field\"] == \"justified_block\" or r[\"_field\"] == \"liveness\" or r[\"_field\"] == \"current_block\"))\n  |> drop(columns: [\"chain_tag\", \"block_number\", \"signer\"])",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"liveness\" and (r[\"_field\"] == \"finalized\" or r[\"_field\"] == \"justified_block\" or r[\"_field\"] == \"liveness\" or r[\"_field\"] == \"current_block\"))\n  |> drop(columns: [\"chain_tag\", \"block_number\", \"signer\"])",
           "refId": "A"
         }
       ],

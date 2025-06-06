@@ -355,7 +355,7 @@ func (s *Staker) appendStakerStats(ev *types.Event) error {
 			},
 			map[string]any{
 				"auto_renew":    staker.AutoRenew,
-				"status":        staker.Status,
+				"status":        int(staker.Status),
 				"staked_amount": staker.Stake.Uint64(),
 			},
 			ev.Timestamp,

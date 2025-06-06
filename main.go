@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	defaultThorURL  = "https://testnet.vechain.org"
+	defaultThorURL  = "https://hayabusa.live.dev.node.vechain.org"
 	defaultInfluxDB = "http://localhost:8086"
 	thorFlag        = flag.String("thor-url", defaultThorURL, "thor node URL, (env var: THOR_URL)")
 	blocksFlag      = flag.Uint64("thor-blocks", 360*24*7, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
