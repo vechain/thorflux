@@ -92,13 +92,13 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 
 			event := &types.Event{
 				Block:          b.Block,
-				Prev:           s.prevBlock.Load(),
-				DPOSActive:     b.DPOSActive,
-				HayabusaForked: b.HayabusaForked,
 				Seed:           b.Seed,
+				HayabusaForked: b.HayabusaForked,
+				DPOSActive:     b.DPOSActive,
+				WriteAPI:       s.db.WriteAPI(),
+				Prev:           s.prevBlock.Load(),
 				ChainTag:       s.chainTag,
 				Genesis:        s.genesis,
-				WriteAPI:       s.db.WriteAPI(),
 				DefaultTags:    defaultTags,
 				Timestamp:      t,
 			}
