@@ -1,4 +1,4 @@
-package influxdb
+package pos
 
 import (
 	"bytes"
@@ -10,9 +10,7 @@ import (
 	"github.com/vechain/thor/v2/api/blocks"
 	builtin2 "github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
-	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/thorclient/builtin"
-	"github.com/vechain/thorflux/pos"
 )
 
 const (
@@ -89,11 +87,12 @@ func collectValidatorAddedEvent(s *stakerStats, event *blocks.JSONEvent) {
 	})
 }
 
-func (s *stakerStats) CollectActiveStakers(client *thorclient.Client, staker *builtin.Staker) error {
-	posData := pos.DataExtractor{
-		Thor: client,
+func (s *stakerStats) CollectActiveStakers(staker *Staker, block *blocks.JSONExpandedBlock, active bool) error {
+	if !active {
+		s.StakersStatus = make([]stakerStatus, 0)
+		return nil
 	}
-	candidates, err := posData.ExtractCandidates(staker)
+	candidates, err := staker.GetValidators(block)
 	if err != nil {
 		return err
 	}

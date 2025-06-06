@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 9,
+  "id": 5,
   "links": [],
   "panels": [
     {
@@ -71,7 +71,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -103,7 +104,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
@@ -153,7 +154,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -194,10 +196,10 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 100
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"block_stats\" and\n      (r._field == \"legacy_txs\" or r._field == \"dyn_fee_txs\") and\n      r._value > 0\n    )\n  |> keep(columns: [\"_time\", \"block_number\", \"_field\", \"_value\"])\n  |> pivot(\n      rowKey:     [\"_time\", \"block_number\"],\n      columnKey:  [\"_field\"],\n      valueColumn:\"_value\"\n    )\n  // convert the block_number string into an integer field called \"block\"\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block: int(v: r.block_number),\n      legacy_txs: if exists r.legacy_txs then r.legacy_txs else 0,\n      dyn_fee_txs: if exists r.dyn_fee_txs then r.dyn_fee_txs else 0\n    }))\n  |> yield(name: \"txs_per_block\")\n",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      (r._field == \"legacy_txs\" or r._field == \"dyn_fee_txs\") and\n      r._value > 0\n    )\n  |> keep(columns: [\"_time\", \"block_number\", \"_field\", \"_value\"])\n  |> pivot(\n      rowKey:     [\"_time\", \"block_number\"],\n      columnKey:  [\"_field\"],\n      valueColumn:\"_value\"\n    )\n  // convert the block_number string into an integer field called \"block\"\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block: int(v: r.block_number),\n      legacy_txs: if exists r.legacy_txs then r.legacy_txs else 0,\n      dyn_fee_txs: if exists r.dyn_fee_txs then r.dyn_fee_txs else 0\n    }))\n  |> yield(name: \"txs_per_block\")\n",
           "refId": "A"
         }
       ],
@@ -219,7 +221,8 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "orange",
@@ -258,10 +261,10 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"legacy_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"legacy_txs\")",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) => r[\"_field\"] == \"legacy_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"legacy_txs\")",
           "refId": "A"
         }
       ],
@@ -283,7 +286,8 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "orange",
@@ -322,14 +326,14 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "eea2frhqbiuwwa"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dyn_fee_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"total_dyn_fee_txs\")",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dyn_fee_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"total_dyn_fee_txs\")",
           "refId": "A"
         }
       ],
@@ -372,7 +376,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -413,14 +418,14 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 100
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "eea2frhqbiuwwa"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"block_stats\" and\n      r._field       == \"validator_rewards\"\n    )\n  // only keep the raw fields well need\n  |> keep(columns: [\"block_number\", \"signer\", \"_value\"])\n  // 1) parse block_number → int “block”\n  // 2) scale non-zero tips by 10^13 → “scaled”\n  |> map(fn: (r) => ({\n      block:  int(v: r.block_number),\n      signer: r.signer,\n      scaled: if r._value == 0.0 then 0.0 else r._value / 10000000000000.0\n    }))\n  // 3) drop the now‐unused originals\n  |> drop(columns: [\"block_number\", \"_value\"])\n  // 4) merge all records together\n  |> group()\n  // 5) pivot so each signer is its own column, keyed by block\n  |> pivot(\n      rowKey:     [\"block\"],\n      columnKey:  [\"signer\"],\n      valueColumn:\"scaled\"\n    )\n  // 6) fill missing signers with zero\n  |> fill(value: 0.0)\n  // 7) sort by block ascending\n  |> sort(columns: [\"block\"])\n  |> yield(name: \"validator_tip_per_block\")\n",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      r._field       == \"validator_rewards\"\n    )\n  // only keep the raw fields well need\n  |> keep(columns: [\"block_number\", \"signer\", \"_value\"])\n  // 1) parse block_number → int “block”\n  // 2) scale non-zero tips by 10^13 → “scaled”\n  |> map(fn: (r) => ({\n      block:  int(v: r.block_number),\n      signer: r.signer,\n      scaled: if r._value == 0.0 then 0.0 else r._value / 10000000000000.0\n    }))\n  // 3) drop the now‐unused originals\n  |> drop(columns: [\"block_number\", \"_value\"])\n  // 4) merge all records together\n  |> group()\n  // 5) pivot so each signer is its own column, keyed by block\n  |> pivot(\n      rowKey:     [\"block\"],\n      columnKey:  [\"signer\"],\n      valueColumn:\"scaled\"\n    )\n  // 6) fill missing signers with zero\n  |> fill(value: 0.0)\n  // 7) sort by block ascending\n  |> sort(columns: [\"block\"])\n  |> yield(name: \"validator_tip_per_block\")\n",
           "refId": "A"
         }
       ],
@@ -451,7 +456,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -482,7 +488,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "query": "from(bucket: \"vechain\")\n  |> range(start: 0, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and r[\"_field\"] == \"block_total_burnt\")\n  |> group()\n  |> sum()",
@@ -540,7 +546,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -571,7 +578,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
@@ -633,7 +640,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -672,14 +680,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "eea2frhqbiuwwa"
           },
-          "query": "\nt1 = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) =>\n      r[\"_field\"] == \"priority_fee_open\" or\n      r[\"_field\"] == \"priority_fee_close\" or\n      r[\"_field\"] == \"priority_fee_high\" or\n      r[\"_field\"] == \"priority_fee_low\"\n  )\n\n\nt2 = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"candlestick_tx_count\")\n  |> map(fn: (r) => ({\n      _time: r._time,\n      _value: float(v: r._value),\n      _field: r._field,\n      _measurement: r._measurement,\n      _start: r._start,\n      _stop: r._stop\n  }))\n\nunion(tables: [t1, t2])\n  |> group(columns: [])\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"_time\"])\n  |> yield(name: \"candlestick\")",
+          "query": "\nt1 = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) =>\n      r[\"_field\"] == \"priority_fee_open\" or\n      r[\"_field\"] == \"priority_fee_close\" or\n      r[\"_field\"] == \"priority_fee_high\" or\n      r[\"_field\"] == \"priority_fee_low\"\n  )\n\n\nt2 = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"candlestick_tx_count\")\n  |> map(fn: (r) => ({\n      _time: r._time,\n      _value: float(v: r._value),\n      _field: r._field,\n      _measurement: r._measurement,\n      _start: r._start,\n      _stop: r._stop\n  }))\n\nunion(tables: [t1, t2])\n  |> group(columns: [])\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"_time\"])\n  |> yield(name: \"candlestick\")",
           "refId": "A"
         }
       ],
@@ -734,7 +742,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -765,7 +774,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.0",
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
@@ -782,7 +791,7 @@
   ],
   "preload": false,
   "refresh": "",
-  "schemaVersion": 41,
+  "schemaVersion": 40,
   "tags": [],
   "templating": {
     "list": []
@@ -795,5 +804,6 @@
   "timezone": "browser",
   "title": "Galactica",
   "uid": "fehlt4dw18oowa",
-  "version": 4
+  "version": 1,
+  "weekStart": ""
 }

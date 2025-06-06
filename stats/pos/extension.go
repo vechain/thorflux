@@ -1,4 +1,4 @@
-package extension
+package pos
 
 import (
 	"github.com/vechain/thor/v2/builtin"
@@ -12,7 +12,7 @@ type Extension struct {
 	revision string
 }
 
-func New(client *thorclient.Client) (*Extension, error) {
+func NewExtension(client *thorclient.Client) (*Extension, error) {
 	contract, err := bind.NewContract(client, builtin.Extension.RawABI(), &builtin.Extension.Address)
 	if err != nil {
 		return nil, err
