@@ -16,12 +16,12 @@ import (
 )
 
 var (
-	defaultThorURL  = "https://hayabusa.live.dev.node.vechain.org"
+	defaultThorURL  = "http://localhost:8669"
 	defaultInfluxDB = "http://localhost:8086"
 	thorFlag        = flag.String("thor-url", defaultThorURL, "thor node URL, (env var: THOR_URL)")
 	blocksFlag      = flag.Uint64("thor-blocks", 360*24*7, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
 	influxUrlFlag   = flag.String("influx-url", defaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
-	influxTokenFlag = flag.String("influx-token", "admin-token", "influxdb auth token, (env var: INFLUX_TOKEN)")
+	influxTokenFlag = flag.String("influx-token", "", "influxdb auth token, (env var: INFLUX_TOKEN)")
 	influxOrg       = flag.String("influx-org", "vechain", "influxdb organization, (env var: INFLUX_ORG)")
 	influxBucket    = flag.String("influx-bucket", "vechain", "influxdb bucket, (env var: INFLUX_BUCKET)")
 )
