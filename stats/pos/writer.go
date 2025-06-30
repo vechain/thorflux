@@ -134,6 +134,7 @@ func (s *Staker) writeEpochStats(event *types.Event) error {
 	totalQueuedWeight := queuedRes.totalQueuedWeight
 	totalCirculatingVet := supplyRes.totalCirculatingVet
 	totalCirculatingVet.Div(totalCirculatingVet, big.NewInt(1e3))
+	candidateProbability := make(map[string]interface{})
 
 	flags := map[string]interface{}{
 		"total_stake":     big.NewInt(0).Add(totalStakedVet, totalQueuedVet).Int64(),
@@ -163,13 +164,34 @@ func (s *Staker) writeEpochStats(event *types.Event) error {
 		}
 
 		onlineValidators := 0
+		offlineValidators := 0
 		for _, candidate := range candidates {
+			probabilityValue := big.NewInt(0).Mul(candidate.Weight, big.NewInt(100))
+			candidateProbability[candidate.Master.String()] = big.NewInt(0).Div(probabilityValue, totalWeightVet).Int64()
 			if candidate.Online {
 				onlineValidators += 1
+			} else {
+				offlineValidators += 1
 			}
 		}
 		flags["online_validators"] = onlineValidators
+		flags["offline_validators"] = offlineValidators
 		flags["next_validator"] = expectedValidator.String()
+	}
+
+	if len(candidateProbability) > 0 {
+		heatmapPointProbability := influxdb2.NewPoint(
+			"hayabusa_probability",
+			map[string]string{
+				"chain_tag": event.ChainTag,
+			},
+			candidateProbability,
+			time.Unix(int64(block.Timestamp), 0),
+		)
+
+		if err := event.WriteAPI.WritePoint(context.Background(), heatmapPointProbability); err != nil {
+			slog.Error("Failed to write heatmap point", "error", err)
+		}
 	}
 
 	// Prepare data for heatmap

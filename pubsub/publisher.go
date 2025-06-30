@@ -120,7 +120,7 @@ func (s *Publisher) sync(ctx context.Context) {
 		default:
 			prev := s.previous()
 			prevTime := time.Unix(int64(prev.Timestamp), 0).UTC()
-			if time.Now().Sub(prevTime) < 10*time.Minute {
+			if time.Now().Sub(prevTime) < 10*time.Second {
 				time.Sleep(time.Until(prevTime.Add(10 * time.Second)))
 				continue
 			}
