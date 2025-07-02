@@ -16,12 +16,13 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
     const epochField = data.series[0].fields.find(f => f.name === '_value');
     const filledField = data.series[0].fields.find(f => f.name === 'filled');
     const proposerField = data.series[0].fields.find(f => f.name === 'proposer');
+    const blockNumberField = data.series[0].fields.find(f => f.name === 'block_number');
 
     if (!epochField || !filledField || !proposerField) {
       return { epochs: [], maxSlots: DEFAULT_SLOTS_PER_EPOCH };
     }
 
-    const epochData: { [key: number]: Array<{ filled: number; proposer: string }> } = {};
+    const epochData: { [key: number]: Array<{ filled: number; proposer: string; blockNumber?: number }> } = {};
     let maxSlotsInEpoch = DEFAULT_SLOTS_PER_EPOCH;
 
     // First pass: group by epoch and find max slots
@@ -29,12 +30,13 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
       const epoch = epochField.values[i];
       const filled = parseInt(filledField.values[i]);
       const proposer = proposerField.values[i];
+      const blockNumber = blockNumberField ? parseInt(blockNumberField.values[i]) : undefined;
 
       if (!epochData[epoch]) {
         epochData[epoch] = [];
       }
 
-      epochData[epoch].push({ filled, proposer });
+      epochData[epoch].push({ filled, proposer, blockNumber });
       maxSlotsInEpoch = Math.max(maxSlotsInEpoch, epochData[epoch].length);
     }
 
@@ -57,7 +59,7 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
       } else {
         const filledValues = [...epochData.values];
         while (filledValues.length < maxSlotsInEpoch) {
-          filledValues.push({ filled: -1, proposer: '' });
+          filledValues.push({ filled: -1, proposer: '', blockNumber: undefined });
         }
         return {
           epoch: epochData.epoch,
@@ -195,7 +197,7 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
     event: React.MouseEvent,
     epoch: number,
     slotIndex: number,
-    value: { filled: number; proposer: string }
+    value: { filled: number; proposer: string; blockNumber?: number }
   ) => {
     const element = event.currentTarget;
     const rect = element.getBoundingClientRect();
@@ -209,12 +211,18 @@ export const EpochSlotsPanel: React.FC<PanelProps> = ({ data, width, height }) =
     const left = rect.left - containerRect.left + rect.width / 2;
     const top = rect.top - containerRect.top + (rect.height * 2);
 
+    const tooltipLines = [
+      `Slot ${slotNumber}: ${status}`,
+      value.proposer || 'No proposer'
+    ];
+    
+    if (value.blockNumber) {
+      tooltipLines.push(`Block: ${value.blockNumber}`);
+    }
+
     setTooltip({
       visible: true,
-      text: [
-        `Slot ${slotNumber}: ${status}`,
-        value.proposer || 'No proposer'
-      ],
+      text: tooltipLines,
       style: {
         left: `${left}px`,
         top: `${top}px`,
