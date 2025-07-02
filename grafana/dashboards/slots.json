@@ -113,7 +113,7 @@
             "type": "influxdb",
             "uid": "eea2frhqbiuwwa"
           },
-          "query": "import \"date\"\n\nfrom(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"epoch\")\n  |> group()\n  |> sort(columns: [\"_time\"])",
+          "query": "import \"date\"\n\nfrom(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and (r._field == \"epoch\" or r._field == \"block_number\"))\n  |> group()\n  |> sort(columns: [\"_time\"])",
           "refId": "A"
         }
       ],
