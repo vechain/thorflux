@@ -10,7 +10,6 @@ import (
 	"syscall"
 
 	"github.com/kouhin/envflag"
-	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/pubsub"
 )
@@ -41,7 +40,6 @@ func main() {
 		"blocks", blocks,
 	)
 
-	thor := thorclient.New(thorURL)
 	influx, err := influxdb.New(influxURL, influxToken, *influxOrg, *influxBucket)
 	if err != nil {
 		slog.Error("failed to create influxdb", "error", err)
@@ -49,12 +47,12 @@ func main() {
 	}
 
 	ctx := exitContext()
-	publisher, blockChan, err := pubsub.New(thor, influx, blocks)
+	publisher, blockChan, err := pubsub.New(thorURL, influx, blocks)
 	if err != nil {
 		slog.Error("failed to create publisher", "error", err)
 		os.Exit(1)
 	}
-	subscriber, err := pubsub.NewSubscriber(thor, influx, blockChan)
+	subscriber, err := pubsub.NewSubscriber(thorURL, influx, blockChan)
 	if err != nil {
 		slog.Error("failed to create subscriber", "error", err)
 		os.Exit(1)
