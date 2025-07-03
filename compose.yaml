@@ -64,6 +64,7 @@ services:
       - INFLUX_URL=http://influxdb:8086
       # - INFLUX_TOKEN=admin-token
       - THOR_BLOCKS=200
+      #- SYNC_FROM_BLOCK=22084150
       - INFLUX_USERNAME=admin
       - INFLUX_PASSWORD=password
       - INFLUX_ORG=vechain
