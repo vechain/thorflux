@@ -51,8 +51,7 @@ func main() {
 
 	// if set syncFromBlock will override the thorBlocks number
 	if syncFromBlock != 0 {
-		tclient := thorclient.New(thorURL)
-		block, err := tclient.Block("best")
+		block, err := thorclient.New(thorURL).Block("best")
 		if err != nil {
 			slog.Error("failed to retrieve best block", "error", err)
 			os.Exit(1)
