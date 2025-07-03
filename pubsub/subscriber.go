@@ -31,17 +31,19 @@ type Subscriber struct {
 	handlers  map[string]Handler
 }
 
-func NewSubscriber(thor *thorclient.Client, db *influxdb.DB, blockChan chan *Block) (*Subscriber, error) {
-	genesis, err := thor.Block("0")
+func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Subscriber, error) {
+	tclient := thorclient.New(thorURL)
+
+	genesis, err := tclient.Block("0")
 	if err != nil {
 		slog.Error("failed to get genesis block", "error", err)
 		return nil, err
 	}
 	chainTag := fmt.Sprintf("%d", genesis.ID[31])
 
-	liveness := liveness2.New(thor)
-	poa := authority.NewList(thor)
-	hayabusa, err := pos.NewStaker(thor)
+	liveness := liveness2.New(thorclient.New(thorURL))
+	poa := authority.NewList(thorclient.New(thorURL))
+	hayabusa, err := pos.NewStaker(thorclient.New(thorURL))
 	if err != nil {
 		slog.Error("failed to create staker instance", "error", err)
 		return nil, err
@@ -112,8 +114,8 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 						slog.Error("failed to handle event", "event_type", eventType, "error", err)
 					}
 				}(name, handler)
-				wg.Wait()
 			}
+			wg.Wait()
 			s.prevBlock.Store(b.Block)
 		}
 	}
