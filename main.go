@@ -12,6 +12,7 @@ import (
 	"github.com/kouhin/envflag"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/pubsub"
+	"github.com/vechain/thor/v2/thorclient"
 )
 
 var (
@@ -50,7 +51,8 @@ func main() {
 
 	// if set syncFromBlock will override the thorBlocks number
 	if syncFromBlock != 0 {
-		block, err := thor.Block("best")
+		tclient := thorclient.New(thorURL)
+		block, err := tclient.Block("best")
 		if err != nil {
 			slog.Error("failed to retrieve best block", "error", err)
 			os.Exit(1)
