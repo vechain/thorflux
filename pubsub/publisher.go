@@ -219,7 +219,7 @@ func (s *Publisher) shouldQuit() bool {
 		slog.Error("failed to get best block", "error", err)
 		return false
 	}
-	if best.Number-s.previous().Number > 1000 {
+	if best.Number-s.previous().Number > 100 {
 		return false
 	}
 	return true
