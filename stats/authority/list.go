@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"math/big"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/vechain/thorflux/types"
@@ -22,6 +23,8 @@ import (
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 )
+
+var topFiveProposers = 5
 
 type List struct {
 	candidates []Candidate
@@ -147,10 +150,48 @@ func (l *List) Write(event *types.Event) error {
 			slog.Error("Failed to write recent slot point", "error", err)
 		}
 
+		proposers := make(map[string]interface{})
+		for _, candidate := range l.candidates {
+			proposers[candidate.Master.String()] = candidate.Active
+		}
+
 		shuffledCandidates, err := l.Shuffled(prev, event.Seed)
 		if err != nil {
 			slog.Error("Error shuffling", "err", err.Error())
 		}
+
+		proposers["signer"] = block.Signer.String()
+		topProposers := topFiveProposers
+		if len(shuffledCandidates) < topFiveProposers {
+			topProposers = len(shuffledCandidates)
+		}
+		for idx := range topProposers {
+			proposers["candidates"+strconv.Itoa(idx)] = shuffledCandidates[idx].String()
+		}
+		authNodes := influxdb2.NewPoint(
+			"authority_nodes",
+			map[string]string{"chain_tag": chainTag, "block_number": strconv.Itoa(int(block.Number))},
+			proposers,
+			time.Unix(int64(block.Timestamp), 0),
+		)
+		if err := writeAPI.WritePoint(context.Background(), authNodes); err != nil {
+			slog.Error("Failed to write authority node point", "error", err)
+		}
+
+		if len(shuffledCandidates) > 0 && shuffledCandidates[0].String() != block.Signer.String() {
+			missedSlotData := make(map[string]interface{})
+			missedSlotData["expected_proposer"] = shuffledCandidates[0].String()
+			missedSlot := influxdb2.NewPoint(
+				"missed_slots",
+				map[string]string{"chain_tag": chainTag, "block_number": strconv.Itoa(int(block.Number)), "actual_proposer": block.Signer.String()},
+				missedSlotData,
+				time.Unix(int64(block.Timestamp), 0),
+			)
+			if err := writeAPI.WritePoint(context.Background(), missedSlot); err != nil {
+				slog.Error("Failed to write missed slot point", "error", err)
+			}
+		}
+
 		for a := startSlot; a < slotsSinceLastBlock-1; a++ {
 			rawTime := prev.Timestamp + a*10
 			slotTime := time.Unix(int64(rawTime), 0)
