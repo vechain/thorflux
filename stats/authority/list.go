@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"math/big"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/vechain/thorflux/types"
@@ -142,8 +141,8 @@ func (l *List) Write(event *types.Event) error {
 		proposer := block.Signer
 		p := influxdb2.NewPoint(
 			"recent_slots",
-			map[string]string{"chain_tag": chainTag, "filled": "1", "proposer": proposer.String(), "block_number": strconv.Itoa(int(block.Number))},
-			map[string]interface{}{"epoch": epoch},
+			map[string]string{"chain_tag": chainTag, "filled": "1", "proposer": proposer.String()},
+			map[string]interface{}{"epoch": epoch, "block_number": block.Number},
 			time.Unix(int64(block.Timestamp), 0),
 		)
 		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
@@ -211,8 +210,8 @@ func (l *List) Write(event *types.Event) error {
 
 			p := influxdb2.NewPoint(
 				"recent_slots",
-				map[string]string{"chain_tag": chainTag, "filled": fmt.Sprintf("%d", value), "proposer": proposer.String(), "block_number": strconv.Itoa(int(block.Number))},
-				map[string]interface{}{"epoch": epoch},
+				map[string]string{"chain_tag": chainTag, "filled": fmt.Sprintf("%d", value), "proposer": proposer.String()},
+				map[string]interface{}{"epoch": epoch, "block_number": block.Number},
 				slotTime,
 			)
 			if err := writeAPI.WritePoint(context.Background(), p); err != nil {

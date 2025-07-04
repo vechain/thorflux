@@ -46,13 +46,15 @@ type DB interface {
 	Latest() (uint32, error)
 }
 
-func New(thor *thorclient.Client, db DB, blockAmount uint32) (*Publisher, chan *Block, error) {
+func New(thorURL string, db DB, blockAmount uint32) (*Publisher, chan *Block, error) {
+	tclient := thorclient.New(thorURL)
+
 	prev, err := db.Latest()
 	if err != nil {
 		slog.Error("failed to get latest block from DB", "error", err)
 		return nil, nil, err
 	}
-	best, err := thor.Block("best")
+	best, err := tclient.Block("best")
 	if err != nil {
 		slog.Error("failed to get best block from thor", "error", err)
 		return nil, nil, err
@@ -67,7 +69,7 @@ func New(thor *thorclient.Client, db DB, blockAmount uint32) (*Publisher, chan *
 	if prev > startBlock {
 		startBlock = prev
 	}
-	start, err := thor.ExpandedBlock(fmt.Sprintf("%d", startBlock))
+	start, err := tclient.ExpandedBlock(fmt.Sprintf("%d", startBlock))
 	if err != nil {
 		slog.Error("failed to get block from thor", "block", startBlock, "error", err)
 		return nil, nil, err
@@ -76,7 +78,7 @@ func New(thor *thorclient.Client, db DB, blockAmount uint32) (*Publisher, chan *
 	previous.Store(start)
 	blockChan := make(chan *Block, 2000)
 
-	staker, err := builtin.NewStaker(thor)
+	staker, err := builtin.NewStaker(tclient)
 	if err != nil {
 		slog.Error("failed to create staker instance", "error", err)
 		return nil, nil, err
@@ -90,7 +92,7 @@ func New(thor *thorclient.Client, db DB, blockAmount uint32) (*Publisher, chan *
 	)
 
 	return &Publisher{
-		thor:              thor,
+		thor:              tclient,
 		prev:              previous,
 		blockChan:         blockChan,
 		hayabusaForkBlock: math.MaxUint32,
@@ -219,7 +221,7 @@ func (s *Publisher) shouldQuit() bool {
 		slog.Error("failed to get best block", "error", err)
 		return false
 	}
-	if best.Number-s.previous().Number > 1000 {
+	if best.Number-s.previous().Number > 100 {
 		return false
 	}
 	return true
