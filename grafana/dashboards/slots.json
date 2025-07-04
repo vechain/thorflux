@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 6,
   "links": [],
   "panels": [
     {
@@ -106,7 +106,7 @@
           }
         ]
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "query": "import \"date\"\n\n\na = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and (r._field == \"epoch\" or r._field == \"block_number\"))\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> rename(columns: {epoch: \"_value\"})\n\nb = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"epoch\")\n  |> group()\n  |> keep(columns:[\"_time\", \"filled\", \"proposer\"])\n\njoin(tables: {t1: a, t2: b}, on: [\"_time\"])\n    |> rename(columns: {_value: \"epoch\", block_number: \"block_number\", filled: \"filled\"})\n    |> keep(columns:[\"_time\", \"filled\", \"block_number\", \"proposer\"])\n\n",
@@ -189,7 +189,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -273,7 +273,7 @@
         "h": 8,
         "w": 17,
         "x": 7,
-        "y": 0
+        "y": 22
       },
       "id": 7,
       "options": {
@@ -351,7 +351,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 30
       },
       "id": 6,
       "options": {
@@ -364,7 +364,7 @@
           ],
           "show": false
         },
-        "frameIndex": 73,
+        "frameIndex": 6,
         "showHeader": true
       },
       "pluginVersion": "11.6.0",
@@ -423,7 +423,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 30
       },
       "id": 5,
       "options": {
@@ -437,7 +437,7 @@
           ],
           "show": false
         },
-        "frameIndex": 73,
+        "frameIndex": 6,
         "showHeader": true,
         "sortBy": [
           {
@@ -590,9 +590,9 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 38
       },
-      "id": 4,
+      "id": 8,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -636,11 +636,11 @@
         "h": 15,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 46
       },
       "id": 1,
       "options": {},
-      "pluginVersion": "1.0.0",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -690,7 +690,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 61
       },
       "id": 3,
       "options": {
@@ -713,7 +713,7 @@
           }
         ]
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
