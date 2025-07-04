@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 6,
   "links": [],
   "panels": [
     {
@@ -38,8 +38,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -51,8 +50,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
-        "w": 4,
+        "h": 8,
+        "w": 7,
         "x": 0,
         "y": 0
       },
@@ -74,7 +73,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -90,6 +89,425 @@
     },
     {
       "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Expected signer"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "signer"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Actual Signer"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "blockNum"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Block number"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 17,
+        "x": 7,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 2,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "block_number"
+          }
+        ]
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"missed_slots\")\n  |> map(fn: (r) => ({ r with signer: r.actual_proposer, blockNum: int(v: r.block_number) }))\n  |> drop(\"columns\": [\"_measurement\", \"_start\", \"_stop\", \"_field\", \"actual_proposer\", \"chain_tag\", \"_time\", \"block_number\"])\n  |> sort(columns: [\"blockNum\"], desc: true)\n  |> limit(n:5)",
+          "refId": "A"
+        }
+      ],
+      "title": "Missed slots",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Candidates"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 73,
+        "showHeader": true
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "query": " from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"authority_nodes\" and (r._field == \"candidates0\" or r._field == \"candidates1\" or r._field == \"candidates2\" or r._field == \"candidates3\" or r._field == \"candidates4\"))\n  |> map(fn: (r) => ({ r with blockNum: int(v: r.block_number) }))\n  |> sort(columns: [\"blockNum\"], desc: true)\n   |> drop(columns: [\"_measurement\", \"chain_tag\", \"_field\", \"_time\", \"_start\", \"_stop\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Candidates",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Signer"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 73,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Block num"
+          }
+        ]
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "query": " from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"authority_nodes\" and r._field == \"signer\")\n  |> map(fn: (r) => ({ r with blockSigner: r.signer, blockNum: int(v: r.block_number) }))\n  |> drop(columns: [\"_measurement\", \"chain_tag\", \"_field\", \"_time\", \"_start\", \"_stop\"])\n  |> sort(columns: [\"blockNum\"], desc: true)\n  |> limit(n:1)",
+          "refId": "A"
+        }
+      ],
+      "title": "Block signer",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "false": {
+                  "color": "green",
+                  "index": 0
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_value"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "applyToRow": true,
+                  "mode": "basic",
+                  "type": "color-background",
+                  "wrapText": false
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "match": "true",
+                      "result": {
+                        "color": "dark-green",
+                        "index": 0
+                      }
+                    },
+                    "type": "special"
+                  },
+                  {
+                    "options": {
+                      "match": "false",
+                      "result": {
+                        "color": "semi-dark-red",
+                        "index": 1
+                      }
+                    },
+                    "type": "special"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_time"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Block time"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_field"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Proposer"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Online"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "block_num"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Block number"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "lastNotNull"
+          ],
+          "show": false
+        },
+        "frameIndex": 214,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Online"
+          }
+        ]
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "query": "import \"strings\"\n\nmaxBlock = from(bucket: \"vechain\")\n    |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r._measurement == \"authority_nodes\")\n    |> drop(columns: [\"_measurement\", \"chain_tag\", \"_value\", \"_field\"])\n    |> map(fn: (r) => ({ block_num: int(v: r.block_number) }))\n    |> max(column: \"block_num\")\n     |> findRecord(fn: (key) => true, idx: 0)\n\n\n    from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"authority_nodes\" and r._field != \"signer\" and not strings.hasPrefix(v: r._field, prefix: \"candidat\"))\n  |> map(fn: (r) => ({ r with block_num: int(v: r.block_number) }))\n  |> filter(fn: (r) => r.block_num == maxBlock.block_num)\n  |> group(columns: [\"block_number\"])\n  |> drop(columns: [\"_measurement\", \"chain_tag\", \"_start\", \"_stop\", \"block_number\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Online validators",
+      "type": "table"
+    },
+    {
+      "datasource": {
         "default": true,
         "type": "influxdb",
         "uid": "eea2frhqbiuwwa"
@@ -102,7 +520,7 @@
         "h": 15,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 24
       },
       "id": 1,
       "options": {},
@@ -145,8 +563,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -157,7 +574,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 39
       },
       "id": 3,
       "options": {
@@ -180,7 +597,7 @@
           }
         ]
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -196,7 +613,7 @@
     }
   ],
   "preload": false,
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": []
@@ -209,6 +626,5 @@
   "timezone": "browser",
   "title": "Slots",
   "uid": "be9urigr0u800b",
-  "version": 6,
-  "weekStart": ""
+  "version": 1
 }
