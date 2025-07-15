@@ -30,12 +30,12 @@ func NewStaker(client *thorclient.Client) (*Staker, error) {
 	return &Staker{staker: staker, client: client, cache: cache}, nil
 }
 
-func (s *Staker) GetValidators(block *blocks.JSONExpandedBlock) (map[thor.Bytes32]*builtin.Validator, error) {
-	return s.cache.Get(block)
+func (s *Staker) GetValidators(block, parent *blocks.JSONExpandedBlock) (map[thor.Bytes32]*builtin.Validator, error) {
+	return s.cache.Get(block, block.Timestamp-parent.Timestamp > 10)
 }
 
-func (s *Staker) NextValidator(block *blocks.JSONExpandedBlock, seed []byte) (*thor.Address, error) {
-	validators, err := s.GetValidators(block)
+func (s *Staker) NextValidator(block, parent *blocks.JSONExpandedBlock, seed []byte) (*thor.Address, error) {
+	validators, err := s.GetValidators(block, parent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validators: %w", err)
 	}
