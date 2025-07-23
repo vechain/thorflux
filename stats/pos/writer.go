@@ -7,11 +7,25 @@ import (
 	"strconv"
 	"time"
 
+	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thorflux/types"
 )
+
+var (
+	eth = big.NewFloat(1e18) // 1 ETH in wei
+)
+
+func toVet(v *big.Int) float64 {
+	result := big.NewFloat(0).SetInt(v)
+	result.Quo(result, eth) // Convert wei to VET
+	// return with 2 decimal places
+	result.SetPrec(2)
+	f, _ := result.Float64()
+	return f
+}
 
 func (s *Staker) Write(event *types.Event) error {
 	if !event.HayabusaForked {
@@ -24,7 +38,7 @@ func (s *Staker) Write(event *types.Event) error {
 		err  error
 	}
 
-	resultChan := make(chan writeResult, 3)
+	resultChan := make(chan writeResult, 4)
 
 	// Launch concurrent goroutines
 	go func() {
@@ -42,6 +56,11 @@ func (s *Staker) Write(event *types.Event) error {
 		resultChan <- writeResult{"appendStakerStats", err}
 	}()
 
+	go func() {
+		err := s.writeEventStats(event)
+		resultChan <- writeResult{"writeEventStats", err}
+	}()
+
 	// Wait for all results and collect errors
 	var errors []error
 	for i := 0; i < 3; i++ {
@@ -57,6 +76,50 @@ func (s *Staker) Write(event *types.Event) error {
 	}
 
 	return nil
+}
+
+func (s *Staker) writeEventStats(event *types.Event) error {
+	if !event.HayabusaForked {
+		return nil
+	}
+
+	abi := s.staker.Raw().ABI()
+
+	eventsByHash := make(map[thor.Bytes32]*ethabi.Event)
+	for _, e := range abi.Events {
+		eventsByHash[thor.Bytes32(e.Id())] = &e
+	}
+
+	flags := make(map[string]interface{})
+	for _, tx := range event.Block.Transactions {
+		for _, output := range tx.Outputs {
+			for _, log := range output.Events {
+				if output.ContractAddress == s.staker.Raw().Address() {
+					ev, ok := eventsByHash[log.Topics[0]]
+					if !ok {
+						continue
+					}
+					prev, ok := flags[ev.Name]
+					if !ok {
+						flags[ev.Name] = 1
+					} else {
+						flags[ev.Name] = prev.(int) + 1
+					}
+				}
+			}
+		}
+	}
+
+	point := influxdb2.NewPoint(
+		"staker_events",
+		map[string]string{
+			"chain_tag": event.ChainTag,
+		},
+		flags,
+		time.Unix(int64(event.Block.Timestamp), 0),
+	)
+
+	return event.WriteAPI.WritePoint(context.Background(), point)
 }
 
 func (s *Staker) writeEpochStats(event *types.Event) error {
@@ -137,19 +200,19 @@ func (s *Staker) writeEpochStats(event *types.Event) error {
 	candidateProbability := make(map[string]interface{})
 
 	flags := map[string]interface{}{
-		"total_stake":     big.NewInt(0).Add(totalStakedVet, totalQueuedVet).Int64(),
-		"active_stake":    totalStakedVet.Int64(),
-		"active_weight":   totalWeightVet.Int64(),
-		"queued_stake":    totalQueuedVet.Int64(),
-		"queued_weight":   totalQueuedWeight.Int64(),
-		"circulating_vet": totalCirculatingVet.Int64(),
+		"total_stake":     toVet(big.NewInt(0).Add(totalStakedVet, totalQueuedVet)),
+		"active_stake":    toVet(totalStakedVet),
+		"active_weight":   toVet(totalWeightVet),
+		"queued_stake":    toVet(totalQueuedVet),
+		"queued_weight":   toVet(totalQueuedWeight),
+		"circulating_vet": toVet(totalCirculatingVet),
 		"epoch":           strconv.FormatUint(uint64(epoch), 10),
 	}
 
 	if event.DPOSActive {
 		var candidates map[thor.Bytes32]*builtin.Validator
 		if blockInEpoch == 0 || len(candidates) == 0 {
-			candidates, err = s.GetValidators(block)
+			candidates, err = s.GetValidators(block, event.Prev)
 			if err != nil {
 				slog.Error("Error while fetching validators", "error", err)
 			}
@@ -157,7 +220,7 @@ func (s *Staker) writeEpochStats(event *types.Event) error {
 
 		expectedValidator := &thor.Address{}
 		if len(candidates) > 0 {
-			expectedValidator, err = s.NextValidator(block, event.Seed)
+			expectedValidator, err = s.NextValidator(block, event.Prev, event.Seed)
 			if err != nil {
 				slog.Error("Cannot extract expected validator", "error", err)
 			}
@@ -319,11 +382,11 @@ func (s *Staker) appendHayabusaEpochGasStats(event *types.Event) error {
 			"chain_tag": event.ChainTag,
 		},
 		map[string]interface{}{
-			"vtho_issued":         vthoIssued.Int64(),
-			"vtho_burned":         vthoBurned.Int64(),
+			"vtho_issued":         toVet(vthoIssued),
+			"vtho_burned":         toVet(vthoBurned),
 			"issued_burned_ratio": issuedBurnedRatio,
-			"validators_share":    validatorsShare.Int64(),
-			"delegators_share":    delegatorsShare.Int64(),
+			"validators_share":    toVet(validatorsShare),
+			"delegators_share":    toVet(delegatorsShare),
 			"epoch":               strconv.FormatUint(uint64(epoch), 10),
 		},
 		event.Timestamp,
@@ -335,7 +398,7 @@ func (s *Staker) appendHayabusaEpochGasStats(event *types.Event) error {
 func (s *Staker) appendStakerStats(ev *types.Event) error {
 	stakerStats := NewStakerStats()
 
-	if err := stakerStats.CollectActiveStakers(s, ev.Block, ev.DPOSActive); err != nil {
+	if err := stakerStats.CollectActiveStakers(s, ev.Block, ev.Prev, ev.DPOSActive); err != nil {
 		slog.Error("Failed to collect active stakers", "error", err)
 	}
 

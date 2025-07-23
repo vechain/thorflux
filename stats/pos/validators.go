@@ -4,6 +4,10 @@ import (
 	"bytes"
 	_ "embed"
 	"errors"
+	"log/slog"
+	"math/big"
+	"sync"
+
 	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -13,9 +17,6 @@ import (
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thor/v2/tx"
-	"log/slog"
-	"math/big"
-	"sync"
 )
 
 type validators struct {
@@ -53,7 +54,7 @@ func newValidatorCache(staker *builtin.Staker, client *thorclient.Client) (*vali
 // Get retrieves the active validators for the given block.
 // It checks if the validators are already cached and if not, fetches them from the staker contract.
 // It the new block is a new epoch, it fetches the refreshed list of validators.
-func (v *validators) Get(block *blocks.JSONExpandedBlock) (map[thor.Bytes32]*builtin.Validator, error) {
+func (v *validators) Get(block *blocks.JSONExpandedBlock, forceUpdate bool) (map[thor.Bytes32]*builtin.Validator, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
@@ -65,7 +66,7 @@ func (v *validators) Get(block *blocks.JSONExpandedBlock) (map[thor.Bytes32]*bui
 	notInitialised := len(v.entries) == 0 || v.previousUpdate.IsZero()
 	newEpoch := prevBlock/v.epochLength != block.Number/v.epochLength
 
-	if notInitialised || newEpoch {
+	if forceUpdate || notInitialised || newEpoch {
 		entries, err := v.Fetch(block.ID)
 		if err != nil {
 			return nil, err

@@ -87,12 +87,12 @@ func collectValidatorAddedEvent(s *stakerStats, event *blocks.JSONEvent) {
 	})
 }
 
-func (s *stakerStats) CollectActiveStakers(staker *Staker, block *blocks.JSONExpandedBlock, active bool) error {
+func (s *stakerStats) CollectActiveStakers(staker *Staker, block, parent *blocks.JSONExpandedBlock, active bool) error {
 	if !active {
 		s.StakersStatus = make([]stakerStatus, 0)
 		return nil
 	}
-	candidates, err := staker.GetValidators(block)
+	candidates, err := staker.GetValidators(block, parent)
 	if err != nil {
 		return err
 	}
