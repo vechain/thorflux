@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/vechain/thor/v2/api"
 	"log/slog"
 	"math"
 	"sort"
@@ -14,7 +15,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/vechain/thor/v2/api/blocks"
 	"github.com/vechain/thor/v2/block"
 	builtin2 "github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
@@ -24,7 +24,7 @@ import (
 
 type Block struct {
 	ForkDetected   bool
-	Block          *blocks.JSONExpandedBlock
+	Block          *api.JSONExpandedBlock
 	Seed           []byte
 	HayabusaForked bool
 	DPOSActive     bool
@@ -34,7 +34,7 @@ const querySize = 200
 
 type Publisher struct {
 	thor      *thorclient.Client
-	prev      *atomic.Pointer[blocks.JSONExpandedBlock]
+	prev      *atomic.Pointer[api.JSONExpandedBlock]
 	blockChan chan *Block
 	staker    *builtin.Staker
 
@@ -74,7 +74,7 @@ func New(thorURL string, db DB, blockAmount uint32) (*Publisher, chan *Block, er
 		slog.Error("failed to get block from thor", "block", startBlock, "error", err)
 		return nil, nil, err
 	}
-	previous := &atomic.Pointer[blocks.JSONExpandedBlock]{}
+	previous := &atomic.Pointer[api.JSONExpandedBlock]{}
 	previous.Store(start)
 	blockChan := make(chan *Block, 2000)
 
@@ -108,7 +108,7 @@ func (s *Publisher) Publish(ctx context.Context) {
 	s.sync(ctx)
 }
 
-func (s *Publisher) previous() *blocks.JSONExpandedBlock {
+func (s *Publisher) previous() *api.JSONExpandedBlock {
 	return s.prev.Load()
 }
 
@@ -143,7 +143,7 @@ func (s *Publisher) sync(ctx context.Context) {
 				slog.Warn("fork detected", "prev", prev.Number, "next", next.Number)
 
 				var (
-					finalized *blocks.JSONExpandedBlock
+					finalized *api.JSONExpandedBlock
 				)
 
 				for {
@@ -298,7 +298,7 @@ func (s *Publisher) fetchSeed(parentID thor.Bytes32) ([]byte, error) {
 	}
 	seedID := seedBlock.ID
 
-	rawBlock := blocks.JSONRawBlockSummary{}
+	rawBlock := api.JSONRawBlockSummary{}
 	res, status, err := s.thor.RawHTTPClient().RawHTTPGet("/blocks/" + hex.EncodeToString(seedID.Bytes()) + "?raw=true")
 	if status != 200 {
 		return nil, fmt.Errorf("failed to fetch raw block: %s", res)
@@ -319,7 +319,7 @@ func (s *Publisher) fetchSeed(parentID thor.Bytes32) ([]byte, error) {
 	return header.Beta()
 }
 
-func (s *Publisher) fetchHayabusaStatus(block *blocks.JSONExpandedBlock) (bool, bool, error) {
+func (s *Publisher) fetchHayabusaStatus(block *api.JSONExpandedBlock) (bool, bool, error) {
 	forked := false
 	if s.hayabusaForkBlock < block.Number {
 		forked = true

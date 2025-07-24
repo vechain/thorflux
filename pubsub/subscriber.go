@@ -3,12 +3,12 @@ package pubsub
 import (
 	"context"
 	"fmt"
+	"github.com/vechain/thor/v2/api"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/vechain/thor/v2/api/blocks"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/stats/authority"
@@ -25,8 +25,8 @@ type Handler func(event *types.Event) error
 type Subscriber struct {
 	blockChan chan *Block
 	db        *influxdb.DB
-	prevBlock *atomic.Pointer[blocks.JSONExpandedBlock]
-	genesis   *blocks.JSONCollapsedBlock
+	prevBlock *atomic.Pointer[api.JSONExpandedBlock]
+	genesis   *api.JSONCollapsedBlock
 	chainTag  string
 	handlers  map[string]Handler
 }
@@ -60,7 +60,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 	return &Subscriber{
 		blockChan: blockChan,
 		db:        db,
-		prevBlock: &atomic.Pointer[blocks.JSONExpandedBlock]{},
+		prevBlock: &atomic.Pointer[api.JSONExpandedBlock]{},
 		genesis:   genesis,
 		chainTag:  chainTag,
 		handlers:  handlers,

@@ -119,7 +119,11 @@ func (s *Staker) writeEventStats(event *types.Event) error {
 		time.Unix(int64(event.Block.Timestamp), 0),
 	)
 
-	return event.WriteAPI.WritePoint(context.Background(), point)
+	list := point.FieldList()
+	if len(list) > 0 {
+		return event.WriteAPI.WritePoint(context.Background(), point)
+	}
+	return nil
 }
 
 func (s *Staker) writeEpochStats(event *types.Event) error {
@@ -210,7 +214,7 @@ func (s *Staker) writeEpochStats(event *types.Event) error {
 	}
 
 	if event.DPOSActive {
-		var candidates map[thor.Bytes32]*builtin.Validator
+		var candidates map[thor.Address]*builtin.Validator
 		if blockInEpoch == 0 || len(candidates) == 0 {
 			candidates, err = s.GetValidators(block, event.Prev)
 			if err != nil {

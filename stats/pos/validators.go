@@ -11,8 +11,7 @@ import (
 	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/vechain/thor/v2/api/accounts"
-	"github.com/vechain/thor/v2/api/blocks"
+	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/thorclient/builtin"
@@ -20,7 +19,7 @@ import (
 )
 
 type validators struct {
-	entries        map[thor.Bytes32]*builtin.Validator
+	entries        map[thor.Address]*builtin.Validator
 	mu             sync.Mutex
 	previousUpdate thor.Bytes32
 	staker         *builtin.Staker
@@ -45,7 +44,7 @@ func newValidatorCache(staker *builtin.Staker, client *thorclient.Client) (*vali
 
 	return &validators{
 		staker:         staker,
-		entries:        make(map[thor.Bytes32]*builtin.Validator),
+		entries:        make(map[thor.Address]*builtin.Validator),
 		previousUpdate: thor.Bytes32{},
 		epochLength:    epochLength,
 	}, nil
@@ -54,7 +53,7 @@ func newValidatorCache(staker *builtin.Staker, client *thorclient.Client) (*vali
 // Get retrieves the active validators for the given block.
 // It checks if the validators are already cached and if not, fetches them from the staker contract.
 // It the new block is a new epoch, it fetches the refreshed list of validators.
-func (v *validators) Get(block *blocks.JSONExpandedBlock, forceUpdate bool) (map[thor.Bytes32]*builtin.Validator, error) {
+func (v *validators) Get(block *api.JSONExpandedBlock, forceUpdate bool) (map[thor.Address]*builtin.Validator, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
@@ -88,7 +87,7 @@ var bytecode string
 // Fetch retrieves all active validators from the staker contract.
 // Using a hacky getAll in a simulation. It means the method takes 35ms
 // It takes 500ms if we iterate each validator on the client side
-func (v *validators) Fetch(id thor.Bytes32) (map[thor.Bytes32]*builtin.Validator, error) {
+func (v *validators) Fetch(id thor.Bytes32) (map[thor.Address]*builtin.Validator, error) {
 	slog.Info("fetching validators", "block", tx.NewBlockRefFromID(id).Number())
 	abi, err := ethabi.JSON(bytes.NewReader([]byte(contractABI)))
 	if err != nil {
@@ -99,8 +98,8 @@ func (v *validators) Fetch(id thor.Bytes32) (map[thor.Bytes32]*builtin.Validator
 		return nil, errors.New("method not found")
 	}
 	to := thor.MustParseAddress("0x841a6556c524d47030762eb14dc4af897e605d9b")
-	res, err := v.staker.Raw().Client().InspectClauses(&accounts.BatchCallData{
-		Clauses: accounts.Clauses{
+	res, err := v.staker.Raw().Client().InspectClauses(&api.BatchCallData{
+		Clauses: api.Clauses{
 			{
 				Data: "0x" + bytecode,
 			},
@@ -123,18 +122,17 @@ func (v *validators) Fetch(id thor.Bytes32) (map[thor.Bytes32]*builtin.Validator
 		return nil, err
 	}
 
-	validators := make(map[thor.Bytes32]*builtin.Validator)
-	ids := out[0].([][32]uint8)
+	validators := make(map[thor.Address]*builtin.Validator)
+	ids := out[0].([]common.Address)
 	masters := out[1].([]common.Address)
 	endorsors := out[2].([]common.Address)
 	stakes := out[3].([]*big.Int)
 	weights := out[4].([]*big.Int)
 	statuses := out[5].([]uint8)
-	autoRenews := out[6].([]bool)
-	onlines := out[7].([]bool)
-	stakingPeriods := out[8].([]uint32)
-	startBlocks := out[9].([]uint32)
-	exitBlocks := out[10].([]uint32)
+	onlines := out[6].([]bool)
+	stakingPeriods := out[7].([]uint32)
+	startBlocks := out[8].([]uint32)
+	exitBlocks := out[9].([]uint32)
 	for i, id := range ids {
 		v := &builtin.Validator{
 			Master:     (*thor.Address)(&masters[i]),
@@ -142,13 +140,12 @@ func (v *validators) Fetch(id thor.Bytes32) (map[thor.Bytes32]*builtin.Validator
 			Stake:      stakes[i],
 			Weight:     weights[i],
 			Status:     builtin.StakerStatus(statuses[i]),
-			AutoRenew:  autoRenews[i],
 			Online:     onlines[i],
 			Period:     stakingPeriods[i],
 			StartBlock: startBlocks[i],
 			ExitBlock:  exitBlocks[i],
 		}
-		id := thor.Bytes32(id)
+		id := thor.Address(id)
 
 		validators[id] = v
 	}
