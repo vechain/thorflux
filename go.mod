@@ -6,7 +6,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.7
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
-	github.com/vechain/thor/v2 v2.2.3-0.20250605113126-d425812c6650
+	github.com/vechain/thor/v2 v2.3.2-0.20250723152233-48fa5855274e
 )
 
 require (

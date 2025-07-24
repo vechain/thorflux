@@ -17,8 +17,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	accounts2 "github.com/vechain/thor/v2/api/accounts"
-	"github.com/vechain/thor/v2/api/blocks"
+	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
@@ -38,7 +37,7 @@ func NewList(thor *thorclient.Client) *List {
 	}
 }
 
-func (l *List) ShouldReset(block *blocks.JSONExpandedBlock) bool {
+func (l *List) ShouldReset(block *api.JSONExpandedBlock) bool {
 	if len(l.candidates) == 0 {
 		return true
 	}
@@ -109,7 +108,7 @@ func (l *List) Init(revision thor.Bytes32) error {
 	return nil
 }
 
-func (l *List) Shuffled(prev *blocks.JSONExpandedBlock, seed []byte) ([]thor.Address, error) {
+func (l *List) Shuffled(prev *api.JSONExpandedBlock, seed []byte) ([]thor.Address, error) {
 	if len(l.candidates) == 0 {
 		if err := l.Init(prev.ID); err != nil {
 			return nil, fmt.Errorf("failed to initialize authority list: %w", err)
@@ -258,7 +257,7 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 	authorityContract := thor.MustParseAddress("0x841a6556c524d47030762eb14dc4af897e605d9b")
 
 	contract, _ := hex.DecodeString(AuthorityListAll)
-	clauses := [2]accounts2.Clause{
+	clauses := [2]api.Clause{
 		{
 			To:    nil,
 			Value: nil,
@@ -270,11 +269,14 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 		},
 	}
 
-	body := &accounts2.BatchCallData{
+	body := &api.BatchCallData{
 		Gas:      gas,
 		Caller:   &caller,
 		GasPayer: &gasPayer,
-		Clauses:  clauses[:],
+		Clauses: api.Clauses{
+			&clauses[0],
+			&clauses[1],
+		},
 	}
 
 	response, err := thorClient.InspectClauses(body, thorclient.Revision(blockID.String()))

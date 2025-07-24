@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"github.com/vechain/thor/v2/api"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/vechain/thor/v2/api/blocks"
 	builtin2 "github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient/builtin"
@@ -45,7 +45,7 @@ func NewStakerStats() *stakerStats {
 	}
 }
 
-func (s *stakerStats) processEvent(event *blocks.JSONEvent) error {
+func (s *stakerStats) processEvent(event *api.JSONEvent) error {
 	if len(event.Topics) == 0 {
 		return nil
 	}
@@ -64,7 +64,7 @@ func (s *stakerStats) processEvent(event *blocks.JSONEvent) error {
 	return nil
 }
 
-func collectValidatorAddedEvent(s *stakerStats, event *blocks.JSONEvent) {
+func collectValidatorAddedEvent(s *stakerStats, event *api.JSONEvent) {
 	endorsorAddress := thor.BytesToAddress(event.Topics[1].Bytes())
 	masterAddress := thor.BytesToAddress(event.Topics[2].Bytes())
 
@@ -75,19 +75,15 @@ func collectValidatorAddedEvent(s *stakerStats, event *blocks.JSONEvent) {
 	hexData, _ = hex.DecodeString(data[64:128])
 	stake := new(big.Int).SetBytes(hexData)
 
-	hexData, _ = hex.DecodeString(data[128:192])
-	autoRenew := hexData[len(hexData)-1] != 0
-
 	s.AddStaker = append(s.AddStaker, addStakerEvent{
-		Endorsor:  endorsorAddress,
-		Master:    masterAddress,
-		Period:    period,
-		Stake:     stake,
-		AutoRenew: autoRenew,
+		Endorsor: endorsorAddress,
+		Master:   masterAddress,
+		Period:   period,
+		Stake:    stake,
 	})
 }
 
-func (s *stakerStats) CollectActiveStakers(staker *Staker, block, parent *blocks.JSONExpandedBlock, active bool) error {
+func (s *stakerStats) CollectActiveStakers(staker *Staker, block, parent *api.JSONExpandedBlock, active bool) error {
 	if !active {
 		s.StakersStatus = make([]stakerStatus, 0)
 		return nil
@@ -98,11 +94,10 @@ func (s *stakerStats) CollectActiveStakers(staker *Staker, block, parent *blocks
 	}
 	for _, candidate := range candidates {
 		s.StakersStatus = append(s.StakersStatus, stakerStatus{
-			Endorsor:  candidate.Endorsor,
-			Master:    candidate.Master,
-			Status:    candidate.Status,
-			Stake:     candidate.Stake,
-			AutoRenew: candidate.AutoRenew,
+			Endorsor: candidate.Endorsor,
+			Master:   candidate.Master,
+			Status:   candidate.Status,
+			Stake:    candidate.Stake,
 		})
 	}
 	return nil
