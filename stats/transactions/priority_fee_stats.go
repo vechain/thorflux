@@ -1,7 +1,7 @@
 package transactions
 
 import (
-	"github.com/vechain/thor/v2/api/blocks"
+	"github.com/vechain/thor/v2/api"
 	"math/big"
 )
 
@@ -13,7 +13,7 @@ type priorityFeeStats struct {
 	closeFee         float64
 }
 
-func (s *priorityFeeStats) processTx(t *blocks.JSONEmbeddedTx) {
+func (s *priorityFeeStats) processTx(t *api.JSONEmbeddedTx) {
 	// Process candlestick values from MaxPriorityFeePerGas.
 	if t.MaxPriorityFeePerGas != nil {
 		// Convert fee from Wei to Gwei (divide by 1e9)

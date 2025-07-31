@@ -3,12 +3,13 @@ package pubsub
 import (
 	"context"
 	"fmt"
+	"github.com/vechain/thor/v2/api"
 	"log/slog"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/vechain/thor/v2/api/blocks"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/stats/authority"
@@ -25,10 +26,11 @@ type Handler func(event *types.Event) error
 type Subscriber struct {
 	blockChan chan *Block
 	db        *influxdb.DB
-	prevBlock *atomic.Pointer[blocks.JSONExpandedBlock]
-	genesis   *blocks.JSONCollapsedBlock
+	prevBlock *atomic.Pointer[api.JSONExpandedBlock]
+	genesis   *api.JSONCollapsedBlock
 	chainTag  string
 	handlers  map[string]Handler
+	client    *thorclient.Client
 }
 
 func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Subscriber, error) {
@@ -60,10 +62,11 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 	return &Subscriber{
 		blockChan: blockChan,
 		db:        db,
-		prevBlock: &atomic.Pointer[blocks.JSONExpandedBlock]{},
+		prevBlock: &atomic.Pointer[api.JSONExpandedBlock]{},
 		genesis:   genesis,
 		chainTag:  chainTag,
 		handlers:  handlers,
+		client:    tclient,
 	}, nil
 }
 
@@ -90,6 +93,15 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				"chain_tag":    s.chainTag,
 				"signer":       b.Block.Signer.String(),
 				"block_number": fmt.Sprintf("%d", b.Block.Number),
+			}
+
+			if s.prevBlock.Load() == nil && b.Block.Number > 0 {
+				prev, err := s.client.ExpandedBlock(strconv.FormatUint(uint64(b.Block.Number-1), 10))
+				if err != nil {
+					slog.Error("failed to fetch previous block", "block_number", b.Block.Number-1, "error", err)
+					continue
+				}
+				s.prevBlock.Store(prev)
 			}
 
 			event := &types.Event{

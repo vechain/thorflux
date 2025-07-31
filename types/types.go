@@ -2,19 +2,19 @@ package types
 
 import (
 	"github.com/influxdata/influxdb-client-go/v2/api"
-	"github.com/vechain/thor/v2/api/blocks"
+	tapi "github.com/vechain/thor/v2/api"
 	"time"
 )
 
 type Event struct {
-	Block          *blocks.JSONExpandedBlock
+	Block          *tapi.JSONExpandedBlock
 	Seed           []byte
 	HayabusaForked bool
 	DPOSActive     bool
 	WriteAPI       api.WriteAPIBlocking
-	Prev           *blocks.JSONExpandedBlock
+	Prev           *tapi.JSONExpandedBlock
 	ChainTag       string
-	Genesis        *blocks.JSONCollapsedBlock
+	Genesis        *tapi.JSONCollapsedBlock
 	DefaultTags    map[string]string
 	Timestamp      time.Time
 }

@@ -8,7 +8,7 @@ import (
 )
 
 type Extension struct {
-	contract bind.Contract
+	contract *bind.Contract
 	revision string
 }
 

@@ -1,9 +1,9 @@
 package transactions
 
 import (
+	"github.com/vechain/thor/v2/api"
 	"sort"
 
-	"github.com/vechain/thor/v2/api/blocks"
 	"github.com/vechain/thor/v2/tx"
 )
 
@@ -19,7 +19,7 @@ type coefStats struct {
 	sum       int
 }
 
-func (s *coefStats) processTx(t *blocks.JSONEmbeddedTx) {
+func (s *coefStats) processTx(t *api.JSONEmbeddedTx) {
 	if t.Type != tx.TypeLegacy {
 		return
 	}

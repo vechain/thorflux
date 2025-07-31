@@ -10,19 +10,19 @@ import (
 	"syscall"
 
 	"github.com/kouhin/envflag"
+	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/pubsub"
-	"github.com/vechain/thor/v2/thorclient"
 )
 
 var (
-	defaultThorURL  = "http://localhost:8669"
+	defaultThorURL  = "http://localhost:8569"
 	defaultInfluxDB = "http://localhost:8086"
 	thorFlag        = flag.String("thor-url", defaultThorURL, "thor node URL, (env var: THOR_URL)")
 	blocksFlag      = flag.Uint64("thor-blocks", 360*24*7, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
 	syncBlockFlag   = flag.Uint64("sync-from-block", 0, "start sync from block height - takes precedence to thor-blocks is set (env var: SYNC_FROM_BLOCK)")
 	influxUrlFlag   = flag.String("influx-url", defaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
-	influxTokenFlag = flag.String("influx-token", "", "influxdb auth token, (env var: INFLUX_TOKEN)")
+	influxTokenFlag = flag.String("influx-token", "admin-token", "influxdb auth token, (env var: INFLUX_TOKEN)")
 	influxOrg       = flag.String("influx-org", "vechain", "influxdb organization, (env var: INFLUX_ORG)")
 	influxBucket    = flag.String("influx-bucket", "vechain", "influxdb bucket, (env var: INFLUX_BUCKET)")
 )

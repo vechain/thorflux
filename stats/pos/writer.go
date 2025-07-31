@@ -2,30 +2,24 @@ package pos
 
 import (
 	"context"
+	_ "embed"
+
 	"log/slog"
+	"math"
 	"math/big"
 	"strconv"
 	"time"
 
 	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thorflux/types"
+	"github.com/vechain/thorflux/vetutil"
 )
-
-var (
-	eth = big.NewFloat(1e18) // 1 ETH in wei
-)
-
-func toVet(v *big.Int) float64 {
-	result := big.NewFloat(0).SetInt(v)
-	result.Quo(result, eth) // Convert wei to VET
-	// return with 2 decimal places
-	result.SetPrec(2)
-	f, _ := result.Float64()
-	return f
-}
 
 func (s *Staker) Write(event *types.Event) error {
 	if !event.HayabusaForked {
@@ -38,11 +32,19 @@ func (s *Staker) Write(event *types.Event) error {
 		err  error
 	}
 
+	start := time.Now()
+	stakers, err := s.FetchAll(event.Block.ID)
+	if err != nil {
+		slog.Error("Failed to fetch all stakers", "error", err)
+		return err
+	}
+	slog.Info("Fetched all stakers", "block", event.Block.Number, "count", len(stakers), "duration", time.Since(start))
+
 	resultChan := make(chan writeResult, 4)
 
 	// Launch concurrent goroutines
 	go func() {
-		err := s.writeEpochStats(event)
+		err := s.writeEpochStats(event, stakers)
 		resultChan <- writeResult{"writeEpochStats", err}
 	}()
 
@@ -52,8 +54,8 @@ func (s *Staker) Write(event *types.Event) error {
 	}()
 
 	go func() {
-		err := s.appendStakerStats(event)
-		resultChan <- writeResult{"appendStakerStats", err}
+		err := s.writeSingleValidatorStats(event, stakers)
+		resultChan <- writeResult{"writeSingleValidatorStats", err}
 	}()
 
 	go func() {
@@ -78,6 +80,20 @@ func (s *Staker) Write(event *types.Event) error {
 	return nil
 }
 
+func iterateEvent(block *api.JSONExpandedBlock, eventSignature thor.Bytes32, callback func(*api.JSONEvent)) {
+	for _, tx := range block.Transactions {
+		for _, output := range tx.Outputs {
+			for _, log := range output.Events {
+				if eventSignature.IsZero() { // If eventSignature is zero, we return all events
+					callback(log)
+				} else if log.Topics[0] == eventSignature { // If eventSignature is not zero, we filter by the event signature
+					callback(log)
+				}
+			}
+		}
+	}
+}
+
 func (s *Staker) writeEventStats(event *types.Event) error {
 	if !event.HayabusaForked {
 		return nil
@@ -91,23 +107,21 @@ func (s *Staker) writeEventStats(event *types.Event) error {
 	}
 
 	flags := make(map[string]interface{})
-	for _, tx := range event.Block.Transactions {
-		for _, output := range tx.Outputs {
-			for _, log := range output.Events {
-				if output.ContractAddress == s.staker.Raw().Address() {
-					ev, ok := eventsByHash[log.Topics[0]]
-					if !ok {
-						continue
-					}
-					prev, ok := flags[ev.Name]
-					if !ok {
-						flags[ev.Name] = 1
-					} else {
-						flags[ev.Name] = prev.(int) + 1
-					}
-				}
-			}
+	iterateEvent(event.Block, thor.Bytes32{}, func(log *api.JSONEvent) {
+		ev, ok := eventsByHash[log.Topics[0]]
+		if !ok {
+			return
 		}
+		prev, ok := flags[ev.Name]
+		if !ok {
+			flags[ev.Name] = 1
+		} else {
+			flags[ev.Name] = prev.(int) + 1
+		}
+	})
+
+	if len(flags) == 0 {
+		return nil
 	}
 
 	point := influxdb2.NewPoint(
@@ -122,10 +136,9 @@ func (s *Staker) writeEventStats(event *types.Event) error {
 	return event.WriteAPI.WritePoint(context.Background(), point)
 }
 
-func (s *Staker) writeEpochStats(event *types.Event) error {
+func (s *Staker) writeEpochStats(event *types.Event, validators []*builtin.Validator) error {
 	block := event.Block
-	epoch := block.Number / 180
-	blockInEpoch := block.Number % 180
+	epoch := block.Number / s.epochLength
 
 	staker := s.staker.Revision(block.ID.String())
 	ext, err := NewExtension(s.client)
@@ -170,7 +183,6 @@ func (s *Staker) writeEpochStats(event *types.Event) error {
 		totalCirculatingVet, err := ext.TotalSupply()
 		supplyChan <- supplyResult{totalCirculatingVet, err}
 	}()
-
 	// Wait for all results
 	stakeRes := <-stakeChan
 	queuedRes := <-queuedChan
@@ -200,27 +212,33 @@ func (s *Staker) writeEpochStats(event *types.Event) error {
 	candidateProbability := make(map[string]interface{})
 
 	flags := map[string]interface{}{
-		"total_stake":     toVet(big.NewInt(0).Add(totalStakedVet, totalQueuedVet)),
-		"active_stake":    toVet(totalStakedVet),
-		"active_weight":   toVet(totalWeightVet),
-		"queued_stake":    toVet(totalQueuedVet),
-		"queued_weight":   toVet(totalQueuedWeight),
-		"circulating_vet": toVet(totalCirculatingVet),
+		"total_stake":     vetutil.ScaleToVET(big.NewInt(0).Add(totalStakedVet, totalQueuedVet)),
+		"active_stake":    vetutil.ScaleToVET(totalStakedVet),
+		"active_weight":   vetutil.ScaleToVET(totalWeightVet),
+		"queued_stake":    vetutil.ScaleToVET(totalQueuedVet),
+		"queued_weight":   vetutil.ScaleToVET(totalQueuedWeight),
+		"circulating_vet": vetutil.ScaleToVET(totalCirculatingVet),
 		"epoch":           strconv.FormatUint(uint64(epoch), 10),
 	}
 
-	if event.DPOSActive {
-		var candidates map[thor.Bytes32]*builtin.Validator
-		if blockInEpoch == 0 || len(candidates) == 0 {
-			candidates, err = s.GetValidators(block, event.Prev)
-			if err != nil {
-				slog.Error("Error while fetching validators", "error", err)
-			}
+	candidates := make(map[thor.Address]*builtin.Validator)
+	onlineValidators := 0
+	for _, v := range validators {
+		if v.Status == builtin.StakerStatusActive {
+			candidates[v.Address] = v
 		}
+		if v.Online {
+			onlineValidators++
+		}
+	}
 
+	flags["active_validators"] = len(candidates)
+	flags["online_validators"] = onlineValidators
+
+	if event.DPOSActive {
 		expectedValidator := &thor.Address{}
 		if len(candidates) > 0 {
-			expectedValidator, err = s.NextValidator(block, event.Prev, event.Seed)
+			expectedValidator, err = s.NextValidator(candidates, event.Block, event.Seed)
 			if err != nil {
 				slog.Error("Cannot extract expected validator", "error", err)
 			}
@@ -230,7 +248,7 @@ func (s *Staker) writeEpochStats(event *types.Event) error {
 		offlineValidators := 0
 		for _, candidate := range candidates {
 			probabilityValue := big.NewInt(0).Mul(candidate.Weight, big.NewInt(100))
-			candidateProbability[candidate.Master.String()] = big.NewInt(0).Div(probabilityValue, totalWeightVet).Int64()
+			candidateProbability[candidate.Address.String()] = big.NewInt(0).Div(probabilityValue, totalWeightVet).Int64()
 			if candidate.Online {
 				onlineValidators += 1
 			} else {
@@ -276,7 +294,7 @@ func (s *Staker) appendHayabusaEpochGasStats(event *types.Event) error {
 	}
 
 	block := event.Block
-	epoch := block.Number / 180
+	epoch := block.Number / s.epochLength
 	energy, err := builtin.NewEnergy(s.client)
 	if err != nil {
 		slog.Error("Failed to create energy instance", "error", err)
@@ -382,11 +400,11 @@ func (s *Staker) appendHayabusaEpochGasStats(event *types.Event) error {
 			"chain_tag": event.ChainTag,
 		},
 		map[string]interface{}{
-			"vtho_issued":         toVet(vthoIssued),
-			"vtho_burned":         toVet(vthoBurned),
+			"vtho_issued":         vetutil.ScaleToVET(vthoIssued),
+			"vtho_burned":         vetutil.ScaleToVET(vthoBurned),
 			"issued_burned_ratio": issuedBurnedRatio,
-			"validators_share":    toVet(validatorsShare),
-			"delegators_share":    toVet(delegatorsShare),
+			"validators_share":    vetutil.ScaleToVET(validatorsShare),
+			"delegators_share":    vetutil.ScaleToVET(delegatorsShare),
 			"epoch":               strconv.FormatUint(uint64(epoch), 10),
 		},
 		event.Timestamp,
@@ -395,54 +413,95 @@ func (s *Staker) appendHayabusaEpochGasStats(event *types.Event) error {
 	return event.WriteAPI.WritePoint(context.Background(), heatmapPoint)
 }
 
-func (s *Staker) appendStakerStats(ev *types.Event) error {
-	stakerStats := NewStakerStats()
+func statusToString(status builtin.StakerStatus) string {
+	switch status {
+	case builtin.StakerStatusQueued:
+		return "queued"
+	case builtin.StakerStatusActive:
+		return "active"
+	case builtin.StakerStatusExited:
+		return "exited"
+	default:
+		return "unknown"
+	}
+}
 
-	if err := stakerStats.CollectActiveStakers(s, ev.Block, ev.Prev, ev.DPOSActive); err != nil {
-		slog.Error("Failed to collect active stakers", "error", err)
+func (s *Staker) writeSingleValidatorStats(ev *types.Event, validators []*builtin.Validator) error {
+	queueOrder := make(map[thor.Address]int)
+	queueCount := 0
+	for _, validator := range validators {
+		if validator.Status == builtin.StakerStatusQueued {
+			queueOrder[validator.Address] = queueCount
+			queueCount++
+		}
 	}
 
-	txs := ev.Block.Transactions
-	for _, tx := range txs {
-		for _, output := range tx.Outputs {
-			for _, event := range output.Events {
-				stakerStats.processEvent(event)
+	type delegationAdded struct {
+		count  int
+		stake  uint64
+		weight uint64
+	}
+
+	queuedDelegators := make(map[thor.Address]*delegationAdded)
+	delegationAddedEv := s.staker.Raw().ABI().Events["DelegationAdded"].Id()
+
+	if delegationAddedEv.String() != (common.Hash{}).String() {
+		iterateEvent(ev.Block, thor.Bytes32(delegationAddedEv), func(log *api.JSONEvent) {
+			validatorAddr := thor.BytesToAddress(log.Topics[1][:])
+
+			decoded := hexutil.MustDecode(log.Data)
+			vet := big.NewInt(0).SetBytes(decoded[0:32])
+			multiplier := big.NewInt(0).SetBytes(decoded[32:64])
+			weight := big.NewInt(0).Mul(vet, multiplier)
+			weight = weight.Div(weight, big.NewInt(100))
+
+			record, ok := queuedDelegators[validatorAddr]
+			if !ok {
+				record = &delegationAdded{
+					count:  0,
+					stake:  0,
+					weight: 0,
+				}
+				queuedDelegators[validatorAddr] = record
 			}
-		}
+			record.count++
+			record.stake += vetutil.ScaleToVET(vet)
+			record.weight += vetutil.ScaleToVET(weight)
+		})
+	} else {
+		slog.Warn("DelegationAdded event not found in staker ABI, skipping queued delegators count")
 	}
 
-	for _, staker := range stakerStats.AddStaker {
-		p := influxdb2.NewPoint(
-			"queued_stakers",
-			map[string]string{
-				"chain_tag": ev.ChainTag,
-				"staker":    staker.Master.String(),
-			},
-			map[string]any{
-				"period":        staker.Period,
-				"auto_renew":    staker.AutoRenew,
-				"staked_amount": staker.Stake,
-			},
-			ev.Timestamp,
-		)
-
-		if err := ev.WriteAPI.WritePoint(context.Background(), p); err != nil {
-			return err
+	for _, validator := range validators {
+		flags := map[string]any{
+			"period":        validator.Period,
+			"staked_amount": vetutil.ScaleToVET(validator.Stake),
+			"weight":        vetutil.ScaleToVET(validator.Weight),
+			"online":        validator.Online,
+			"start_block":   validator.StartBlock,
 		}
-	}
 
-	for _, staker := range stakerStats.StakersStatus {
+		delegatorsAdded, ok := queuedDelegators[validator.Address]
+		if ok {
+			flags["queued_delegators_count"] = delegatorsAdded.count
+			flags["queued_delegators_stake"] = delegatorsAdded.stake
+			flags["queued_delegators_weight"] = delegatorsAdded.weight
+		}
+
+		if validator.Status == builtin.StakerStatusQueued {
+			flags["queue_position"] = queueOrder[validator.Address]
+		}
+
 		p := influxdb2.NewPoint(
-			"stakers_status",
+			"individual_validators",
 			map[string]string{
-				"chain_tag": ev.ChainTag,
-				"staker":    staker.Master.String(),
+				"chain_tag":      ev.ChainTag,
+				"staker":         validator.Address.String(),
+				"endorsor":       validator.Endorsor.String(),
+				"status":         statusToString(validator.Status),
+				"signalled_exit": strconv.FormatBool(validator.ExitBlock != math.MaxUint32),
 			},
-			map[string]any{
-				"auto_renew":    staker.AutoRenew,
-				"status":        int(staker.Status),
-				"staked_amount": staker.Stake.Uint64(),
-			},
+			flags,
 			ev.Timestamp,
 		)
 
