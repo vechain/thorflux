@@ -56,8 +56,8 @@ func (s *Staker) Write(event *types.Event) error {
 		resultChan <- writeResult{"writeSingleValidatorStats", err}
 	}()
 	go func() {
-		err := s.writeContractEventStats(event)
-		resultChan <- writeResult{"writeContractEventStats", err}
+		err := s.writeBlockStats(event)
+		resultChan <- writeResult{"writeBlockStats", err}
 	}()
 
 	// Wait for all results and collect errors
@@ -91,7 +91,7 @@ func iterateEvent(block *api.JSONExpandedBlock, eventSignature thor.Bytes32, cal
 	}
 }
 
-func (s *Staker) writeContractEventStats(event *types.Event) error {
+func (s *Staker) writeBlockStats(event *types.Event) error {
 	if !event.HayabusaForked {
 		return nil
 	}
