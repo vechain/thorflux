@@ -15,15 +15,71 @@ interface Staker {
     function firstActive() external view returns (address);
     function firstQueued() external view returns (address);
     function next(address id) external view returns (address);
+
+    function totalStake() external view returns (uint256, uint256);
+
+    function queuedStake() external view returns (uint256, uint256);
+
+    function getCompletedPeriods(address validator) external view returns (uint32);
+    /*
+    uint256 lockedStake,
+    uint256 lockedWeight,
+    uint256 delegatorsStake,
+    uint256 delegatorsWeight,
+    */
+    function getValidationTotals(address validator) external view returns (uint256, uint256, uint256, uint256);
+}
+
+interface Energy {
+    function totalSupply() external view returns (uint256);
+
+    function totalBurned() external view returns (uint256);
 }
 
 contract GetValidators {
     Staker private constant STAKER = Staker(0x00000000000000000000000000005374616B6572);
+    Energy private constant ENERGY = Energy(0x0000000000000000000000000000456E65726779);
 
-    function getAll() public view returns (
-        address[] memory, address[] memory,
-        uint256[] memory, uint256[] memory, uint8[] memory,
-        bool[] memory, uint32[] memory, uint32[] memory, uint32[] memory
+    // staker stats
+    function stakerBalance() public view returns (uint256) {
+        return getBalance(address(STAKER));
+    }
+
+    function totalStake() public view returns (uint256, uint256) {
+        return STAKER.totalStake();
+    }
+
+    function queuedStake() public view returns (uint256, uint256) {
+        return STAKER.queuedStake();
+    }
+
+    function getBalance(address account) private view returns (uint256) {
+        return account.balance;
+    }
+
+    // VTHO Stats
+    function totalSupply() public view returns (uint256) {
+        return ENERGY.totalSupply();
+    }
+
+    function totalBurned() public view returns (uint256) {
+        return ENERGY.totalBurned();
+    }
+
+    function getValidators() public view returns (
+        address[] memory,  // masters
+        address[] memory, // endorsors
+        uint256[] memory, // stake
+        uint256[] memory, // weight
+        uint8[] memory, // status
+        bool[] memory, // online
+        uint32[] memory, // stakingPeriod
+        uint32[] memory, // startBlock
+        uint32[] memory, // exitBlock
+        uint32[] memory, // completedPeriods
+        uint256[] memory, // delegatorsStake
+        uint256[] memory, // delegatorsWeight
+        uint256[] memory // totalStake
     ) {
         address[1000] memory idBuffer;
         uint count = 0;
@@ -40,7 +96,7 @@ contract GetValidators {
         address next = STAKER.firstQueued();
         while (next != address(0)) {
             idBuffer[count] = next;
-            next = STAKER.next(first);
+            next = STAKER.next(next);
             count++;
         }
 
@@ -54,6 +110,10 @@ contract GetValidators {
         uint32[] memory stakingPeriod = new uint32[](count);
         uint32[] memory startBlock = new uint32[](count);
         uint32[] memory exitBlock = new uint32[](count);
+        uint32[] memory completedPeriods = new uint32[](count);
+        uint256[] memory totalStake = new uint256[](count);
+        uint256[] memory delegatorsStake = new uint256[](count);
+        uint256[] memory delegatorsWeight = new uint256[](count);
 
         for (uint i = 0; i < count; i++) {
             address validatorId = idBuffer[i];
@@ -73,10 +133,27 @@ contract GetValidators {
             stakingPeriod[i] = period;
             startBlock[i] = start;
             exitBlock[i] = exit;
+            completedPeriods[i] = STAKER.getCompletedPeriods(validatorId);
+            (uint256 lockedStake, , uint256 dStake, uint256 dWeight) = STAKER.getValidationTotals(validatorId);
+            delegatorsStake[i] = dStake;
+            delegatorsWeight[i] = dWeight;
+            totalStake[i] = lockedStake;
         }
 
         return (
-            masters, endorsors, stake, weight, status, online, stakingPeriod, startBlock, exitBlock
+            masters,
+            endorsors,
+            stake,
+            weight,
+            status,
+            online,
+            stakingPeriod,
+            startBlock,
+            exitBlock,
+            completedPeriods,
+            delegatorsStake,
+            delegatorsWeight,
+            totalStake
         );
     }
 }
