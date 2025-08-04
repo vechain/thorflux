@@ -3,11 +3,12 @@ package pubsub
 import (
 	"context"
 	"fmt"
-	"github.com/vechain/thor/v2/api"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/vechain/thor/v2/api"
 
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/influxdb"
@@ -82,7 +83,7 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				continue
 			}
 
-			if b.Block.Number%250 == 0 || time.Now().Sub(t) < 10*time.Minute {
+			if b.Block.Number%250 == 0 || time.Since(t) < 10*time.Minute {
 				slog.Info("🪣 writing to bucket", "number", b.Block.Number)
 			}
 
