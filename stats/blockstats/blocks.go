@@ -19,6 +19,7 @@ func Write(ev *types.Event) error {
 	flags["block_gas_limit"] = ev.Block.GasLimit
 	flags["block_gas_usage"] = float64(ev.Block.GasUsed) * 100 / float64(ev.Block.GasLimit)
 	flags["storage_size"] = ev.Block.Size
+	flags["block_signer"] = ev.Block.Signer.String()
 	gap := float64(10)
 	if ev.Prev != nil {
 		gap = float64(ev.Block.Timestamp - ev.Prev.Timestamp)
