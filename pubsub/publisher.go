@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/vechain/thor/v2/api"
 	"log/slog"
 	"math"
 	"sort"
@@ -14,9 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/vechain/thor/v2/api"
-
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/block"
 	builtin2 "github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"

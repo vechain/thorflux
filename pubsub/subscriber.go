@@ -85,7 +85,7 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				continue
 			}
 
-			if b.Block.Number%250 == 0 || time.Now().Sub(t) < 10*time.Minute {
+			if b.Block.Number%250 == 0 || time.Since(t) < 10*time.Minute {
 				slog.Info("🪣 writing to bucket", "number", b.Block.Number)
 			}
 
