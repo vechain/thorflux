@@ -11,9 +11,8 @@ import (
 	"time"
 
 	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient/builtin"
@@ -26,12 +25,6 @@ func (s *Staker) Write(event *types.Event) error {
 		return nil
 	}
 
-	// Execute all write operations concurrently
-	type writeResult struct {
-		name string
-		err  error
-	}
-
 	start := time.Now()
 	stakerInfo, err := s.FetchAll(event.Block.ID)
 	if err != nil {
@@ -40,47 +33,49 @@ func (s *Staker) Write(event *types.Event) error {
 	}
 	slog.Info("Fetched all stakers", "block", event.Block.Number, "count", len(stakerInfo.Validations), "duration", time.Since(start))
 
-	resultChan := make(chan writeResult, 4)
+	points := make([]*write.Point, 0)
 
-	// Launch concurrent goroutines
-	go func() {
-		err := s.writeValidatorOverview(event, stakerInfo)
-		resultChan <- writeResult{"writeValidatorOverview", err}
-	}()
-	go func() {
-		err := s.writeEnergyStats(event, stakerInfo)
-		resultChan <- writeResult{"writeEnergyStats", err}
-	}()
-	go func() {
-		err := s.writeSingleValidatorStats(event, stakerInfo.Validations)
-		resultChan <- writeResult{"writeSingleValidatorStats", err}
-	}()
-	go func() {
-		err := s.writeBlockStats(event)
-		resultChan <- writeResult{"writeBlockStats", err}
-	}()
+	blockPoints, err := s.createBlockPoints(event, stakerInfo)
+	if err != nil {
+		slog.Error("Failed to create block points", "error", err)
+	} else {
+		points = append(points, blockPoints...)
+	}
 
-	// Wait for all results and collect errors
-	var errors []error
-	for i := 0; i < 3; i++ {
-		result := <-resultChan
-		if result.err != nil {
-			errors = append(errors, result.err)
+	singleValidatorPoints := s.createSingleValidatorStats(event, stakerInfo)
+	points = append(points, singleValidatorPoints...)
+
+	overviewPoints := s.createValidatorOverview(event, stakerInfo)
+	points = append(points, overviewPoints...)
+
+	energyPoints, err := s.createEnergyStats(event, stakerInfo)
+	if err != nil {
+		slog.Error("Failed to write energy stats", "error", err)
+	} else {
+		points = append(points, energyPoints...)
+	}
+
+	for _, point := range points {
+		if len(point.FieldList()) == 0 {
+			slog.Warn("Skipping point with no fields", "point", point)
 		}
 	}
 
-	// Return the first error if any occurred
-	if len(errors) > 0 {
-		return errors[0]
+	if err := event.WriteAPI.WritePoint(context.Background(), points...); err != nil {
+		slog.Error("Failed to write points to InfluxDB", "error", err)
+		return err
 	}
 
 	return nil
 }
 
-func iterateEvent(block *api.JSONExpandedBlock, eventSignature thor.Bytes32, callback func(*api.JSONEvent)) {
+func (s *Staker) iterateEvent(block *api.JSONExpandedBlock, eventSignature thor.Bytes32, callback func(*api.JSONEvent)) {
 	for _, tx := range block.Transactions {
 		for _, output := range tx.Outputs {
 			for _, log := range output.Events {
+				if log.Address != *s.staker.Raw().Address() {
+					continue // Skip logs that are not from the staker contract
+				}
 				if eventSignature.IsZero() { // If eventSignature is zero, we return all events
 					callback(log)
 				} else if log.Topics[0] == eventSignature { // If eventSignature is not zero, we filter by the event signature
@@ -91,49 +86,37 @@ func iterateEvent(block *api.JSONExpandedBlock, eventSignature thor.Bytes32, cal
 	}
 }
 
-func (s *Staker) writeBlockStats(event *types.Event) error {
+func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]*write.Point, error) {
 	if !event.HayabusaForked {
-		return nil
+		return nil, nil
 	}
 
 	abi := s.staker.Raw().ABI()
 
-	eventsByHash := make(map[thor.Bytes32]*ethabi.Event)
+	eventAbiByHash := make(map[thor.Bytes32]ethabi.Event)
 	for _, e := range abi.Events {
-		eventsByHash[thor.Bytes32(e.Id())] = &e
+		eventAbiByHash[thor.Bytes32(e.Id())] = e
 	}
+	eventsByTopic := make(map[thor.Bytes32][]*api.JSONEvent)
 
-	flags := make(map[string]interface{})
-	iterateEvent(event.Block, thor.Bytes32{}, func(log *api.JSONEvent) {
-		ev, ok := eventsByHash[log.Topics[0]]
-		if !ok {
-			return
+	s.iterateEvent(event.Block, thor.Bytes32{}, func(log *api.JSONEvent) {
+		if allEvents, ok := eventsByTopic[log.Topics[0]]; !ok {
+			allEvents = make([]*api.JSONEvent, 0)
+			eventsByTopic[log.Topics[0]] = allEvents
 		}
-		prev, ok := flags[ev.Name]
-		if !ok {
-			flags[ev.Name] = 1
-		} else {
-			flags[ev.Name] = prev.(int) + 1
-		}
+		eventsByTopic[log.Topics[0]] = append(eventsByTopic[log.Topics[0]], log)
 	})
 
-	if len(flags) == 0 {
-		return nil
+	points, err := s.ProcessEvents(event.Block.ID, eventsByTopic, eventAbiByHash, event.Timestamp)
+	if err != nil {
+		slog.Error("Failed to process events", "error", err)
+		return nil, err
 	}
 
-	point := influxdb2.NewPoint(
-		"staker_events",
-		map[string]string{
-			"chain_tag": event.ChainTag,
-		},
-		flags,
-		time.Unix(int64(event.Block.Timestamp), 0),
-	)
-
-	return event.WriteAPI.WritePoint(context.Background(), point)
+	return points, nil
 }
 
-func (s *Staker) writeValidatorOverview(event *types.Event, info *StakerInformation) error {
+func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInformation) []*write.Point {
 	block := event.Block
 	epoch := block.Number / s.epochLength
 
@@ -171,6 +154,7 @@ func (s *Staker) writeValidatorOverview(event *types.Event, info *StakerInformat
 		"queued_weight": vetutil.ScaleToVET(info.QueuedWeight),
 		// TODO: This is Circulating VTHO, not VET
 		"circulating_vet":    vetutil.ScaleToVET(info.TotalSupplyVTHO),
+		"contract_vet":       vetutil.ScaleToVET(info.ContractBalance),
 		"online_stake":       vetutil.ScaleToVET(onlineStake),
 		"offline_stake":      vetutil.ScaleToVET(offlineStake),
 		"online_weight":      vetutil.ScaleToVET(onlineWeight),
@@ -197,17 +181,18 @@ func (s *Staker) writeValidatorOverview(event *types.Event, info *StakerInformat
 		"validator_overview",
 		map[string]string{
 			"chain_tag": event.ChainTag,
+			"signer":    event.Block.Signer.String(),
 		},
 		flags,
 		time.Unix(int64(block.Timestamp), 0),
 	)
 
-	return event.WriteAPI.WritePoint(context.Background(), heatmapPoint)
+	return []*write.Point{heatmapPoint}
 }
 
-func (s *Staker) writeEnergyStats(event *types.Event, info *StakerInformation) error {
+func (s *Staker) createEnergyStats(event *types.Event, info *StakerInformation) ([]*write.Point, error) {
 	if !event.DPOSActive {
-		return nil
+		return nil, nil
 	}
 
 	defer func() {
@@ -219,9 +204,10 @@ func (s *Staker) writeEnergyStats(event *types.Event, info *StakerInformation) e
 	epoch := block.Number / s.epochLength
 
 	if (s.prevVTHOSupply.Load() == nil || s.prevVTHOBurned.Load() == nil) || event.Block.ParentID != event.Prev.ID {
+		slog.Info("Fetching previous totals for VTHO supply and burned")
 		if err := s.setPrevTotals(event.Block.ParentID); err != nil {
 			slog.Error("Failed to set previous totals", "error", err)
-			return err
+			return nil, err
 		}
 	}
 
@@ -234,7 +220,7 @@ func (s *Staker) writeEnergyStats(event *types.Event, info *StakerInformation) e
 	// Validate data before processing
 	if parentTotalSupply == nil || parentTotalSupply.Cmp(big.NewInt(0)) <= 0 ||
 		parentTotalBurned == nil || parentTotalBurned.Cmp(big.NewInt(0)) <= 0 {
-		return nil
+		return nil, nil
 	}
 
 	vthoIssued := big.NewInt(0).Sub(totalSupply, parentTotalSupply)
@@ -273,7 +259,7 @@ func (s *Staker) writeEnergyStats(event *types.Event, info *StakerInformation) e
 		event.Timestamp,
 	)
 
-	return event.WriteAPI.WritePoint(context.Background(), heatmapPoint)
+	return []*write.Point{heatmapPoint}, nil
 }
 
 func statusToString(status builtin.StakerStatus) string {
@@ -289,54 +275,23 @@ func statusToString(status builtin.StakerStatus) string {
 	}
 }
 
-func (s *Staker) writeSingleValidatorStats(ev *types.Event, validators []*Validation) error {
+func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInformation) []*write.Point {
 	queueOrder := make(map[thor.Address]int)
 	queueCount := 0
-	for _, validator := range validators {
+	for _, validator := range info.Validations {
 		if validator.Status == builtin.StakerStatusQueued {
 			queueOrder[validator.Address] = queueCount
 			queueCount++
 		}
 	}
-
-	type delegationAdded struct {
-		count  int
-		stake  uint64
-		weight uint64
+	prevValidators, err := s.ValidatorMap(ev.Block.ParentID)
+	if err != nil {
+		slog.Error("Failed to get previous validators", "error", err)
 	}
 
-	queuedDelegators := make(map[thor.Address]*delegationAdded)
-	delegationAddedEv := s.staker.Raw().ABI().Events["DelegationAdded"].Id()
+	points := make([]*write.Point, 0)
 
-	// this looks for DelegationAdded and adds the count
-	if delegationAddedEv.String() != (common.Hash{}).String() {
-		iterateEvent(ev.Block, thor.Bytes32(delegationAddedEv), func(log *api.JSONEvent) {
-			validatorAddr := thor.BytesToAddress(log.Topics[1][:])
-
-			decoded := hexutil.MustDecode(log.Data)
-			vet := big.NewInt(0).SetBytes(decoded[0:32])
-			multiplier := big.NewInt(0).SetBytes(decoded[32:64])
-			weight := big.NewInt(0).Mul(vet, multiplier)
-			weight = weight.Div(weight, big.NewInt(100))
-
-			record, ok := queuedDelegators[validatorAddr]
-			if !ok {
-				record = &delegationAdded{
-					count:  0,
-					stake:  0,
-					weight: 0,
-				}
-				queuedDelegators[validatorAddr] = record
-			}
-			record.count++
-			record.stake += vetutil.ScaleToVET(vet)
-			record.weight += vetutil.ScaleToVET(weight)
-		})
-	} else {
-		slog.Warn("DelegationAdded event not found in staker ABI, skipping queued delegators count")
-	}
-
-	for _, validator := range validators {
+	for _, validator := range info.Validations {
 		flags := map[string]any{
 			"staked_amount":     vetutil.ScaleToVET(validator.Stake),
 			"weight":            vetutil.ScaleToVET(validator.Weight),
@@ -347,13 +302,28 @@ func (s *Staker) writeSingleValidatorStats(ev *types.Event, validators []*Valida
 			"delegators_staked": vetutil.ScaleToVET(validator.DelegatorsStaked),
 			"delegators_weight": vetutil.ScaleToVET(validator.DelegatorsWeight),
 			"exit_block":        validator.ExitBlock,
+			"current_block":     ev.Block.Number,
 		}
-
-		delegatorsAdded, ok := queuedDelegators[validator.Address]
+		prevEntry, ok := prevValidators[validator.Address]
 		if ok {
-			flags["queued_delegators_count"] = delegatorsAdded.count
-			flags["queued_delegators_stake"] = delegatorsAdded.stake
-			flags["queued_delegators_weight"] = delegatorsAdded.weight
+			if prevEntry.Online != validator.Online {
+				flags["online_changed"] = true
+			}
+			if prevEntry.Status != validator.Status {
+				flags["status_changed"] = true
+				flags["prev_status"] = statusToString(prevEntry.Status)
+			}
+			if prevEntry.Weight.Cmp(validator.Weight) != 0 {
+				flags["weight_changed"] = true
+				flags["weight_change"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.Weight, prevEntry.Weight))
+			}
+			if prevEntry.Stake.Cmp(validator.Stake) != 0 {
+				flags["stake_changed"] = true
+				flags["stake_change"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.Stake, prevEntry.Stake))
+			}
+			if prevEntry.ExitBlock != validator.ExitBlock {
+				flags["exit_block_changed"] = true
+			}
 		}
 
 		if validator.Status == builtin.StakerStatusQueued {
@@ -374,10 +344,8 @@ func (s *Staker) writeSingleValidatorStats(ev *types.Event, validators []*Valida
 			ev.Timestamp,
 		)
 
-		if err := ev.WriteAPI.WritePoint(context.Background(), p); err != nil {
-			return err
-		}
+		points = append(points, p)
 	}
 
-	return nil
+	return points
 }

@@ -123,6 +123,7 @@ func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
 
 	existing, ok := s.cache.Get(id)
 	if ok {
+		slog.Info("Using cached staker info", "id", id.String())
 		return existing.(*StakerInformation), nil
 	}
 	if err := s.initABI(); err != nil {
@@ -136,8 +137,21 @@ func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to unpack staker info: %w", err)
 	}
-	s.cache.Add(id, result.Validations)
+	s.cache.Add(id, result)
 	return result, nil
+}
+
+func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*builtin.Validator, error) {
+	info, err := s.FetchAll(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch staker info: %w", err)
+	}
+
+	validators := make(map[thor.Address]*builtin.Validator, len(info.Validations))
+	for _, v := range info.Validations {
+		validators[v.Address] = v.Validator
+	}
+	return validators, nil
 }
 
 func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {

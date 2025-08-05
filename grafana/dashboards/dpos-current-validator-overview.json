@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 7,
+  "id": 12,
   "links": [],
   "panels": [
     {
@@ -47,69 +47,8 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 5,
+        "w": 6,
         "x": 0,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "text": {
-          "titleSize": 1
-        },
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> sum(column: \"_value\")",
-          "refId": "A"
-        }
-      ],
-      "title": "Total Weight",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "locale"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 5,
-        "x": 5,
         "y": 0
       },
       "id": 3,
@@ -140,7 +79,7 @@
           "refId": "A"
         }
       ],
-      "title": "Validator Stakes",
+      "title": "Validator TVL (VET)",
       "type": "stat"
     },
     {
@@ -153,6 +92,7 @@
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 0,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -163,17 +103,17 @@
               }
             ]
           },
-          "unit": "locale"
+          "unit": "currencyUSD"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 7,
-        "w": 5,
-        "x": 10,
+        "w": 6,
+        "x": 6,
         "y": 0
       },
-      "id": 7,
+      "id": 16,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -197,11 +137,319 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "// Get the latest record time for \"weight\"\nlatestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\n// Total active weight\nweight = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({\n      r with\n      _value: float(v: r._value),\n      _field: \"weight\",\n      dummy: \"join_key\"\n  }))\n\n// Total active weight * 2\nvalidator_weight = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({\n      r with\n      _value: float(v: r._value) * 2.0,\n      _field: \"validator_weight\",\n      dummy: \"join_key\"\n  }))\n\n// Join and compute difference\njoin(\n  tables: {w: weight, v: validator_weight},\n  on: [\"dummy\"]\n)\n|> map(fn: (r) => ({\n    _time: now(),\n    _field: \"difference\",\n    _value: r._value_w - r._value_v\n  }))\n",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
           "refId": "A"
         }
       ],
-      "title": "Total  Delegator Weight",
+      "title": "Validator TVL (USD)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 17,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 1
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")",
+          "refId": "A"
+        }
+      ],
+      "title": "DelegatorTVL (VET)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 18,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 1
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
+          "refId": "A"
+        }
+      ],
+      "title": "Delegator TVL (USD)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 7
+      },
+      "id": 19,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 1
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Validator + Delegator TVL (VET)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 7
+      },
+      "id": 20,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 1
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
+          "refId": "A"
+        }
+      ],
+      "title": "Validator + Delegator TVL (USD)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 0,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 7
+      },
+      "id": 22,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 1
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"current_block\")\n  |> group()\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Last Processed Block",
       "type": "stat"
     },
     {
@@ -246,7 +494,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 164
+                "value": 256
               },
               {
                 "id": "links",
@@ -273,7 +521,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 113
+                "value": 150
               },
               {
                 "id": "mappings",
@@ -340,12 +588,96 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "Delegator TVL"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 149
+              },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block Probability"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 127
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Validator TVL"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 155
+              },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total TVL"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 146
+              },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blocks Per Epoch"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 158
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Weight"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 174
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "Start Block"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 115
+                "value": 102
               }
             ]
           }
@@ -355,7 +687,7 @@
         "h": 19,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 14
       },
       "id": 14,
       "options": {
@@ -373,14 +705,14 @@
         "sortBy": [
           {
             "desc": true,
-            "displayName": "Block Probability"
+            "displayName": "Total TVL"
           }
         ]
       },
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\")\n  |> pivot(\n      rowKey:[\"_time\", \"staker\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.staker,\n      \"Completed Periods\": r.completed_periods,\n      \"Online\": r.online,\n      \"Weight\": r.weight,\n      \"Block Probability\": float(v: r.weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Staked Amount\": r.staked_amount,\n      \"Total Stake\": r.total_staked,\n      \"Delegator Stake\": r.delegators_staked,\n      \"Delegator Weight\": r.delegators_weight,\n      \"Staking Period Length\": r.staking_period_length,\n      \"Exit Signalled\": r.signalled_exit\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Total Stake\",\n      \"Weight\",\n      \"Delegator Stake\",\n      \"Delegator Weight\",\n      \"Staking Period Length\",\n      \"Exit Signalled\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n  ])\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\")\n  |> pivot(\n      rowKey:[\"_time\", \"staker\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.staker,\n      \"Completed Periods\": r.completed_periods,\n      \"Online\": r.online,\n      \"Weight\": r.weight,\n      \"Block Probability\": float(v: r.weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Validator TVL\": float(v: r.staked_amount) * float(v: \"${vet_price}\"),\n      \"Delegator TVL\": float(v: r.delegators_staked) * float(v: \"${vet_price}\"),\n      \"Staking Period Length\": r.staking_period_length,\n      \"Exit Signalled\": r.signalled_exit\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Validator TVL\",\n      \"Delegator TVL\",      \n      \"Weight\",\n      \"Staking Period Length\",\n      \"Exit Signalled\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"]\n    }))\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n",
           "refId": "A"
         }
       ],
@@ -394,16 +726,15 @@
             "indexByName": {
               "Block Probability": 3,
               "Blocks Per Epoch": 4,
-              "Completed Periods": 10,
-              "Delegator Stake": 6,
-              "Delegator Weight": 7,
+              "Completed Periods": 9,
+              "Delegator TVL": 7,
               "Exit Signalled": 1,
-              "Online": 9,
-              "Staked Amount": 8,
-              "Staking Period Length": 12,
-              "Start Block": 11,
-              "Total Stake": 5,
+              "Online": 8,
+              "Staking Period Length": 11,
+              "Start Block": 10,
+              "Total TVL": 5,
               "Validator": 0,
+              "Validator TVL": 6,
               "Weight": 2
             },
             "renameByName": {
@@ -440,8 +771,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -456,21 +786,21 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 164
+                "value": 256
               },
               {
                 "id": "links",
                 "value": [
                   {
                     "title": "",
-                    "url": "http://localhost:3000/d/fetli0i64zny8c/dpos-individual-stakers?orgId=1&from=now-30m&to=now&timezone=browser&var-staker=${__data.fields.Validator}"
+                    "url": "http://localhost:3000/d/fetli0i64zny8c/dpos-individual-stakers?orgId=1&from=now-30m&to=now&timezone=browser&var-staker${__data.fields.Validator}"
                   }
                 ]
               },
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "type": "json-view"
+                  "type": "auto"
                 }
               }
             ]
@@ -483,7 +813,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 113
+                "value": 150
               },
               {
                 "id": "mappings",
@@ -550,24 +880,108 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "Delegator TVL"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 149
+              },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block Probability"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 127
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Validator TVL"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 155
+              },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total TVL"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 146
+              },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blocks Per Epoch"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 158
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Weight"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 174
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "Start Block"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 115
+                "value": 102
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 13,
+        "h": 12,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 33
       },
-      "id": 15,
+      "id": 21,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -582,19 +996,19 @@
         "showHeader": true,
         "sortBy": [
           {
-            "desc": true,
-            "displayName": "Block Probability"
+            "desc": false,
+            "displayName": "Exit Block"
           }
         ]
       },
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\" and r[\"signalled_exit\"] == \"true\")\n  |> pivot(\n      rowKey:[\"_time\", \"staker\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n      \"Validator\": r.staker,\n      \"Completed Periods\": r.completed_periods,\n      \"Exit Block\": r.exit_block,\n      \"Online\": r.online,\n      \"Weight\": r.weight,\n      \"Block Probability\": float(v: r.weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Staked Amount\": r.staked_amount,\n      \"Total Stake\": r.total_staked,\n      \"Delegator Stake\": r.delegators_staked,\n      \"Delegator Weight\": r.delegators_weight,\n      \"Staking Period Length\": r.staking_period_length\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n       \"Exit Block\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Total Stake\",\n      \"Weight\",\n      \"Delegator Stake\",\n      \"Delegator Weight\",\n      \"Staking Period Length\",\n      \"Exit Signalled\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n  ])\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\" and r[\"signalled_exit\"] == \"true\")\n  |> pivot(\n      rowKey:[\"_time\", \"staker\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.staker,\n      \"Completed Periods\": r.completed_periods,\n      \"Online\": r.online,\n      \"Weight\": r.weight,\n      \"Block Probability\": float(v: r.weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Validator TVL\": float(v: r.staked_amount) * float(v: \"${vet_price}\"),\n      \"Delegator TVL\": float(v: r.delegators_staked) * float(v: \"${vet_price}\"),\n      \"Staking Period Length\": r.staking_period_length,\n      \"Exit Signalled\": r.signalled_exit,\n      \"Exit Block\": r.exit_block\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Validator TVL\",\n      \"Delegator TVL\",      \n      \"Weight\",\n      \"Staking Period Length\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n      \"Exit Block\",\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"]\n    }))\n  |> sort(columns: [\"Exit Block\"], desc: true)\n",
           "refId": "A"
         }
       ],
-      "title": "Exiting Validators",
+      "title": "Validator List",
       "transformations": [
         {
           "id": "organize",
@@ -602,19 +1016,18 @@
             "excludeByName": {},
             "includeByName": {},
             "indexByName": {
-              "Block Probability": 3,
-              "Blocks Per Epoch": 4,
-              "Completed Periods": 10,
-              "Delegator Stake": 6,
-              "Delegator Weight": 7,
+              "Block Probability": 6,
+              "Blocks Per Epoch": 7,
+              "Completed Periods": 9,
+              "Delegator TVL": 4,
               "Exit Block": 1,
-              "Online": 9,
-              "Staked Amount": 8,
-              "Staking Period Length": 12,
-              "Start Block": 11,
-              "Total Stake": 5,
+              "Online": 8,
+              "Staking Period Length": 11,
+              "Start Block": 10,
+              "Total TVL": 2,
               "Validator": 0,
-              "Weight": 2
+              "Validator TVL": 3,
+              "Weight": 5
             },
             "renameByName": {
               "Validator": ""
@@ -646,8 +1059,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -658,7 +1070,7 @@
         "h": 11,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 45
       },
       "id": 9,
       "options": {
@@ -764,7 +1176,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 50
+        "y": 56
       },
       "id": 10,
       "options": {
@@ -863,7 +1275,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 50
+        "y": 56
       },
       "id": 11,
       "options": {
@@ -962,7 +1374,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 58
+        "y": 64
       },
       "id": 12,
       "options": {
@@ -1061,7 +1473,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 58
+        "y": 64
       },
       "id": 13,
       "options": {
@@ -1111,7 +1523,26 @@
   "schemaVersion": 40,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "0.02337",
+          "value": "0.02337"
+        },
+        "description": "",
+        "label": "VET / USD",
+        "name": "vet_price",
+        "options": [
+          {
+            "selected": true,
+            "text": "0.02337",
+            "value": "0.02337"
+          }
+        ],
+        "query": "0.02337",
+        "type": "textbox"
+      }
+    ]
   },
   "time": {
     "from": "now-3h",
@@ -1119,7 +1550,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "DPOS - Validator Overview",
+  "title": "DPOS - Current Validator Overview",
   "uid": "detluspo628zkf",
   "version": 6,
   "weekStart": ""
