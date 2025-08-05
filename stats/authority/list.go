@@ -18,6 +18,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"

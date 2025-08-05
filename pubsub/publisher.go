@@ -14,6 +14,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/vechain/thor/v2/api"
+
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/vechain/thor/v2/block"
 	builtin2 "github.com/vechain/thor/v2/builtin"
@@ -122,7 +124,7 @@ func (s *Publisher) sync(ctx context.Context) {
 		default:
 			prev := s.previous()
 			prevTime := time.Unix(int64(prev.Timestamp), 0).UTC()
-			if time.Now().Sub(prevTime) < 10*time.Second {
+			if time.Since(prevTime) < 10*time.Second {
 				time.Sleep(time.Until(prevTime.Add(10 * time.Second)))
 				continue
 			}
@@ -300,6 +302,9 @@ func (s *Publisher) fetchSeed(parentID thor.Bytes32) ([]byte, error) {
 
 	rawBlock := api.JSONRawBlockSummary{}
 	res, status, err := s.thor.RawHTTPClient().RawHTTPGet("/blocks/" + hex.EncodeToString(seedID.Bytes()) + "?raw=true")
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch raw block: %w", err)
+	}
 	if status != 200 {
 		return nil, fmt.Errorf("failed to fetch raw block: %s", res)
 	}
