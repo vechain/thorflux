@@ -1,6 +1,11 @@
 package pos
 
 import (
+	"log/slog"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
@@ -9,10 +14,6 @@ import (
 	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thor/v2/tx"
 	"github.com/vechain/thorflux/vetutil"
-	"log/slog"
-	"math/big"
-	"strconv"
-	"time"
 )
 
 func (s *Staker) ProcessEvents(
@@ -296,12 +297,13 @@ func (s *Staker) processDelegationWithdrawn(rev thor.Bytes32, event *api.JSONEve
 func (s *Staker) processDelegationSignaledExit(rev thor.Bytes32, event *api.JSONEvent, abi abi.Event, timestamp time.Time) (*write.Point, error) {
 	// delegationID is indexed, so we can extract it from the event topics
 	delegationID := new(big.Int).SetBytes(event.Topics[1][:]) // indexed
-	delegation, err := s.staker.Revision(rev.String()).GetDelegation(delegationID)
+	staker := s.staker.Revision(rev.String())
+	delegation, err := staker.GetDelegation(delegationID)
 	if err != nil {
 		slog.Error("failed to get delegation", "delegation_id", delegationID, "error", err)
 		return nil, err
 	}
-	validation, err := s.staker.Revision(rev.String()).Get(delegation.Validator)
+	validation, err := staker.Get(delegation.Validator)
 	if err != nil {
 		slog.Error("failed to get validation", "validator", delegation.Validator, "error", err)
 		return nil, err
@@ -311,6 +313,10 @@ func (s *Staker) processDelegationSignaledExit(rev thor.Bytes32, event *api.JSON
 	weight = weight.Mul(weight, delegation.Stake)
 	weight = weight.Div(weight, big.NewInt(100)) // assuming multiplier is in percentage
 
+	// eg start block = 6, period = 6, end period = 5
+	// 6 + (6 * 5) = 36
+	exitBlock := validation.StartBlock + (validation.Period * delegation.EndPeriod)
+
 	return write.NewPoint(
 		"delegation_signaled_exit",
 		map[string]string{
@@ -319,6 +325,7 @@ func (s *Staker) processDelegationSignaledExit(rev thor.Bytes32, event *api.JSON
 		},
 		map[string]interface{}{
 			"exit_period":              delegation.EndPeriod,
+			"exit_block":               exitBlock,
 			"stake":                    vetutil.ScaleToVET(delegation.Stake),
 			"multiplier":               delegation.Multiplier,
 			"weight":                   vetutil.ScaleToVET(weight),

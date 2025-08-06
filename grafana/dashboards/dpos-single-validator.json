@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 8,
+  "id": 5,
   "links": [],
   "panels": [
     {
@@ -315,6 +315,69 @@
           "color": {
             "mode": "thresholds"
           },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 3,
+        "y": 8
+      },
+      "id": 27,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validation_queued\" or r[\"_measurement\"] == \"validation_withdrawn\" or r[\"_measurement\"] == \"validation_signaled_exit\" or r[\"_measurement\"] == \"stake_increased\" or r[\"_measurement\"] == \"stake_decreased\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> group()\n  |> drop(columns: [\"_stop\", \"_start\"])\n  |> sort(columns: [\"_time\"], desc: true)",
+          "refId": "A"
+        }
+      ],
+      "title": "Actions Taken",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -333,7 +396,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 8
+        "y": 16
       },
       "id": 17,
       "options": {
@@ -395,7 +458,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 8
+        "y": 16
       },
       "id": 10,
       "options": {
@@ -495,7 +558,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 16
       },
       "id": 14,
       "options": {
@@ -549,7 +612,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 16
+        "y": 24
       },
       "id": 19,
       "options": {
@@ -611,7 +674,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 16
+        "y": 24
       },
       "id": 6,
       "options": {
@@ -710,7 +773,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 24
       },
       "id": 12,
       "options": {
@@ -764,7 +827,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 24
+        "y": 32
       },
       "id": 24,
       "options": {
@@ -826,7 +889,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 24
+        "y": 32
       },
       "id": 25,
       "options": {
@@ -888,7 +951,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 24
+        "y": 32
       },
       "id": 7,
       "options": {
@@ -949,7 +1012,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 24
+        "y": 32
       },
       "id": 11,
       "options": {
@@ -1045,7 +1108,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 40
       },
       "id": 15,
       "options": {
@@ -1133,7 +1196,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 40
       },
       "id": 13,
       "options": {
@@ -1230,7 +1293,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 48
       },
       "id": 21,
       "options": {
@@ -1252,7 +1315,7 @@
           "refId": "A"
         }
       ],
-      "title": "Queued Delegations",
+      "title": "Queued Delegations (TODO: Filter out positions that withdraw before getting locked)",
       "transformations": [
         {
           "id": "organize",
@@ -1272,6 +1335,179 @@
         }
       ],
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stake USD"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "VET"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "locale"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "id": 26,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "staker=\"0xf514f19cd174de4f33874256c0748a98a031d73a\"\nvet_price=\"0.02\"\n\nlatestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"start_period\")\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> filter(fn: (r) => r[\"start_period\"] <= current)\n   |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"Weight\": r.weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"Weight\", \"_time\", \"Stake USD\"])\n  |> sort(columns: [\"Stake USD\"], desc: true)",
+          "refId": "A"
+        }
+      ],
+      "title": "Activated Delegations (TODO: Filter out exited, withdrawn or not started)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "Delegation ID": 1,
+              "Multiplier": 4,
+              "Stake USD": 2,
+              "VET": 3,
+              "Weight": 5,
+              "_time": 0
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 57
+      },
+      "id": 28,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "\nlatestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_signaled_exit\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => \n    r[\"_field\"] == \"block\" or \n    r[\"_field\"] == \"exit_period\" or \n    r[\"_field\"] == \"multiplier\" or \n    r[\"_field\"] == \"validator_staking_period\" or \n    r[\"_field\"] == \"validator_start_block\" or \n    r[\"_field\"] == \"weight\" or\n    r[\"_field\"] == \"exit_block\"\n  )\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()",
+          "refId": "A"
+        }
+      ],
+      "title": "Signalled Exit Delegations (TODO: Separate this by exited or exiting, based on current block and exit block)",
+      "type": "table"
     }
   ],
   "preload": false,
@@ -1282,8 +1518,8 @@
     "list": [
       {
         "current": {
-          "text": "0x71339fdd408a14a077ce5bac08bb641891fde304",
-          "value": "0x71339fdd408a14a077ce5bac08bb641891fde304"
+          "text": "0x9b8c4e22a2e5eb61f362089b1d8d9211693f0767",
+          "value": "0x9b8c4e22a2e5eb61f362089b1d8d9211693f0767"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"vechain\", tag: \"staker\")",
         "name": "staker",
@@ -1315,13 +1551,13 @@
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "DPOS - Individual Stakers",
   "uid": "fetli0i64zny8c",
-  "version": 21,
+  "version": 1,
   "weekStart": ""
 }
