@@ -133,7 +133,7 @@ func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]
 
 func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInformation) []*write.Point {
 	block := event.Block
-	epoch := block.Number / s.epochLength
+	epoch := block.Number / thor.CheckpointInterval
 
 	leaderGroup := make(map[thor.Address]*builtin.Validator)
 
@@ -161,6 +161,15 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		}
 	}
 
+	validator, ok := leaderGroup[event.Block.Signer]
+	weightProcessed := big.NewInt(0)
+	if !ok {
+		slog.Warn("Signer not found in leader group", "signer", event.Block.Signer.String())
+		return nil
+	} else {
+		weightProcessed = validator.Weight
+	}
+
 	flags := map[string]interface{}{
 		"total_stake":   vetutil.ScaleToVET(big.NewInt(0).Add(info.TotalVET, info.QueuedVET)),
 		"active_stake":  vetutil.ScaleToVET(info.TotalVET),
@@ -174,10 +183,12 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"offline_stake":      vetutil.ScaleToVET(offlineStake),
 		"online_weight":      vetutil.ScaleToVET(onlineWeight),
 		"offline_weight":     vetutil.ScaleToVET(offlineWeight),
-		"epoch":              strconv.FormatUint(uint64(epoch), 10),
+		"epoch":              epoch,
+		"block_in_epoch":     block.Number % thor.CheckpointInterval,
 		"active_validators":  len(leaderGroup),
 		"online_validators":  onlineValidators,
 		"offline_validators": offlineValidators,
+		"weight_processed":   vetutil.ScaleToVET(weightProcessed),
 	}
 
 	if event.DPOSActive {

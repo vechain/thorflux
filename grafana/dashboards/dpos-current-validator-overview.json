@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 9,
+  "id": 6,
   "links": [],
   "panels": [
     {
@@ -1684,6 +1684,125 @@
         }
       ],
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 15,
+        "y": 59
+      },
+      "id": 25,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_in_epoch\")\n  |> group()\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Current Block In Epoch",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 67
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 15,
+        "y": 67
+      },
+      "id": 26,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ntotal_weight = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value)\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value * uint(v: 100) / total_weight._value}))",
+          "refId": "A"
+        }
+      ],
+      "title": "Finality - Voted Weight",
+      "type": "stat"
     }
   ],
   "preload": false,
@@ -1720,6 +1839,6 @@
   "timezone": "browser",
   "title": "DPOS - Current Validator Overview",
   "uid": "detluspo628zkf",
-  "version": 3,
+  "version": 5,
   "weekStart": ""
 }
