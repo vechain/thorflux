@@ -25,22 +25,13 @@ func (s *Staker) Write(event *types.Event) error {
 		return nil
 	}
 
-	start := time.Now()
 	stakerInfo, err := s.FetchAll(event.Block.ID)
 	if err != nil {
 		slog.Error("Failed to fetch all stakers", "error", err)
 		return err
 	}
-	slog.Info("Fetched all stakers", "block", event.Block.Number, "count", len(stakerInfo.Validations), "duration", time.Since(start))
 
 	points := make([]*write.Point, 0)
-
-	blockPoints, err := s.createBlockPoints(event, stakerInfo)
-	if err != nil {
-		slog.Error("Failed to create block points", "error", err)
-	} else {
-		points = append(points, blockPoints...)
-	}
 
 	singleValidatorPoints := s.createSingleValidatorStats(event, stakerInfo)
 	points = append(points, singleValidatorPoints...)
@@ -55,9 +46,22 @@ func (s *Staker) Write(event *types.Event) error {
 		points = append(points, energyPoints...)
 	}
 
+	blockPoints, err := s.createBlockPoints(event, stakerInfo)
+	if err != nil {
+		slog.Error("Failed to create block points", "error", err)
+	} else {
+		points = append(points, blockPoints...)
+	}
+
+	missedSlotsPoints, err := s.createMissedSlotsPoints(event, stakerInfo)
+	if err != nil {
+		slog.Error("Failed to create missed slots points", "error", err)
+	}
+	points = append(points, missedSlotsPoints...)
+
 	for _, point := range points {
 		if len(point.FieldList()) == 0 {
-			slog.Warn("Skipping point with no fields", "point", point)
+			slog.Warn("Skipping point with no fields", "point", point.Name())
 		}
 	}
 
@@ -67,23 +71,6 @@ func (s *Staker) Write(event *types.Event) error {
 	}
 
 	return nil
-}
-
-func (s *Staker) iterateEvent(block *api.JSONExpandedBlock, eventSignature thor.Bytes32, callback func(*api.JSONEvent)) {
-	for _, tx := range block.Transactions {
-		for _, output := range tx.Outputs {
-			for _, log := range output.Events {
-				if log.Address != *s.staker.Raw().Address() {
-					continue // Skip logs that are not from the staker contract
-				}
-				if eventSignature.IsZero() { // If eventSignature is zero, we return all events
-					callback(log)
-				} else if log.Topics[0] == eventSignature { // If eventSignature is not zero, we filter by the event signature
-					callback(log)
-				}
-			}
-		}
-	}
 }
 
 func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]*write.Point, error) {
@@ -99,18 +86,46 @@ func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]
 	}
 	eventsByTopic := make(map[thor.Bytes32][]*api.JSONEvent)
 
-	s.iterateEvent(event.Block, thor.Bytes32{}, func(log *api.JSONEvent) {
-		if allEvents, ok := eventsByTopic[log.Topics[0]]; !ok {
-			allEvents = make([]*api.JSONEvent, 0)
-			eventsByTopic[log.Topics[0]] = allEvents
+	for _, tx := range event.Block.Transactions {
+		for _, output := range tx.Outputs {
+			for _, log := range output.Events {
+				if log.Address != *s.staker.Raw().Address() {
+					continue // Skip logs that are not from the staker contract
+				}
+				if allEvents, ok := eventsByTopic[log.Topics[0]]; !ok {
+					allEvents = make([]*api.JSONEvent, 0)
+					eventsByTopic[log.Topics[0]] = allEvents
+				}
+				eventsByTopic[log.Topics[0]] = append(eventsByTopic[log.Topics[0]], log)
+			}
 		}
-		eventsByTopic[log.Topics[0]] = append(eventsByTopic[log.Topics[0]], log)
-	})
+	}
 
 	points, err := s.ProcessEvents(event.Block.ID, eventsByTopic, eventAbiByHash, event.Timestamp)
 	if err != nil {
 		slog.Error("Failed to process events", "error", err)
 		return nil, err
+	}
+
+	flags := make(map[string]interface{})
+	for signature, events := range eventsByTopic {
+		abiEvent, ok := eventAbiByHash[signature]
+		if !ok {
+			slog.Warn("Event ABI not found", "event", signature)
+			continue
+		}
+		flags[abiEvent.Name] = len(events)
+	}
+	if len(flags) > 1 {
+		eventTotalsPoint := influxdb2.NewPoint(
+			"staker_events",
+			map[string]string{
+				"chain_tag": event.ChainTag,
+			},
+			flags,
+			event.Timestamp,
+		)
+		points = append(points, eventTotalsPoint)
 	}
 
 	return points, nil
@@ -288,9 +303,42 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 	if err != nil {
 		slog.Error("Failed to get previous validators", "error", err)
 	}
+	validators, err := s.ValidatorMap(ev.Block.ID)
+	if err != nil {
+		slog.Error("Failed to get current validators", "error", err)
+	}
 
 	points := make([]*write.Point, 0)
 
+	// process previous validators that are not in the current set
+	// this is useful for tracking exits and status changes
+	for id, validator := range prevValidators {
+		_, ok := validators[id]
+		if ok {
+			continue
+		}
+		flags := map[string]any{
+			"status_changed": statusToString(validator.Status),
+		}
+
+		p := influxdb2.NewPoint(
+			"individual_validators",
+			map[string]string{
+				"chain_tag":             ev.ChainTag,
+				"staker":                validator.Address.String(),
+				"endorsor":              validator.Endorsor.String(),
+				"status":                statusToString(builtin.StakerStatusExited),
+				"signalled_exit":        strconv.FormatBool(validator.ExitBlock != math.MaxUint32),
+				"staking_period_length": strconv.FormatUint(uint64(validator.Period), 10),
+			},
+			flags,
+			ev.Timestamp,
+		)
+		points = append(points, p)
+
+	}
+
+	// process all current validators, queued and active
 	for _, validator := range info.Validations {
 		flags := map[string]any{
 			"staked_amount":     vetutil.ScaleToVET(validator.Stake),
@@ -306,26 +354,22 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 		}
 		prevEntry, ok := prevValidators[validator.Address]
 		if ok {
-			if prevEntry.Online != validator.Online {
-				flags["online_changed"] = true
-			}
-			if prevEntry.Status != validator.Status {
-				flags["status_changed"] = true
-				flags["prev_status"] = statusToString(prevEntry.Status)
-			}
 			if prevEntry.Weight.Cmp(validator.Weight) != 0 {
-				flags["weight_changed"] = true
-				flags["weight_change"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.Weight, prevEntry.Weight))
+				flags["weight_changed"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.Weight, prevEntry.Weight))
 			}
 			if prevEntry.Stake.Cmp(validator.Stake) != 0 {
-				flags["stake_changed"] = true
-				flags["stake_change"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.Stake, prevEntry.Stake))
+				flags["stake_changed"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.Stake, prevEntry.Stake))
 			}
 			if prevEntry.ExitBlock != validator.ExitBlock {
-				flags["exit_block_changed"] = true
+				flags["exit_block_changed"] = validator.ExitBlock
 			}
 		}
-
+		if prevEntry == nil || prevEntry.Online != validator.Online {
+			flags["online_changed"] = strconv.FormatBool(validator.Online)
+		}
+		if prevEntry == nil || prevEntry.Status != validator.Status {
+			flags["status_changed"] = statusToString(validator.Status)
+		}
 		if validator.Status == builtin.StakerStatusQueued {
 			flags["queue_position"] = queueOrder[validator.Address]
 		}
@@ -348,4 +392,44 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 	}
 
 	return points
+}
+
+func (s *Staker) createMissedSlotsPoints(event *types.Event, info *StakerInformation) ([]*write.Point, error) {
+	if !event.DPOSActive {
+		return nil, nil
+	}
+	validators := make(map[thor.Address]*builtin.Validator)
+	for _, v := range info.Validations {
+		if v.Status == builtin.StakerStatusActive {
+			validators[v.Address] = v.Validator
+		}
+	}
+
+	missed, err := s.MissedSlots(validators, event.Block, event.Seed)
+	if err != nil {
+		slog.Error("Failed to get missed slots", "error", err)
+		return nil, err
+	}
+
+	points := make([]*write.Point, 0)
+
+	for _, v := range missed {
+		slog.Warn("Missed slot for validator", "validator", v.Signer, "block", event.Block.Number, "slot", v.Slot)
+
+		point := influxdb2.NewPoint(
+			"dpos_missed_slots",
+			map[string]string{
+				"chain_tag": event.ChainTag,
+				"signer":    v.Signer.String(),
+			},
+			map[string]interface{}{
+				"slot":         v.Slot,
+				"block_number": event.Block.Number,
+			},
+			event.Timestamp,
+		)
+		points = append(points, point)
+	}
+
+	return points, nil
 }

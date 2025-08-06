@@ -17,7 +17,7 @@ func NewExtension(client *thorclient.Client) (*Extension, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Extension{contract: *contract}, nil
+	return &Extension{contract: contract}, nil
 }
 
 func (e *Extension) Revision(rev string) *Extension {

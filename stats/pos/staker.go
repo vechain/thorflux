@@ -79,31 +79,47 @@ func NewStaker(client *thorclient.Client) (*Staker, error) {
 	return &Staker{staker: staker, client: client, epochLength: epochLength, cache: cache}, nil
 }
 
-func (s *Staker) NextValidator(
+type MissedSlot struct {
+	Slot   uint64
+	Signer thor.Address
+}
+
+func (s *Staker) MissedSlots(
 	validators map[thor.Address]*builtin.Validator,
 	block *api.JSONExpandedBlock,
 	seed []byte,
-) (*thor.Address, error) {
+) ([]MissedSlot, error) {
 	proposers := make(map[thor.Address]*validation.Validation)
 	for id, v := range validators {
+		if v.Status != builtin.StakerStatusActive {
+			continue
+		}
 		// scheduler doesn't need any other fields
 		proposers[id] = &validation.Validation{
 			Online: v.Online,
 			Weight: v.Weight,
 		}
 	}
-
-	sched, err := pos.NewScheduler(block.Signer, proposers, block.Number, block.Timestamp, seed)
+	parent, err := s.client.Block(block.ParentID.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch parent block %s: %w", block.ParentID, err)
+	}
+	sched, err := pos.NewScheduler(block.Signer, proposers, parent.Number, parent.Timestamp, seed)
 	if err != nil {
 		return nil, err
 	}
-	for id := range validators {
-		if sched.IsScheduled(block.Timestamp+10, id) {
-			return &id, nil
+	missedSigners := make([]MissedSlot, 0)
+	for i := parent.Timestamp + thor.BlockInterval; i < block.Timestamp; i += thor.BlockInterval {
+		for master := range proposers {
+			if sched.IsScheduled(i, master) {
+				missedSigners = append(missedSigners, MissedSlot{
+					Slot:   i,
+					Signer: master,
+				})
+			}
 		}
 	}
-	slog.Warn("No expected validator found for current block", "block", block.ID, "seed", fmt.Sprintf("%x", seed))
-	return nil, fmt.Errorf("no expected validator found for current block %s", block.ID)
+	return missedSigners, nil
 }
 
 //go:embed compiled/GetValidators.abi
@@ -123,7 +139,6 @@ func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
 
 	existing, ok := s.cache.Get(id)
 	if ok {
-		slog.Info("Using cached staker info", "id", id.String())
 		return existing.(*StakerInformation), nil
 	}
 	if err := s.initABI(); err != nil {

@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 11,
+  "id": 6,
   "links": [],
   "panels": [
     {
@@ -181,7 +181,7 @@
           "refId": "D"
         }
       ],
-      "title": "Staker Contract (Queued, Locked, Cooldown & Withdrawable)",
+      "title": "Contract Totals USD",
       "type": "timeseries"
     },
     {
@@ -478,7 +478,7 @@
           "refId": "D"
         }
       ],
-      "title": "Staker Contract VET (Queued, Locked, Cooldown & Withdrawable)",
+      "title": "Contract Totals VET",
       "type": "timeseries"
     },
     {
@@ -819,13 +819,13 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "DPOS - Historic Stakes",
   "uid": "deu27qno9em0wc",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }

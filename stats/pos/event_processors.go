@@ -66,7 +66,7 @@ func (s *Staker) ProcessEvents(
 	return points, nil
 }
 
-func processValidationQueued(rev thor.Bytes32, event *api.JSONEvent, abi abi.Event, timestamp time.Time) (*write.Point, error) {
+func processValidationQueued(_ thor.Bytes32, event *api.JSONEvent, abi abi.Event, timestamp time.Time) (*write.Point, error) {
 	validator := thor.BytesToAddress(event.Topics[1][:]) // indexed
 	endorsor := thor.BytesToAddress(event.Topics[2][:])  // indexed
 
@@ -239,18 +239,19 @@ func (s *Staker) processDelegationAdded(rev thor.Bytes32, event *api.JSONEvent, 
 
 func (s *Staker) processDelegationWithdrawn(rev thor.Bytes32, event *api.JSONEvent, abi abi.Event, timestamp time.Time) (*write.Point, error) {
 	// delegationID is indexed, so we can extract it from the event topics
+	staker := s.staker.Revision(rev.String())
 	delegationID := new(big.Int).SetBytes(event.Topics[1][:]) // indexed
-	delegation, err := s.staker.Revision(rev.String()).GetDelegation(delegationID)
+	delegation, err := staker.GetDelegation(delegationID)
 	if err != nil {
 		slog.Error("failed to get delegation", "delegation_id", delegationID, "error", err)
 		return nil, err
 	}
-	validation, err := s.staker.Revision(rev.String()).Get(delegation.Validator)
+	validation, err := staker.Get(delegation.Validator)
 	if err != nil {
 		slog.Error("failed to get validation", "validator", delegation.Validator, "error", err)
 		return nil, err
 	}
-	validatorComplete, err := s.staker.Revision(rev.String()).GetCompletedPeriods(delegation.Validator)
+	validatorComplete, err := staker.GetCompletedPeriods(delegation.Validator)
 	if err != nil {
 		slog.Error("failed to get validation", "validator", delegation.Validator, "error", err)
 		return nil, err
@@ -285,7 +286,7 @@ func (s *Staker) processDelegationWithdrawn(rev thor.Bytes32, event *api.JSONEve
 			"stake":      vetutil.ScaleToVET(stake),
 			"multiplier": delegation.Multiplier,
 			"weight":     vetutil.ScaleToVET(weight),
-			"started":    strconv.FormatBool(validationCurrent >= delegation.StartPeriod),
+			"started":    strconv.FormatBool(validationCurrent > delegation.StartPeriod),
 			"block":      tx.NewBlockRefFromID(rev).Number(),
 		},
 		timestamp,

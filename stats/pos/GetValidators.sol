@@ -1,34 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
-interface Staker {
-    function get(address id) external view returns (
-        address,
-        uint256,
-        uint256,
-        uint8,
-        bool,
-        uint32,
-        uint32,
-        uint32
-    );
-    function firstActive() external view returns (address);
-    function firstQueued() external view returns (address);
-    function next(address id) external view returns (address);
-
-    function totalStake() external view returns (uint256, uint256);
-
-    function queuedStake() external view returns (uint256, uint256);
-
-    function getCompletedPeriods(address validator) external view returns (uint32);
-    /*
-    uint256 lockedStake,
-    uint256 lockedWeight,
-    uint256 delegatorsStake,
-    uint256 delegatorsWeight,
-    */
-    function getValidationTotals(address validator) external view returns (uint256, uint256, uint256, uint256);
-}
+import "./compiled/Staker.sol";
 
 interface Energy {
     function totalSupply() external view returns (uint256);
@@ -37,7 +10,7 @@ interface Energy {
 }
 
 contract GetValidators {
-    Staker private constant STAKER = Staker(0x00000000000000000000000000005374616B6572);
+    Staker private constant STAKER = Staker(payable(0x00000000000000000000000000005374616B6572));
     Energy private constant ENERGY = Energy(0x0000000000000000000000000000456E65726779);
 
     // staker stats
