@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 6,
+  "id": 8,
   "links": [],
   "panels": [
     {
@@ -320,7 +320,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "text",
                 "value": null
               }
             ]
@@ -334,6 +334,222 @@
         "w": 6,
         "x": 0,
         "y": 8
+      },
+      "id": 17,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
+          },
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"staker\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.staked_amount }))\n  |> last()\n  |> drop(columns: [\"delegators_staked\", \"staked_amount\"])\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: \"${vet_price}\")}))",
+          "refId": "A"
+        }
+      ],
+      "title": "Combined TVL (USD)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 8
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
+          },
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"staker\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.staked_amount }))\n  |> last()\n  |> drop(columns: [\"delegators_staked\", \"staked_amount\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Combined Locked VET",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "text",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"staker\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.staked_amount }))\n  |> drop(columns: [\"delegators_staked\", \"staked_amount\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Combined Locked VET",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 16
       },
       "id": 19,
       "options": {
@@ -360,7 +576,7 @@
             "type": "influxdb",
             "uid": "eea2frhqbiuwwa"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
           "refId": "A"
         }
       ],
@@ -395,7 +611,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 8
+        "y": 16
       },
       "id": 6,
       "options": {
@@ -427,253 +643,6 @@
         }
       ],
       "title": "Validator Locked VET",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "locale"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 8
-      },
-      "id": 7,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
-          },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> last()",
-          "refId": "A"
-        }
-      ],
-      "title": "Multiplied Combine TVL",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 8
-      },
-      "id": 11,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
-          },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()",
-          "refId": "A"
-        }
-      ],
-      "title": "Completed Staking Periods",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "text",
-                "value": null
-              }
-            ]
-          },
-          "unit": "locale"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 0,
-        "y": 16
-      },
-      "id": 10,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
-          },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"staker\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.staked_amount }))\n  |> last()\n  |> drop(columns: [\"delegators_staked\", \"staked_amount\"])",
-          "refId": "A"
-        }
-      ],
-      "title": "Combined Locked VET  (TODO: Why does this equal V Locked VET)",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "text",
-                "value": null
-              }
-            ]
-          },
-          "unit": "currencyUSD"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 6,
-        "y": 16
-      },
-      "id": 17,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
-          },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"staker\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.staked_amount }))\n  |> last()\n  |> drop(columns: [\"delegators_staked\", \"staked_amount\"])\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
-          "refId": "A"
-        }
-      ],
-      "title": "Combined TVL (USD)",
       "type": "stat"
     },
     {
@@ -775,186 +744,6 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "fixedColor": "text",
-            "mode": "fixed"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "locale"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 24
-      },
-      "id": 13,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> keep(columns: [\"_value\", \"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
-          "refId": "A"
-        }
-      ],
-      "title": "Combined Locked Weight",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "text",
-            "mode": "fixed"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "locale"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 24
-      },
-      "id": 14,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"staker\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.staked_amount }))\n  |> drop(columns: [\"delegators_staked\", \"staked_amount\"])",
-          "refId": "A"
-        }
-      ],
-      "title": "Combined Locked VET (TODO: Why does this equal V Locked VET)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
             "mode": "thresholds"
           },
           "mappings": [],
@@ -967,7 +756,7 @@
               }
             ]
           },
-          "unit": "locale"
+          "unit": "currencyUSD"
         },
         "overrides": []
       },
@@ -975,9 +764,9 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 32
+        "y": 24
       },
-      "id": 8,
+      "id": 24,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -1002,11 +791,11 @@
             "type": "influxdb",
             "uid": "eea2frhqbiuwwa"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> last()",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: \"${vet_price}\")}))",
           "refId": "A"
         }
       ],
-      "title": "Delegators Locked VET",
+      "title": "Delegators Locked USD",
       "type": "stat"
     },
     {
@@ -1037,9 +826,9 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 32
+        "y": 24
       },
-      "id": 9,
+      "id": 25,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -1064,11 +853,134 @@
             "type": "influxdb",
             "uid": "eea2frhqbiuwwa"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_weight\")\n  |> group()\n  |> last()",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> last()",
           "refId": "A"
         }
       ],
-      "title": "Delegators Locked Weight",
+      "title": "Delegators Locked VET",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 24
+      },
+      "id": 7,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
+          },
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Multiplied Combine TVL",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 24
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
+          },
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Completed Staking Periods",
       "type": "stat"
     },
     {
@@ -1132,7 +1044,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 32
       },
       "id": 15,
@@ -1167,69 +1079,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "blue",
-                "value": null
-              }
-            ]
-          },
-          "unit": "currencyUSD"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 0,
-        "y": 40
-      },
-      "id": 20,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
-          },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
-          "refId": "A"
-        }
-      ],
-      "title": "Delegators Locked USD",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "blue",
+            "fixedColor": "text",
             "mode": "fixed"
           },
           "custom": {
@@ -1270,7 +1120,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "green",
                 "value": null
               }
             ]
@@ -1283,9 +1133,9 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 40
+        "y": 32
       },
-      "id": 16,
+      "id": 13,
       "options": {
         "legend": {
           "calcs": [],
@@ -1302,11 +1152,11 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_weight\")\n  |> keep(columns: [\"_value\", \"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> keep(columns: [\"_value\", \"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
-      "title": "Delegator Locked Weight",
+      "title": "Combined Locked Weight",
       "type": "timeseries"
     },
     {
@@ -1380,7 +1230,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 48
+        "y": 40
       },
       "id": 21,
       "options": {
@@ -1398,121 +1248,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"delegation_id\")\n  |>pivot(\n        rowKey:[\"_time\", \"validator\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"Weight\": r.weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"Weight\", \"_time\", \"Stake USD\"])",
-          "refId": "A"
-        }
-      ],
-      "title": "Queued Delegations",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {},
-            "includeByName": {},
-            "indexByName": {
-              "Delegation ID": 1,
-              "Multiplier": 4,
-              "Stake USD": 2,
-              "VET": 3,
-              "Weight": 5,
-              "_time": 0
-            },
-            "renameByName": {}
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "center",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Stake USD"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "currencyUSD"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "VET"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "locale"
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 57
-      },
-      "id": 22,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": true
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "11.5.2",
-      "targets": [
-        {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_signaled_exit\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"delegation_id\")\n  |>pivot(\n        rowKey:[\"_time\", \"validator\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"Weight\": r.weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"Weight\", \"_time\", \"Stake USD\"])",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"start_period\")\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> filter(fn: (r) => r[\"start_period\"] > current)\n   |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"Weight\": r.weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"Weight\", \"_time\", \"Stake USD\"])\n  |> sort(columns: [\"Stake USD\"], desc: true)",
           "refId": "A"
         }
       ],
@@ -1546,8 +1282,8 @@
     "list": [
       {
         "current": {
-          "text": "0x4f459c0a6e9f543673ba68e5751c0eb4abe47fbf",
-          "value": "0x4f459c0a6e9f543673ba68e5751c0eb4abe47fbf"
+          "text": "0x71339fdd408a14a077ce5bac08bb641891fde304",
+          "value": "0x71339fdd408a14a077ce5bac08bb641891fde304"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"vechain\", tag: \"staker\")",
         "name": "staker",
@@ -1586,6 +1322,6 @@
   "timezone": "browser",
   "title": "DPOS - Individual Stakers",
   "uid": "fetli0i64zny8c",
-  "version": 3,
+  "version": 21,
   "weekStart": ""
 }

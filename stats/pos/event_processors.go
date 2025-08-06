@@ -94,7 +94,7 @@ func processValidationQueued(_ thor.Bytes32, event *api.JSONEvent, abi abi.Event
 		},
 		map[string]interface{}{
 			"period": period,
-			"stake":  stake.String(),
+			"stake":  vetutil.ScaleToVET(stake),
 		},
 		timestamp,
 	), nil

@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 8,
+  "id": 6,
   "links": [],
   "panels": [
     {
@@ -1009,7 +1009,7 @@
           "refId": "A"
         }
       ],
-      "title": "Validator List",
+      "title": "Exiting Validators",
       "transformations": [
         {
           "id": "organize",
@@ -1066,11 +1066,116 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_time"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Queued Time"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "queue_position"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Position in Queue"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stake"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "VET Stake"
+              },
+              {
+                "id": "unit",
+                "value": "locale"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "stake_usd"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "USD Stake"
+              },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Queued Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 235
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Position in Queue"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 142
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "USD Stake"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 166
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "VET Stake"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 255
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
-        "h": 11,
-        "w": 24,
+        "h": 14,
+        "w": 20,
         "x": 0,
         "y": 45
       },
@@ -1083,14 +1188,15 @@
           "reducer": [
             "sum"
           ],
-          "show": false
+          "show": true
         },
-        "showHeader": true
+        "showHeader": true,
+        "sortBy": []
       },
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestRecord._time)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"queue_position\")\n  |> group()\n  |> sort(columns: [\"_value\"])\n  |> keep(columns: [\"_value\", \"staker\"])",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nqueued_stakers = from(bucket: \"vechain\")\n  |> range(start: latestRecord._time)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"queued\" and r[\"_field\"] == \"queue_position\")\n  |> keep(columns: [\"_value\", \"staker\"])\n  |> rename(columns: {staker: \"validator\"})\n  |> rename(columns: {_value: \"queue_position\"})\n\nvalidation_stakes = from(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => \n    r[\"_measurement\"] == \"validation_queued\" and \n    r[\"_field\"] == \"stake\"\n  )\n  |> keep(columns: [\"_time\", \"validator\", \"_value\"])\n  |> rename(columns: {_value: \"stake\"})\n\njoin(\n  tables: {queued: queued_stakers, stakes: validation_stakes},\n  on: [\"validator\"]\n)\n    |> group()\n    |> sort(columns: [\"queue_position\"])\n    |> map(fn: (r) => ({ r with stake_usd: float(v: r.stake) * float(v: ${vet_price})}))",
           "refId": "A"
         }
       ],
@@ -1102,8 +1208,11 @@
             "excludeByName": {},
             "includeByName": {},
             "indexByName": {
-              "_value": 1,
-              "staker": 0
+              "_time": 0,
+              "queue_position": 1,
+              "stake": 3,
+              "stake_usd": 2,
+              "validator": 4
             },
             "renameByName": {
               "_value": "Position",
@@ -1119,7 +1228,7 @@
         "type": "influxdb",
         "uid": "eea2frhqbiuwwa"
       },
-      "description": "The list changes dynamically based on the `Validators` option at the top",
+      "description": "Validators ordered by weight, ie. block production.\n\nThe cumulative sum shows what percent the given validator and all above it control.\n\nEg. Scroll down to look for 67% and see the number of validators to the left",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1408,7 +1517,7 @@
         "h": 21,
         "w": 15,
         "x": 0,
-        "y": 56
+        "y": 59
       },
       "id": 23,
       "options": {
