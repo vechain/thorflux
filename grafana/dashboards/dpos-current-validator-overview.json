@@ -501,7 +501,7 @@
                 "value": [
                   {
                     "title": "",
-                    "url": "http://localhost:3000/d/fetli0i64zny8c/dpos-individual-stakers?orgId=1&from=now-30m&to=now&timezone=browser&var-staker${__data.fields.Validator}"
+                    "url": "/d/fetli0i64zny8c/dpos-individual-stakers?orgId=1&from=now-30m&to=now&timezone=browser&var-staker${__data.fields.Validator}"
                   }
                 ]
               },
@@ -794,7 +794,7 @@
                 "value": [
                   {
                     "title": "",
-                    "url": "http://localhost:3000/d/fetli0i64zny8c/dpos-individual-stakers?orgId=1&from=now-30m&to=now&timezone=browser&var-staker${__data.fields.Validator}"
+                    "url": "/d/fetli0i64zny8c/dpos-individual-stakers?orgId=1&from=now-30m&to=now&timezone=browser&var-staker${__data.fields.Validator}"
                   }
                 ]
               },
@@ -1330,7 +1330,7 @@
                 "value": [
                   {
                     "title": "",
-                    "url": "http://localhost:3000/d/fetli0i64zny8c/dpos-individual-stakers?orgId=1&from=now-30m&to=now&timezone=browser&var-staker${__data.fields.Validator}"
+                    "url": "/d/fetli0i64zny8c/dpos-individual-stakers?orgId=1&from=now-30m&to=now&timezone=browser&var-staker${__data.fields.Validator}"
                   }
                 ]
               },

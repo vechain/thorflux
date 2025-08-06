@@ -325,6 +325,7 @@ func (s *Staker) processDelegationSignaledExit(rev thor.Bytes32, event *api.JSON
 		},
 		map[string]interface{}{
 			"exit_period":              delegation.EndPeriod,
+			"first_period":             delegation.StartPeriod,
 			"exit_block":               exitBlock,
 			"stake":                    vetutil.ScaleToVET(delegation.Stake),
 			"multiplier":               delegation.Multiplier,
