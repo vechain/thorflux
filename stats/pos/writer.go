@@ -318,7 +318,7 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			continue
 		}
 		flags := map[string]any{
-			"status_changed": statusToString(validator.Status),
+			"status_changed": builtin.StakerStatusExited,
 		}
 
 		p := influxdb2.NewPoint(
