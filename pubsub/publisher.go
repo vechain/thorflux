@@ -13,9 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/vechain/thor/v2/api"
-
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/block"
 	builtin2 "github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
@@ -62,8 +61,8 @@ func New(thorURL string, db DB, blockAmount uint32) (*Publisher, chan *Block, er
 	}
 	slog.Info(fmt.Sprintf("best block is %d", best.Number))
 	var startBlock uint32
-	if blockAmount > best.Number {
-		startBlock = 0
+	if blockAmount > best.Number-1 {
+		startBlock = 1
 	} else {
 		startBlock = best.Number - blockAmount
 	}
@@ -129,7 +128,7 @@ func (s *Publisher) sync(ctx context.Context) {
 			}
 			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
 			if err != nil {
-				slog.Error("failed to fetch block", "error", err)
+				slog.Error("failed to fetch block", "error", err, "block", prev.Number+1)
 				time.Sleep(5 * time.Second)
 				continue
 			}
@@ -222,7 +221,7 @@ func (s *Publisher) shouldQuit() bool {
 		slog.Error("failed to get best block", "error", err)
 		return false
 	}
-	if best.Number-s.previous().Number > 100 {
+	if best.Number-s.previous().Number > 300 {
 		return false
 	}
 	return true

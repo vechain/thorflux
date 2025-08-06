@@ -3,12 +3,12 @@ package pubsub
 import (
 	"context"
 	"fmt"
+	"github.com/vechain/thor/v2/api"
 	"log/slog"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/vechain/thor/v2/api"
 
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/influxdb"
@@ -30,6 +30,7 @@ type Subscriber struct {
 	genesis   *api.JSONCollapsedBlock
 	chainTag  string
 	handlers  map[string]Handler
+	client    *thorclient.Client
 }
 
 func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Subscriber, error) {
@@ -65,6 +66,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 		genesis:   genesis,
 		chainTag:  chainTag,
 		handlers:  handlers,
+		client:    tclient,
 	}, nil
 }
 
@@ -91,6 +93,15 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				"chain_tag":    s.chainTag,
 				"signer":       b.Block.Signer.String(),
 				"block_number": fmt.Sprintf("%d", b.Block.Number),
+			}
+
+			if s.prevBlock.Load() == nil && b.Block.Number > 0 {
+				prev, err := s.client.ExpandedBlock(strconv.FormatUint(uint64(b.Block.Number-1), 10))
+				if err != nil {
+					slog.Error("failed to fetch previous block", "block_number", b.Block.Number-1, "error", err)
+					continue
+				}
+				s.prevBlock.Store(prev)
 			}
 
 			event := &types.Event{

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/vechain/thor/v2/api"
 	"log/slog"
 	"math/big"
 	"sort"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
@@ -257,7 +257,7 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 	authorityContract := thor.MustParseAddress("0x841a6556c524d47030762eb14dc4af897e605d9b")
 
 	contract, _ := hex.DecodeString(AuthorityListAll)
-	clauses := [2]api.Clause{
+	clauses := api.Clauses{
 		{
 			To:    nil,
 			Value: nil,
@@ -273,10 +273,7 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 		Gas:      gas,
 		Caller:   &caller,
 		GasPayer: &gasPayer,
-		Clauses: api.Clauses{
-			&clauses[0],
-			&clauses[1],
-		},
+		Clauses:  clauses,
 	}
 
 	response, err := thorClient.InspectClauses(body, thorclient.Revision(blockID.String()))
