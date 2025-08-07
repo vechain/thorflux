@@ -282,6 +282,7 @@ func (s *Staker) createEnergyStats(event *types.Event, info *StakerInformation) 
 		"hayabusa_gas",
 		map[string]string{
 			"chain_tag": event.ChainTag,
+			"signer":    event.Block.Signer.String(),
 		},
 		map[string]interface{}{
 			"vtho_issued":         vetutil.ScaleToVET(vthoIssued),
