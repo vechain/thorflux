@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 5,
+  "id": 9,
   "links": [],
   "panels": [
     {
@@ -342,7 +342,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 3,
+        "x": 0,
         "y": 8
       },
       "id": 27,
@@ -366,6 +366,143 @@
         }
       ],
       "title": "Actions Taken",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "block_number {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Block Number"
+              },
+              {
+                "id": "unit",
+                "value": "locale"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "signer_probability {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Block Probability %"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "block_in_epoch {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Block In Epoch"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "epoch {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Epoch"
+              },
+              {
+                "id": "unit",
+                "value": "locale"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 29,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"vechain\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"signer\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"signer_probability\" or r[\"_field\"] == \"block_number\" or  r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"block_in_epoch\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> sort(columns: [\"block_number\"], desc: true)",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Blocks (TODO: Why is block probability different for same epoch?)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "_time": 0,
+              "block_in_epoch {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}": 3,
+              "block_number {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}": 1,
+              "epoch {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}": 4,
+              "signer_probability {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}": 2
+            },
+            "renameByName": {}
+          }
+        }
+      ],
       "type": "table"
     },
     {
@@ -1095,8 +1232,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           },
@@ -1183,8 +1319,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -1244,8 +1379,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -1267,8 +1401,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
-                      "value": null
+                      "color": "green"
                     }
                   ]
                 }
@@ -1358,8 +1491,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -1381,8 +1513,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
-                      "value": null
+                      "color": "green"
                     }
                   ]
                 }
@@ -1472,8 +1603,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -1518,8 +1648,8 @@
     "list": [
       {
         "current": {
-          "text": "0x7fa55b59f5e1af1526b2783625aac1706e778392",
-          "value": "0x7fa55b59f5e1af1526b2783625aac1706e778392"
+          "text": "0x94b7593de972dc9f627581333755ae686cb90ebc",
+          "value": "0x94b7593de972dc9f627581333755ae686cb90ebc"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"vechain\", tag: \"staker\")",
         "name": "staker",
@@ -1558,6 +1688,6 @@
   "timezone": "browser",
   "title": "DPOS - Individual Stakers",
   "uid": "fetli0i64zny8c",
-  "version": 4,
+  "version": 3,
   "weekStart": ""
 }

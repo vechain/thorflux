@@ -133,22 +133,27 @@ func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]
 
 func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInformation) []*write.Point {
 	block := event.Block
-	epoch := block.Number / s.epochLength
+	epoch := block.Number / thor.CheckpointInterval
 
 	leaderGroup := make(map[thor.Address]*builtin.Validator)
 
 	onlineValidators := 0
 	onlineStake := big.NewInt(0)
 	onlineWeight := big.NewInt(0)
+	accumulatedStake := big.NewInt(0)
 
 	offlineValidators := 0
 	offlineStake := big.NewInt(0)
 	offlineWeight := big.NewInt(0)
+	accumulatedWeight := big.NewInt(0)
 
 	for _, v := range info.Validations {
 		if v.Status != builtin.StakerStatusActive {
 			continue
 		}
+		accumulatedStake.Add(accumulatedStake, v.Stake)
+		accumulatedStake.Add(accumulatedStake, v.DelegatorsStaked)
+		accumulatedWeight.Add(accumulatedWeight, v.Weight)
 		leaderGroup[v.Address] = v.Validator
 		if v.Online {
 			onlineValidators++
@@ -161,12 +166,24 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		}
 	}
 
+	validator, ok := leaderGroup[event.Block.Signer]
+	weightProcessed := big.NewInt(0)
+	if !ok {
+		slog.Warn("Signer not found in leader group", "signer", event.Block.Signer.String())
+		return nil
+	} else {
+		weightProcessed = validator.Weight
+	}
+
 	flags := map[string]interface{}{
-		"total_stake":   vetutil.ScaleToVET(big.NewInt(0).Add(info.TotalVET, info.QueuedVET)),
-		"active_stake":  vetutil.ScaleToVET(info.TotalVET),
-		"active_weight": vetutil.ScaleToVET(info.TotalWeight),
-		"queued_stake":  vetutil.ScaleToVET(info.QueuedVET),
-		"queued_weight": vetutil.ScaleToVET(info.QueuedWeight),
+		"total_stake": vetutil.ScaleToVET(big.NewInt(0).Add(info.TotalVET, info.QueuedVET)),
+		// storing accumulated and contract totals for chart comparison - we can ensure consistency
+		"active_stake":              vetutil.ScaleToVET(info.TotalVET),
+		"active_stake_accumulated":  vetutil.ScaleToVET(accumulatedStake),
+		"active_weight":             vetutil.ScaleToVET(info.TotalWeight),
+		"active_weight_accumulated": vetutil.ScaleToVET(accumulatedWeight),
+		"queued_stake":              vetutil.ScaleToVET(info.QueuedVET),
+		"queued_weight":             vetutil.ScaleToVET(info.QueuedWeight),
 		// TODO: This is Circulating VTHO, not VET
 		"circulating_vet":    vetutil.ScaleToVET(info.TotalSupplyVTHO),
 		"contract_vet":       vetutil.ScaleToVET(info.ContractBalance),
@@ -174,10 +191,13 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"offline_stake":      vetutil.ScaleToVET(offlineStake),
 		"online_weight":      vetutil.ScaleToVET(onlineWeight),
 		"offline_weight":     vetutil.ScaleToVET(offlineWeight),
-		"epoch":              strconv.FormatUint(uint64(epoch), 10),
+		"epoch":              epoch,
+		"block_in_epoch":     block.Number % thor.CheckpointInterval,
 		"active_validators":  len(leaderGroup),
 		"online_validators":  onlineValidators,
 		"offline_validators": offlineValidators,
+		"weight_processed":   vetutil.ScaleToVET(weightProcessed),
+		"block_number":       block.Number,
 	}
 
 	if event.DPOSActive {
