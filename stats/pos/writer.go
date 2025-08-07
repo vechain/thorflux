@@ -166,6 +166,18 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		}
 	}
 
+	withdrawnFunds := big.NewInt(0)
+	for _, tx := range event.Block.Transactions {
+		for _, output := range tx.Outputs {
+			for _, transfer := range output.Transfers {
+				if transfer.Sender != *s.staker.Raw().Address() {
+					continue // Skip transfers not from the staker contract
+				}
+				withdrawnFunds.Add(withdrawnFunds, (*big.Int)(transfer.Amount))
+			}
+		}
+	}
+
 	validator, ok := leaderGroup[event.Block.Signer]
 	weightProcessed := big.NewInt(0)
 	if !ok {
@@ -184,6 +196,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"active_weight_accumulated": vetutil.ScaleToVET(accumulatedWeight),
 		"queued_stake":              vetutil.ScaleToVET(info.QueuedVET),
 		"queued_weight":             vetutil.ScaleToVET(info.QueuedWeight),
+		"withdrawn_vet":             vetutil.ScaleToVET(withdrawnFunds),
 		// TODO: This is Circulating VTHO, not VET
 		"circulating_vet":    vetutil.ScaleToVET(info.TotalSupplyVTHO),
 		"contract_vet":       vetutil.ScaleToVET(info.ContractBalance),
