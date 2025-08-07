@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 9,
+  "id": 5,
   "links": [],
   "panels": [
     {
@@ -36,8 +36,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -103,8 +102,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -170,8 +168,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -259,8 +256,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -315,58 +311,117 @@
           "color": {
             "mode": "thresholds"
           },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "locale"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 5,
+        "x": 0,
+        "y": 8
+      },
+      "id": 30,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
+          },
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\" and r[\"signer\"] == \"${staker}\" and r[\"_field\"] == \"validators_share\")\n  |> sum()",
+          "refId": "A"
+        }
+      ],
+      "title": "VTHO Earned",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
+                "color": "green"
               }
             ]
-          }
+          },
+          "unit": "currencyUSD"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 0,
+        "w": 5,
+        "x": 5,
         "y": 8
       },
-      "id": 27,
+      "id": 31,
       "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
           ],
-          "show": false
+          "fields": "",
+          "values": false
         },
-        "showHeader": true
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validation_queued\" or r[\"_measurement\"] == \"validation_withdrawn\" or r[\"_measurement\"] == \"validation_signaled_exit\" or r[\"_measurement\"] == \"stake_increased\" or r[\"_measurement\"] == \"stake_decreased\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> group()\n  |> drop(columns: [\"_stop\", \"_start\"])\n  |> sort(columns: [\"_time\"], desc: true)",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
+          },
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\" and r[\"signer\"] == \"${staker}\" and r[\"_field\"] == \"validators_share\")\n  |> sum()\n  |> map(fn: (r) => ({r with _value: float(v: r._value) * float(v: \"${vtho_price}\")}))\n  ",
           "refId": "A"
         }
       ],
-      "title": "Actions Taken",
-      "type": "table"
+      "title": "VTHO Earned",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -390,8 +445,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -400,7 +454,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "block_number {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}"
+              "options": "block_number"
             },
             "properties": [
               {
@@ -416,7 +470,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "signer_probability {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}"
+              "options": "signer_probability"
             },
             "properties": [
               {
@@ -432,7 +486,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "block_in_epoch {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}"
+              "options": "block_in_epoch"
             },
             "properties": [
               {
@@ -444,7 +498,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "epoch {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}"
+              "options": "epoch"
             },
             "properties": [
               {
@@ -481,7 +535,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"signer\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"signer_probability\" or r[\"_field\"] == \"block_number\" or  r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"block_in_epoch\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> sort(columns: [\"block_number\"], desc: true)",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"signer\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"signer_probability\" or r[\"_field\"] == \"block_number\" or  r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"block_in_epoch\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> sort(columns: [\"block_number\"], desc: true)\n  |> drop(columns: [\"_start\", \"_stop\", \"chain_tag\", \"signer\"])",
           "refId": "A"
         }
       ],
@@ -494,10 +548,10 @@
             "includeByName": {},
             "indexByName": {
               "_time": 0,
-              "block_in_epoch {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}": 3,
-              "block_number {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}": 1,
-              "epoch {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}": 4,
-              "signer_probability {_start=\"2005-08-07 11:34:35.759682011 +0000 UTC\", _stop=\"2025-08-07 11:34:35.759682011 +0000 UTC\", chain_tag=\"234\", signer=\"0x94b7593de972dc9f627581333755ae686cb90ebc\"}": 2
+              "block_in_epoch": 3,
+              "block_number": 1,
+              "epoch": 4,
+              "signer_probability": 2
             },
             "renameByName": {}
           }
@@ -520,8 +574,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
-                "value": null
+                "color": "text"
               }
             ]
           },
@@ -582,8 +635,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
-                "value": null
+                "color": "text"
               }
             ]
           },
@@ -678,8 +730,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -736,8 +787,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -798,8 +848,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -893,8 +942,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -951,8 +999,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           },
@@ -1013,8 +1060,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           },
@@ -1075,8 +1121,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
-                "value": null
+                "color": "text"
               }
             ]
           },
@@ -1137,8 +1182,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -1368,7 +1412,7 @@
             "mode": "thresholds"
           },
           "custom": {
-            "align": "center",
+            "align": "auto",
             "cellOptions": {
               "type": "auto"
             },
@@ -1380,47 +1424,15 @@
             "steps": [
               {
                 "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Stake USD"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "currencyUSD"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green"
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "VET"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "locale"
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 9,
@@ -1428,7 +1440,7 @@
         "x": 0,
         "y": 48
       },
-      "id": 21,
+      "id": 27,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -1437,36 +1449,18 @@
           "reducer": [
             "sum"
           ],
-          "show": true
+          "show": false
         },
         "showHeader": true
       },
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"start_period\")\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> filter(fn: (r) => r[\"start_period\"] > current)\n   |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"Weight\": r.weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"Weight\", \"_time\", \"Stake USD\"])\n  |> sort(columns: [\"Stake USD\"], desc: true)",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validation_queued\" or r[\"_measurement\"] == \"validation_withdrawn\" or r[\"_measurement\"] == \"validation_signaled_exit\" or r[\"_measurement\"] == \"stake_increased\" or r[\"_measurement\"] == \"stake_decreased\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> group()\n  |> drop(columns: [\"_stop\", \"_start\"])\n  |> sort(columns: [\"_time\"], desc: true)",
           "refId": "A"
         }
       ],
-      "title": "Queued Delegations (TODO: Filter out positions that withdraw before getting locked)",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {},
-            "includeByName": {},
-            "indexByName": {
-              "Delegation ID": 1,
-              "Multiplier": 4,
-              "Stake USD": 2,
-              "VET": 3,
-              "Weight": 5,
-              "_time": 0
-            },
-            "renameByName": {}
-          }
-        }
-      ],
+      "title": "Actions Taken",
       "type": "table"
     },
     {
@@ -1608,12 +1602,124 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stake USD"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "VET"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "locale"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 9,
         "w": 12,
         "x": 0,
+        "y": 57
+      },
+      "id": 21,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"staker\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"start_period\")\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> filter(fn: (r) => r[\"start_period\"] > current)\n   |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"Weight\": r.weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"Weight\", \"_time\", \"Stake USD\"])\n  |> sort(columns: [\"Stake USD\"], desc: true)",
+          "refId": "A"
+        }
+      ],
+      "title": "Queued Delegations (TODO: Filter out positions that withdraw before getting locked)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "Delegation ID": 1,
+              "Multiplier": 4,
+              "Stake USD": 2,
+              "VET": 3,
+              "Weight": 5,
+              "_time": 0
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
         "y": 57
       },
       "id": 28,
@@ -1648,8 +1754,8 @@
     "list": [
       {
         "current": {
-          "text": "0x94b7593de972dc9f627581333755ae686cb90ebc",
-          "value": "0x94b7593de972dc9f627581333755ae686cb90ebc"
+          "text": "0x21d40a6360f07530eb6d0591b4b0d18adabc8c86",
+          "value": "0x21d40a6360f07530eb6d0591b4b0d18adabc8c86"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"vechain\", tag: \"staker\")",
         "name": "staker",
@@ -1677,17 +1783,34 @@
         ],
         "query": "0.02303",
         "type": "textbox"
+      },
+      {
+        "current": {
+          "text": "0.001883",
+          "value": "0.001883"
+        },
+        "label": "VTHO / USD",
+        "name": "vtho_price",
+        "options": [
+          {
+            "selected": true,
+            "text": "0.001883",
+            "value": "0.001883"
+          }
+        ],
+        "query": "0.001883",
+        "type": "textbox"
       }
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "DPOS - Individual Stakers",
   "uid": "fetli0i64zny8c",
-  "version": 3,
+  "version": 7,
   "weekStart": ""
 }
