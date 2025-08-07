@@ -197,6 +197,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"online_validators":  onlineValidators,
 		"offline_validators": offlineValidators,
 		"weight_processed":   vetutil.ScaleToVET(weightProcessed),
+		"block_number":       block.Number,
 	}
 
 	if event.DPOSActive {
