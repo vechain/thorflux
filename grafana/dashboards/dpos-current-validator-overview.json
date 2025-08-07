@@ -1571,7 +1571,7 @@
         ]
       },
       "gridPos": {
-        "h": 21,
+        "h": 31,
         "w": 15,
         "x": 0,
         "y": 59
@@ -2130,6 +2130,6 @@
   "timezone": "browser",
   "title": "DPOS - Current Validator Overview",
   "uid": "detluspo628zkf",
-  "version": 18,
+  "version": 20,
   "weekStart": ""
 }
