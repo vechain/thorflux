@@ -84,7 +84,7 @@ contract GetValidators {
         uint32[] memory startBlock = new uint32[](count);
         uint32[] memory exitBlock = new uint32[](count);
         uint32[] memory completedPeriods = new uint32[](count);
-        uint256[] memory totalStake = new uint256[](count);
+        uint256[] memory totalStakeAmt = new uint256[](count);
         uint256[] memory delegatorsStake = new uint256[](count);
         uint256[] memory delegatorsWeight = new uint256[](count);
 
@@ -92,10 +92,21 @@ contract GetValidators {
             address validatorId = idBuffer[i];
             (
                 address endorsor,
-                uint256 stakeAmount, uint256 weightAmount,
-                uint8 validatorStatus, bool isOnline,
-                uint32 period, uint32 start, uint32 exit
-            ) = STAKER.get(validatorId);
+                uint256 stakeAmount,
+                uint256 weightAmount,
+            ) = STAKER.getValidatorStake(validatorId);
+
+            (
+                uint8 validatorStatus,
+                bool isOnline
+            ) = STAKER.getValidatorStatus(validatorId);
+
+            (
+                uint32 period,
+                uint32 start,
+                uint32 exit,
+                uint32 compPeriods
+            ) = STAKER.getValidatorPeriodDetails(validatorId);
 
             masters[i] = validatorId;
             endorsors[i] = endorsor;
@@ -106,11 +117,11 @@ contract GetValidators {
             stakingPeriod[i] = period;
             startBlock[i] = start;
             exitBlock[i] = exit;
-            completedPeriods[i] = STAKER.getCompletedPeriods(validatorId);
+            completedPeriods[i] = compPeriods;
             (uint256 lockedStake, , uint256 dStake, uint256 dWeight) = STAKER.getValidationTotals(validatorId);
             delegatorsStake[i] = dStake;
             delegatorsWeight[i] = dWeight;
-            totalStake[i] = lockedStake;
+            totalStakeAmt[i] = lockedStake;
         }
 
         return (
@@ -126,7 +137,7 @@ contract GetValidators {
             completedPeriods,
             delegatorsStake,
             delegatorsWeight,
-            totalStake
+            totalStakeAmt
         );
     }
 }

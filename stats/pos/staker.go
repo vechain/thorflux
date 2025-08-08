@@ -23,11 +23,12 @@ import (
 )
 
 type Validation struct {
-	*builtin.Validator
-	CompletedPeriods uint32   // Number of completed staking periods
-	TotalStaked      *big.Int // Total staked amount in the validator
-	DelegatorsStaked *big.Int // Total staked amount by delegators
-	DelegatorsWeight *big.Int // Total weight of delegators
+	ValidatorStake         *builtin.ValidatorStake
+	ValidatorStatus        *builtin.ValidatorStatus
+	ValidatorPeriodDetails *builtin.ValidatorPeriodDetails
+	TotalStaked            *big.Int // Total staked amount in the validator
+	DelegatorsStaked       *big.Int // Total staked amount by delegators
+	DelegatorsWeight       *big.Int // Total weight of delegators
 }
 
 type StakerInformation struct {
@@ -85,18 +86,20 @@ type MissedSlot struct {
 }
 
 func (s *Staker) MissedSlots(
-	validators map[thor.Address]*builtin.Validator,
+	validatorsStake map[thor.Address]*builtin.ValidatorStake,
+	validatorsStatus map[thor.Address]*builtin.ValidatorStatus,
 	block *api.JSONExpandedBlock,
 	seed []byte,
 ) ([]MissedSlot, error) {
 	proposers := make(map[thor.Address]*validation.Validation)
-	for id, v := range validators {
-		if v.Status != builtin.StakerStatusActive {
+	for id, v := range validatorsStake {
+		valStatus := validatorsStatus[id]
+		if valStatus.Status != builtin.StakerStatusActive {
 			continue
 		}
 		// scheduler doesn't need any other fields
 		proposers[id] = &validation.Validation{
-			Online: v.Online,
+			Online: valStatus.Online,
 			Weight: v.Weight,
 		}
 	}
@@ -156,17 +159,21 @@ func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
 	return result, nil
 }
 
-func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*builtin.Validator, error) {
+func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*builtin.ValidatorStake, map[thor.Address]*builtin.ValidatorStatus, map[thor.Address]*builtin.ValidatorPeriodDetails, error) {
 	info, err := s.FetchAll(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch staker info: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to fetch staker info: %w", err)
 	}
 
-	validators := make(map[thor.Address]*builtin.Validator, len(info.Validations))
+	validators := make(map[thor.Address]*builtin.ValidatorStake, len(info.Validations))
+	validatorsStatuses := make(map[thor.Address]*builtin.ValidatorStatus, len(info.Validations))
+	validatorsPeriodDetails := make(map[thor.Address]*builtin.ValidatorPeriodDetails, len(info.Validations))
 	for _, v := range info.Validations {
-		validators[v.Address] = v.Validator
+		validators[v.ValidatorStake.Address] = v.ValidatorStake
+		validatorsStatuses[v.ValidatorStake.Address] = v.ValidatorStatus
+		validatorsPeriodDetails[v.ValidatorStake.Address] = v.ValidatorPeriodDetails
 	}
-	return validators, nil
+	return validators, validatorsStatuses, validatorsPeriodDetails, nil
 }
 
 func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
@@ -299,24 +306,32 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 	totalStaked := out[2].([]*big.Int)
 
 	for i := range masters {
-		v := &builtin.Validator{
-			Address:    (thor.Address)(masters[i]),
-			Endorsor:   (thor.Address)(endorsors[i]),
-			Stake:      stakes[i],
-			Weight:     weights[i],
-			Status:     builtin.StakerStatus(statuses[i]),
-			Online:     onlines[i],
-			Period:     stakingPeriods[i],
-			StartBlock: startBlocks[i],
-			ExitBlock:  exitBlocks[i],
+		vStake := &builtin.ValidatorStake{
+			Address:  (thor.Address)(masters[i]),
+			Endorsor: (thor.Address)(endorsors[i]),
+			Stake:    stakes[i],
+			Weight:   weights[i],
+		}
+		vStatus := &builtin.ValidatorStatus{
+			Address: (thor.Address)(masters[i]),
+			Status:  builtin.StakerStatus(statuses[i]),
+			Online:  onlines[i],
+		}
+		vPeriodDetails := &builtin.ValidatorPeriodDetails{
+			Address:          (thor.Address)(masters[i]),
+			Period:           stakingPeriods[i],
+			StartBlock:       startBlocks[i],
+			ExitBlock:        exitBlocks[i],
+			CompletedPeriods: completedPeriods[i],
 		}
 
 		validators = append(validators, &Validation{
-			Validator:        v,
-			CompletedPeriods: completedPeriods[i],
-			TotalStaked:      new(big.Int).Set(totalStaked[i]),
-			DelegatorsStaked: new(big.Int).Set(delegatorsStaked[i]),
-			DelegatorsWeight: new(big.Int).Set(delegatorsWeight[i]),
+			ValidatorStake:         vStake,
+			ValidatorStatus:        vStatus,
+			ValidatorPeriodDetails: vPeriodDetails,
+			TotalStaked:            new(big.Int).Set(totalStaked[i]),
+			DelegatorsStaked:       new(big.Int).Set(delegatorsStaked[i]),
+			DelegatorsWeight:       new(big.Int).Set(delegatorsWeight[i]),
 		})
 	}
 

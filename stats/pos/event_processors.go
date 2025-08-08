@@ -197,7 +197,7 @@ func processStakeDecreased(rev thor.Bytes32, event *api.JSONEvent, abi abi.Event
 func (s *Staker) processDelegationAdded(rev thor.Bytes32, event *api.JSONEvent, abi abi.Event, timestamp time.Time) (*write.Point, error) {
 	validator := thor.BytesToAddress(event.Topics[1][:])      // indexed
 	delegationID := new(big.Int).SetBytes(event.Topics[2][:]) // indexed
-	delegation, err := s.staker.Revision(rev.String()).GetDelegation(delegationID)
+	delegation, err := s.staker.Revision(rev.String()).GetDelegationPeriodDetails(delegationID)
 	if err != nil {
 		slog.Error("failed to get delegation", "delegation_id", delegationID, "error", err)
 		return nil, err
@@ -242,23 +242,28 @@ func (s *Staker) processDelegationWithdrawn(rev thor.Bytes32, event *api.JSONEve
 	// delegationID is indexed, so we can extract it from the event topics
 	staker := s.staker.Revision(rev.String())
 	delegationID := new(big.Int).SetBytes(event.Topics[1][:]) // indexed
-	delegation, err := staker.GetDelegation(delegationID)
+	delegation, err := staker.GetDelegationStake(delegationID)
 	if err != nil {
 		slog.Error("failed to get delegation", "delegation_id", delegationID, "error", err)
 		return nil, err
 	}
-	validation, err := staker.Get(delegation.Validator)
+	delegationPeriodDetails, err := staker.GetDelegationPeriodDetails(delegationID)
+	if err != nil {
+		slog.Error("failed to get delegation period details", "delegation_id", delegationID, "error", err)
+		return nil, err
+	}
+	validatorStatus, err := staker.GetValidatorStatus(delegation.Validator)
+	if err != nil {
+		slog.Error("failed to get validator status", "validator", delegation.Validator, "error", err)
+		return nil, err
+	}
+	validatorComplete, err := staker.GetValidatorPeriodDetails(delegation.Validator)
 	if err != nil {
 		slog.Error("failed to get validation", "validator", delegation.Validator, "error", err)
 		return nil, err
 	}
-	validatorComplete, err := staker.GetCompletedPeriods(delegation.Validator)
-	if err != nil {
-		slog.Error("failed to get validation", "validator", delegation.Validator, "error", err)
-		return nil, err
-	}
-	validationCurrent := *validatorComplete
-	if validation.Status == builtin.StakerStatusActive {
+	validationCurrent := validatorComplete.CompletedPeriods
+	if validatorStatus.Status == builtin.StakerStatusActive {
 		validationCurrent += 1
 	}
 
@@ -287,7 +292,7 @@ func (s *Staker) processDelegationWithdrawn(rev thor.Bytes32, event *api.JSONEve
 			"stake":      vetutil.ScaleToVET(stake),
 			"multiplier": delegation.Multiplier,
 			"weight":     vetutil.ScaleToVET(weight),
-			"started":    strconv.FormatBool(validationCurrent > delegation.StartPeriod),
+			"started":    strconv.FormatBool(validationCurrent > delegationPeriodDetails.StartPeriod),
 			"block":      tx.NewBlockRefFromID(rev).Number(),
 		},
 		timestamp,
@@ -298,12 +303,17 @@ func (s *Staker) processDelegationSignaledExit(rev thor.Bytes32, event *api.JSON
 	// delegationID is indexed, so we can extract it from the event topics
 	delegationID := new(big.Int).SetBytes(event.Topics[1][:]) // indexed
 	staker := s.staker.Revision(rev.String())
-	delegation, err := staker.GetDelegation(delegationID)
+	delegation, err := staker.GetDelegationStake(delegationID)
 	if err != nil {
 		slog.Error("failed to get delegation", "delegation_id", delegationID, "error", err)
 		return nil, err
 	}
-	validation, err := staker.Get(delegation.Validator)
+	delegationPeriodDetails, err := staker.GetDelegationPeriodDetails(delegationID)
+	if err != nil {
+		slog.Error("failed to get delegation period details", "delegation_id", delegationID, "error", err)
+		return nil, err
+	}
+	validation, err := staker.GetValidatorPeriodDetails(delegation.Validator)
 	if err != nil {
 		slog.Error("failed to get validation", "validator", delegation.Validator, "error", err)
 		return nil, err
@@ -315,7 +325,7 @@ func (s *Staker) processDelegationSignaledExit(rev thor.Bytes32, event *api.JSON
 
 	// eg start block = 6, period = 6, end period = 5
 	// 6 + (6 * 5) = 36
-	exitBlock := validation.StartBlock + (validation.Period * delegation.EndPeriod)
+	exitBlock := validation.StartBlock + (validation.Period * delegationPeriodDetails.EndPeriod)
 
 	return write.NewPoint(
 		"delegation_signaled_exit",
@@ -324,8 +334,8 @@ func (s *Staker) processDelegationSignaledExit(rev thor.Bytes32, event *api.JSON
 			"delegation_id": delegationID.String(),
 		},
 		map[string]interface{}{
-			"exit_period":              delegation.EndPeriod,
-			"first_period":             delegation.StartPeriod,
+			"exit_period":              delegationPeriodDetails.EndPeriod,
+			"first_period":             delegationPeriodDetails.StartPeriod,
 			"exit_block":               exitBlock,
 			"stake":                    vetutil.ScaleToVET(delegation.Stake),
 			"multiplier":               delegation.Multiplier,
