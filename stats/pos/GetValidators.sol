@@ -42,17 +42,20 @@ contract GetValidators {
     function getValidators() public view returns (
         address[] memory,  // masters
         address[] memory, // endorsors
-        uint256[] memory, // stake
-        uint256[] memory, // weight
-        uint8[] memory, // status
-        bool[] memory, // online
-        uint32[] memory, // stakingPeriod
-        uint32[] memory, // startBlock
-        uint32[] memory, // exitBlock
+        uint8[] memory, // statuses
+        bool[] memory,    // onlines
+        uint32[] memory, // stakingPeriodLengths
+        uint32[] memory, // startBlocks
+        uint32[] memory, // exitBlocks
         uint32[] memory, // completedPeriods
+        uint256[] memory, // validatorLockedStakes
+        uint256[] memory, // validatorLockedWeights
         uint256[] memory, // delegatorsStake
-        uint256[] memory, // delegatorsWeight
-        uint256[] memory // totalStake
+        uint256[] memory, // validatorQueuedStakes
+        uint256[] memory, // totalQueuedStakes
+        uint256[] memory, // totalQueuedWeights
+        uint256[] memory, // totalExitingStakes
+        uint256[] memory  // totalExitingWeights
     ) {
         address[1000] memory idBuffer;
         uint count = 0;
@@ -76,30 +79,47 @@ contract GetValidators {
         // Allocate output arrays
         address[] memory masters = new address[](count);
         address[] memory endorsors = new address[](count);
-        uint256[] memory stake = new uint256[](count);
-        uint256[] memory weight = new uint256[](count);
-        uint8[] memory status = new uint8[](count);
-        bool[] memory online = new bool[](count);
-        uint32[] memory stakingPeriod = new uint32[](count);
-        uint32[] memory startBlock = new uint32[](count);
-        uint32[] memory exitBlock = new uint32[](count);
+        uint8[] memory statuses = new uint8[](count);
+        bool[] memory onlines = new bool[](count);
+        uint32[] memory stakingPeriodLengths = new uint32[](count);
+        uint32[] memory startBlocks = new uint32[](count);
+        uint32[] memory exitBlocks = new uint32[](count);
         uint32[] memory completedPeriods = new uint32[](count);
-        uint256[] memory totalStakeAmt = new uint256[](count);
+
+        uint256[] memory validatorLockedStakes = new uint256[](count);
+        uint256[] memory validatorLockedWeights = new uint256[](count);
         uint256[] memory delegatorsStake = new uint256[](count);
-        uint256[] memory delegatorsWeight = new uint256[](count);
+
+        uint256[] memory validatorQueuedStakes = new uint256[](count);
+        uint256[] memory totalQueuedStakes = new uint256[](count);
+        uint256[] memory totalQueuedWeights = new uint256[](count);
+
+        uint256[] memory totalExitingStakes = new uint256[](count);
+        uint256[] memory totalExitingWeights = new uint256[](count);
+
 
         for (uint i = 0; i < count; i++) {
             address validatorId = idBuffer[i];
+
+            masters[i] = validatorId;
+
             (
                 address endorsor,
-                uint256 stakeAmount,
-                uint256 weightAmount,
+                uint256 validatorStake,
+                uint256 combinedWeight,
+                uint256 queuedStakeAmount
             ) = STAKER.getValidatorStake(validatorId);
+            endorsors[i] = endorsor;
+            validatorLockedStakes[i] = validatorStake;
+            validatorLockedWeights[i] = combinedWeight;
+            validatorQueuedStakes[i] = queuedStakeAmount;
 
             (
                 uint8 validatorStatus,
                 bool isOnline
             ) = STAKER.getValidatorStatus(validatorId);
+            statuses[i] = validatorStatus;
+            onlines[i] = isOnline;
 
             (
                 uint32 period,
@@ -107,37 +127,44 @@ contract GetValidators {
                 uint32 exit,
                 uint32 compPeriods
             ) = STAKER.getValidatorPeriodDetails(validatorId);
-
-            masters[i] = validatorId;
-            endorsors[i] = endorsor;
-            stake[i] = stakeAmount;
-            weight[i] = weightAmount;
-            status[i] = validatorStatus;
-            online[i] = isOnline;
-            stakingPeriod[i] = period;
-            startBlock[i] = start;
-            exitBlock[i] = exit;
+            stakingPeriodLengths[i] = period;
+            startBlocks[i] = start;
+            exitBlocks[i] = exit;
             completedPeriods[i] = compPeriods;
-            (uint256 lockedStake, , uint256 dStake, uint256 dWeight) = STAKER.getValidationTotals(validatorId);
-            delegatorsStake[i] = dStake;
-            delegatorsWeight[i] = dWeight;
-            totalStakeAmt[i] = lockedStake;
+
+            (
+                uint256 lockedStake,
+                uint256 lockedWeight,
+                uint256 queuedStake,
+                uint256 queuedWeight,
+                uint256 exitingStake,
+                uint256 exitingWeight
+            ) = STAKER.getValidationTotals(validatorId);
+            delegatorsStake[i] = lockedStake- validatorStake;
+            totalQueuedStakes[i] = queuedStake;
+            totalQueuedWeights[i] = queuedWeight;
+            totalExitingStakes[i] = exitingStake;
+            totalExitingWeights[i] = exitingWeight;
         }
+
 
         return (
             masters,
             endorsors,
-            stake,
-            weight,
-            status,
-            online,
-            stakingPeriod,
-            startBlock,
-            exitBlock,
+            statuses,
+            onlines,
+            stakingPeriodLengths,
+            startBlocks,
+            exitBlocks,
             completedPeriods,
+            validatorLockedStakes,
+            validatorLockedWeights,
             delegatorsStake,
-            delegatorsWeight,
-            totalStakeAmt
+            validatorQueuedStakes,
+            totalQueuedStakes,
+            totalQueuedWeights,
+            totalExitingStakes,
+            totalExitingWeights
         );
     }
 }

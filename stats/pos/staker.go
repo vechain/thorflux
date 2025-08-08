@@ -23,12 +23,14 @@ import (
 )
 
 type Validation struct {
-	ValidatorStake         *builtin.ValidatorStake
-	ValidatorStatus        *builtin.ValidatorStatus
-	ValidatorPeriodDetails *builtin.ValidatorPeriodDetails
-	TotalStaked            *big.Int // Total staked amount in the validator
-	DelegatorsStaked       *big.Int // Total staked amount by delegators
-	DelegatorsWeight       *big.Int // Total weight of delegators
+	*builtin.ValidatorStake
+	*builtin.ValidatorStatus
+	*builtin.ValidatorPeriodDetails
+	*builtin.ValidationTotals
+	DelegatorStake        *big.Int // Total stake of delegators for this validator
+	DelegatorWeight       *big.Int // Total weight of delegators for this validator
+	DelegatorQueuedStake  *big.Int // Total queued stake of delegators for this validator
+	DelegatorQueuedWeight *big.Int // Total queued weight of delegators for this validator
 }
 
 type StakerInformation struct {
@@ -40,6 +42,7 @@ type StakerInformation struct {
 	TotalWeight     *big.Int // Total weight of all validators
 	TotalSupplyVTHO *big.Int // Total supply of VTHO in the network
 	TotalBurnedVTHO *big.Int // Total VTHO burned in the network
+	IssuanceVTHO    *big.Int // Total VTHO issued in the network
 }
 
 type Staker struct {
@@ -159,21 +162,17 @@ func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
 	return result, nil
 }
 
-func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*builtin.ValidatorStake, map[thor.Address]*builtin.ValidatorStatus, map[thor.Address]*builtin.ValidatorPeriodDetails, error) {
+func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*Validation, error) {
 	info, err := s.FetchAll(id)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to fetch staker info: %w", err)
+		return nil, fmt.Errorf("failed to fetch staker info: %w", err)
 	}
 
-	validators := make(map[thor.Address]*builtin.ValidatorStake, len(info.Validations))
-	validatorsStatuses := make(map[thor.Address]*builtin.ValidatorStatus, len(info.Validations))
-	validatorsPeriodDetails := make(map[thor.Address]*builtin.ValidatorPeriodDetails, len(info.Validations))
+	validators := make(map[thor.Address]*Validation, len(info.Validations))
 	for _, v := range info.Validations {
-		validators[v.ValidatorStake.Address] = v.ValidatorStake
-		validatorsStatuses[v.ValidatorStake.Address] = v.ValidatorStatus
-		validatorsPeriodDetails[v.ValidatorStake.Address] = v.ValidatorPeriodDetails
+		validators[(v.ValidatorStake.Address)] = v
 	}
-	return validators, validatorsStatuses, validatorsPeriodDetails, nil
+	return validators, nil
 }
 
 func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
@@ -293,24 +292,28 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 	validators := make([]*Validation, 0)
 	masters := out[0].([]common.Address)
 	endorsors := out[1].([]common.Address)
-	stakes := out[2].([]*big.Int)
-	weights := out[3].([]*big.Int)
-	statuses := out[4].([]uint8)
-	onlines := out[5].([]bool)
-	stakingPeriods := out[6].([]uint32)
-	startBlocks := out[7].([]uint32)
-	exitBlocks := out[8].([]uint32)
-	completedPeriods := out[9].([]uint32)
-	delegatorsStaked := out[10].([]*big.Int)
-	delegatorsWeight := out[11].([]*big.Int)
-	totalStaked := out[2].([]*big.Int)
+	statuses := out[2].([]uint8)
+	onlines := out[3].([]bool)
+	stakingPeriodLengths := out[4].([]uint32)
+	startBlocks := out[5].([]uint32)
+	exitBlocks := out[6].([]uint32)
+	completedPeriods := out[7].([]uint32)
+	validatorLockedVETs := out[8].([]*big.Int)
+	validatorLockedWeights := out[9].([]*big.Int)
+	delegatorsStakes := out[10].([]*big.Int)
+	validatorQueuedStakes := out[11].([]*big.Int)
+	totalQueuedStakes := out[12].([]*big.Int)
+	totalQueuedWeights := out[13].([]*big.Int)
+	exitingStakes := out[14].([]*big.Int)
+	exitingWeights := out[15].([]*big.Int)
 
 	for i := range masters {
 		vStake := &builtin.ValidatorStake{
-			Address:  (thor.Address)(masters[i]),
-			Endorsor: (thor.Address)(endorsors[i]),
-			Stake:    stakes[i],
-			Weight:   weights[i],
+			Address:     (thor.Address)(masters[i]),
+			Endorsor:    (thor.Address)(endorsors[i]),
+			Stake:       validatorLockedVETs[i],
+			Weight:      validatorLockedWeights[i],
+			QueuedStake: validatorQueuedStakes[i],
 		}
 		vStatus := &builtin.ValidatorStatus{
 			Address: (thor.Address)(masters[i]),
@@ -319,19 +322,29 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 		}
 		vPeriodDetails := &builtin.ValidatorPeriodDetails{
 			Address:          (thor.Address)(masters[i]),
-			Period:           stakingPeriods[i],
+			Period:           stakingPeriodLengths[i],
 			StartBlock:       startBlocks[i],
 			ExitBlock:        exitBlocks[i],
 			CompletedPeriods: completedPeriods[i],
+		}
+		totals := &builtin.ValidationTotals{
+			TotalLockedStake:   new(big.Int).Add(vStake.Stake, delegatorsStakes[i]),
+			TotalLockedWeight:  validatorLockedWeights[i],
+			TotalQueuedStake:   totalQueuedStakes[i],
+			TotalQueuedWeight:  totalQueuedWeights[i],
+			TotalExitingStake:  exitingStakes[i],
+			TotalExitingWeight: exitingWeights[i],
 		}
 
 		validators = append(validators, &Validation{
 			ValidatorStake:         vStake,
 			ValidatorStatus:        vStatus,
 			ValidatorPeriodDetails: vPeriodDetails,
-			TotalStaked:            new(big.Int).Set(totalStaked[i]),
-			DelegatorsStaked:       new(big.Int).Set(delegatorsStaked[i]),
-			DelegatorsWeight:       new(big.Int).Set(delegatorsWeight[i]),
+			ValidationTotals:       totals,
+			DelegatorStake:         delegatorsStakes[i],
+			DelegatorWeight:        new(big.Int).Sub(validatorLockedWeights[i], big.NewInt(0).Mul(validatorLockedVETs[i], big.NewInt(2))),
+			DelegatorQueuedStake:   new(big.Int).Sub(totalQueuedStakes[i], validatorQueuedStakes[i]),
+			DelegatorQueuedWeight:  new(big.Int).Sub(totalQueuedWeights[i], big.NewInt(0).Mul(validatorQueuedStakes[i], big.NewInt(2))),
 		})
 	}
 

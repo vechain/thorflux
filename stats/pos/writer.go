@@ -152,16 +152,18 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 			continue
 		}
 		accumulatedStake.Add(accumulatedStake, v.ValidatorStake.Stake)
-		accumulatedStake.Add(accumulatedStake, v.DelegatorsStaked)
+		accumulatedStake.Add(accumulatedStake, v.DelegatorStake)
 		accumulatedWeight.Add(accumulatedWeight, v.ValidatorStake.Weight)
 		leaderGroup[v.ValidatorStake.Address] = v.ValidatorStake
 		if v.ValidatorStatus.Online {
 			onlineValidators++
-			onlineStake.Add(onlineStake, v.TotalStaked)
+			onlineStake.Add(onlineStake, v.TotalLockedStake)
+			onlineStake.Add(onlineStake, v.DelegatorStake)
 			onlineWeight.Add(onlineWeight, v.ValidatorStake.Weight)
 		} else {
 			offlineValidators++
-			offlineStake.Add(offlineStake, v.TotalStaked)
+			offlineStake.Add(offlineStake, v.TotalLockedStake)
+			offlineStake.Add(offlineStake, v.DelegatorStake)
 			offlineWeight.Add(offlineWeight, v.ValidatorStake.Weight)
 		}
 	}
@@ -333,11 +335,11 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			queueCount++
 		}
 	}
-	prevValidators, prevValStatuses, prevValDetails, err := s.ValidatorMap(ev.Block.ParentID)
+	prevValidators, err := s.ValidatorMap(ev.Block.ParentID)
 	if err != nil {
 		slog.Error("Failed to get previous validators", "error", err)
 	}
-	validators, valStatuses, valDetails, err := s.ValidatorMap(ev.Block.ID)
+	validators, err := s.ValidatorMap(ev.Block.ID)
 	if err != nil {
 		slog.Error("Failed to get current validators", "error", err)
 	}
@@ -346,12 +348,11 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 
 	// process previous validators that are not in the current set
 	// this is useful for tracking exits and status changes
-	for id, validator := range prevValidators {
-		_, ok := validators[id]
+	for addr, validator := range prevValidators {
+		_, ok := validators[addr]
 		if ok {
 			continue
 		}
-		valDetail := valDetails[id]
 		flags := map[string]any{
 			"status_changed": builtin.StakerStatusExited,
 		}
@@ -360,11 +361,11 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			"individual_validators",
 			map[string]string{
 				"chain_tag":             ev.ChainTag,
-				"staker":                validator.Address.String(),
+				"validator":             addr.String(),
 				"endorsor":              validator.Endorsor.String(),
 				"status":                statusToString(builtin.StakerStatusExited),
-				"signalled_exit":        strconv.FormatBool(valDetail.ExitBlock != math.MaxUint32),
-				"staking_period_length": strconv.FormatUint(uint64(valDetail.Period), 10),
+				"signalled_exit":        strconv.FormatBool(validator.ExitBlock != math.MaxUint32),
+				"staking_period_length": strconv.FormatUint(uint64(validator.Period), 10),
 			},
 			flags,
 			ev.Timestamp,
@@ -376,22 +377,31 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 	// process all current validators, queued and active
 	for _, validator := range info.Validations {
 		flags := map[string]any{
-			"staked_amount":     vetutil.ScaleToVET(validator.ValidatorStake.Stake),
-			"weight":            vetutil.ScaleToVET(validator.ValidatorStake.Weight),
 			"online":            validator.ValidatorStatus.Online,
 			"start_block":       validator.ValidatorPeriodDetails.StartBlock,
 			"completed_periods": validator.ValidatorPeriodDetails.CompletedPeriods,
-			"total_staked":      vetutil.ScaleToVET(validator.TotalStaked),
-			"delegators_staked": vetutil.ScaleToVET(validator.DelegatorsStaked),
-			"delegators_weight": vetutil.ScaleToVET(validator.DelegatorsWeight),
 			"exit_block":        validator.ValidatorPeriodDetails.ExitBlock,
 			"current_block":     ev.Block.Number,
+
+			// combined totals, validator + delegators
+			"total_staked":         vetutil.ScaleToVET(validator.TotalLockedStake),
+			"total_weight":         vetutil.ScaleToVET(validator.Weight),
+			"total_queued_vet":     vetutil.ScaleToVET(validator.TotalQueuedStake),
+			"total_queued_weight":  vetutil.ScaleToVET(validator.TotalQueuedWeight),
+			"total_exiting_vet":    vetutil.ScaleToVET(validator.TotalExitingStake),
+			"total_exiting_weight": vetutil.ScaleToVET(validator.TotalExitingWeight),
+
+			// validator only
+			"validator_staked":     vetutil.ScaleToVET(validator.ValidatorStake.Stake),
+			"validator_weight":     vetutil.ScaleToVET(big.NewInt(0).Mul(big.NewInt(2), validator.ValidatorStake.Stake)),
+			"validator_queued_vet": vetutil.ScaleToVET(validator.QueuedStake),
+
+			// delegator only
+			"delegators_staked":    vetutil.ScaleToVET(validator.DelegatorStake),
+			"delegators_weight":    vetutil.ScaleToVET(validator.DelegatorWeight),
+			"delegator_queued_vet": vetutil.ScaleToVET(validator.DelegatorQueuedStake),
 		}
 		prevEntry, ok := prevValidators[validator.ValidatorStake.Address]
-		prevDetail := prevValDetails[validator.ValidatorStake.Address]
-		prevStatus := prevValStatuses[validator.ValidatorStake.Address]
-		valDetail := valDetails[validator.ValidatorStake.Address]
-		valStatus := valStatuses[validator.ValidatorStake.Address]
 		if ok {
 			if prevEntry.Weight.Cmp(validator.ValidatorStake.Weight) != 0 {
 				flags["weight_changed"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.ValidatorStake.Weight, prevEntry.Weight))
@@ -399,15 +409,15 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			if prevEntry.Stake.Cmp(validator.ValidatorStake.Stake) != 0 {
 				flags["stake_changed"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.ValidatorStake.Stake, prevEntry.Stake))
 			}
-			if prevDetail.ExitBlock != valDetail.ExitBlock {
-				flags["exit_block_changed"] = valDetail.ExitBlock
+			if prevEntry.ExitBlock != prevEntry.ExitBlock {
+				flags["exit_block_changed"] = prevEntry.ExitBlock
 			}
 		}
-		if prevEntry == nil || prevStatus.Online != valStatus.Online {
-			flags["online_changed"] = strconv.FormatBool(valStatus.Online)
+		if prevEntry == nil || prevEntry.Online != validator.Online {
+			flags["online_changed"] = strconv.FormatBool(validator.Online)
 		}
-		if prevEntry == nil || prevStatus.Status != valStatus.Status {
-			flags["status_changed"] = statusToString(valStatus.Status)
+		if prevEntry == nil || prevEntry.Status != validator.Status {
+			flags["status_changed"] = statusToString(validator.Status)
 		}
 		if validator.ValidatorStatus.Status == builtin.StakerStatusQueued {
 			flags["queue_position"] = queueOrder[validator.ValidatorStake.Address]
@@ -417,7 +427,7 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			"individual_validators",
 			map[string]string{
 				"chain_tag":             ev.ChainTag,
-				"staker":                validator.ValidatorStake.Address.String(),
+				"validator":             validator.ValidatorStake.Address.String(),
 				"endorsor":              validator.ValidatorStake.Endorsor.String(),
 				"status":                statusToString(validator.ValidatorStatus.Status),
 				"signalled_exit":        strconv.FormatBool(validator.ValidatorPeriodDetails.ExitBlock != math.MaxUint32),

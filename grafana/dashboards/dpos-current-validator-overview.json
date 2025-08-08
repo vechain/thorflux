@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 8,
+  "id": 9,
   "links": [],
   "panels": [
     {
@@ -75,7 +75,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")",
           "refId": "A"
         }
       ],
@@ -137,7 +137,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\" or r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
           "refId": "A"
         }
       ],
@@ -198,7 +198,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_issued\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_issued\")\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
@@ -259,7 +259,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_issued\")\n  |> drop(columns: [\"chain_tag\"])\n  |> map(fn: (r) => ({r with _value: float(v: r._value) * float(v: \"${vtho_price}\")}))",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_issued\")\n  |> drop(columns: [\"chain_tag\"])\n  |> map(fn: (r) => ({r with _value: float(v: r._value) * float(v: \"${vtho_price}\")}))",
           "refId": "A"
         }
       ],
@@ -320,7 +320,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> sum(column: \"_value\")",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> sum(column: \"_value\")",
           "refId": "A"
         }
       ],
@@ -382,7 +382,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
           "refId": "A"
         }
       ],
@@ -443,7 +443,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")",
           "refId": "A"
         }
       ],
@@ -505,7 +505,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
           "refId": "A"
         }
       ],
@@ -772,7 +772,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\")\n  |> pivot(\n      rowKey:[\"_time\", \"staker\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.staker,\n      \"Completed Periods\": r.completed_periods,\n      \"Online\": r.online,\n      \"Weight\": r.weight,\n      \"Block Probability\": float(v: r.weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Validator TVL\": float(v: r.staked_amount) * float(v: \"${vet_price}\"),\n      \"Delegator TVL\": float(v: r.delegators_staked) * float(v: \"${vet_price}\"),\n      \"Staking Period Length\": r.staking_period_length,\n      \"Exit Signalled\": r.signalled_exit\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Validator TVL\",\n      \"Delegator TVL\",      \n      \"Weight\",\n      \"Staking Period Length\",\n      \"Exit Signalled\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"]\n    }))\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\")\n  |> pivot(\n      rowKey:[\"_time\", \"validator\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.validator,\n      \"Completed Periods\": r.completed_periods,\n      \"Online\": r.online,\n      \"total_weight\": r.total_weight,\n      \"Block Probability\": float(v: r.total_weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.total_weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Validator TVL\": float(v: r.validator_staked) * float(v: \"${vet_price}\"),\n      \"Delegator TVL\": float(v: r.delegators_staked) * float(v: \"${vet_price}\"),\n      \"Staking Period Length\": r.staking_period_length,\n      \"Exit Signalled\": r.signalled_exit\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Validator TVL\",\n      \"Delegator TVL\",      \n      \"total_weight\",\n      \"Staking Period Length\",\n      \"Exit Signalled\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"]\n    }))\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n",
           "refId": "A"
         }
       ],
@@ -1065,7 +1065,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\" and r[\"signalled_exit\"] == \"true\")\n  |> pivot(\n      rowKey:[\"_time\", \"staker\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.staker,\n      \"Completed Periods\": r.completed_periods,\n      \"Online\": r.online,\n      \"Weight\": r.weight,\n      \"Block Probability\": float(v: r.weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Validator TVL\": float(v: r.staked_amount) * float(v: \"${vet_price}\"),\n      \"Delegator TVL\": float(v: r.delegators_staked) * float(v: \"${vet_price}\"),\n      \"Staking Period Length\": r.staking_period_length,\n      \"Exit Signalled\": r.signalled_exit,\n      \"Exit Block\": r.exit_block\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Validator TVL\",\n      \"Delegator TVL\",      \n      \"Weight\",\n      \"Staking Period Length\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n      \"Exit Block\",\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"]\n    }))\n  |> sort(columns: [\"Exit Block\"], desc: true)\n",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\" and r[\"signalled_exit\"] == \"true\")\n  |> pivot(\n      rowKey:[\"_time\", \"validator\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.validator,\n      \"Completed Periods\": r.completed_periods,\n      \"Online\": r.online,\n      \"total_weight\": r.total_weight,\n      \"Block Probability\": float(v: r.total_weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.total_weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Validator TVL\": float(v: r.validator_staked) * float(v: \"${vet_price}\"),\n      \"Delegator TVL\": float(v: r.delegators_staked) * float(v: \"${vet_price}\"),\n      \"Staking Period Length\": r.staking_period_length,\n      \"Exit Signalled\": r.signalled_exit,\n      \"Exit Block\": r.exit_block\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Validator TVL\",\n      \"Delegator TVL\",      \n      \"total_weight\",\n      \"Staking Period Length\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n      \"Exit Block\",\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"]\n    }))\n  |> sort(columns: [\"Exit Block\"], desc: true)\n",
           "refId": "A"
         }
       ],
@@ -1120,7 +1120,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -1255,7 +1256,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nqueued_stakers = from(bucket: \"vechain\")\n  |> range(start: latestRecord._time)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"queued\" and r[\"_field\"] == \"queue_position\")\n  |> keep(columns: [\"_value\", \"staker\"])\n  |> rename(columns: {staker: \"validator\"})\n  |> rename(columns: {_value: \"queue_position\"})\n\nvalidation_stakes = from(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => \n    r[\"_measurement\"] == \"validation_queued\" and \n    r[\"_field\"] == \"stake\"\n  )\n  |> keep(columns: [\"_time\", \"validator\", \"_value\"])\n  |> rename(columns: {_value: \"stake\"})\n\njoin(\n  tables: {queued: queued_stakers, stakes: validation_stakes},\n  on: [\"validator\"]\n)\n    |> group()\n    |> sort(columns: [\"queue_position\"])\n    |> map(fn: (r) => ({ r with stake_usd: float(v: r.stake) * float(v: ${vet_price})}))",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nqueued_stakers = from(bucket: \"vechain\")\n  |> range(start: latestRecord._time)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"queued\" and r[\"_field\"] == \"queue_position\")\n  |> keep(columns: [\"_value\", \"validator\"])\n  |> rename(columns: {_value: \"queue_position\"})\n\nvalidation_stakes = from(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => \n    r[\"_measurement\"] == \"validation_queued\" and \n    r[\"_field\"] == \"stake\"\n  )\n  |> keep(columns: [\"_time\", \"validator\", \"_value\"])\n  |> rename(columns: {_value: \"stake\"})\n\njoin(\n  tables: {queued: queued_stakers, stakes: validation_stakes},\n  on: [\"validator\"]\n)\n    |> group()\n    |> sort(columns: [\"queue_position\"])\n    |> map(fn: (r) => ({ r with stake_usd: float(v: r.stake) * float(v: ${vet_price})}))",
           "refId": "A"
         }
       ],
@@ -1297,7 +1298,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -1331,7 +1333,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"_field\"] == \"active_validators\")",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"_field\"] == \"active_validators\")",
           "refId": "A"
         }
       ],
@@ -1365,7 +1367,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -1613,7 +1616,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "red"
+                      "color": "red",
+                      "value": null
                     },
                     {
                       "color": "green",
@@ -1650,7 +1654,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\")\n  |> pivot(\n      rowKey:[\"_time\", \"staker\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.staker,\n      \"Weight\": r.weight,\n      \"Block Probability\": float(v: r.weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.weight) * 180.0 / float(v: weight_sum._value),\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Weight\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"]\n    }))\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\")\n  |> pivot(\n      rowKey:[\"_time\", \"validator\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.validator,\n      \"total_weight\": r.total_weight,\n      \"Block Probability\": float(v: r.total_weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.total_weight) * 180.0 / float(v: weight_sum._value),\n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"total_weight\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"]\n    }))\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n",
           "refId": "A"
         }
       ],
@@ -1756,7 +1760,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -1790,7 +1795,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_in_epoch\")\n  |> group()\n  |> last()",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_in_epoch\")\n  |> group()\n  |> last()",
           "refId": "A"
         }
       ],
@@ -1812,7 +1817,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": null
               },
               {
                 "color": "green",
@@ -1851,7 +1857,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ntotal_weight = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value)\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value * uint(v: 100) / total_weight._value}))",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ntotal_weight = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value)\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value * uint(v: 100) / total_weight._value}))",
           "refId": "A"
         }
       ],
@@ -1873,7 +1879,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": null
               },
               {
                 "color": "green",
@@ -1911,7 +1918,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value)\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> count()",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value)\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> count()",
           "refId": "A"
         }
       ],
@@ -1933,7 +1940,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue"
+                "color": "blue",
+                "value": null
               }
             ]
           },
@@ -1968,7 +1976,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ntotal_weight = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value - uint(v: 1))\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value * uint(v: 100) / total_weight._value}))",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ntotal_weight = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value - uint(v: 1))\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value * uint(v: 100) / total_weight._value}))",
           "refId": "A"
         }
       ],
@@ -1990,7 +1998,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue"
+                "color": "blue",
+                "value": null
               }
             ]
           }
@@ -2024,7 +2033,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value - uint(v: 1))\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> count()",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value - uint(v: 1))\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> count()",
           "refId": "A"
         }
       ],
@@ -2046,7 +2055,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "purple"
+                "color": "purple",
+                "value": null
               }
             ]
           },
@@ -2081,7 +2091,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ntotal_weight = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value - uint(v: 2))\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value * uint(v: 100) / total_weight._value}))",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ntotal_weight = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value - uint(v: 2))\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value * uint(v: 100) / total_weight._value}))",
           "refId": "A"
         }
       ],
@@ -2103,7 +2113,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "purple"
+                "color": "purple",
+                "value": null
               }
             ]
           }
@@ -2137,7 +2148,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"staked_amount\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value - uint(v: 2))\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> count()",
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nepoch = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -120m)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"weight_processed\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> filter(fn: (r) => r[\"epoch\"] == epoch._value - uint(v: 2))\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> map(fn: (r) => ({r with _value: r.weight_processed}))\n  |> first()\n  |> group()\n  |> count()",
           "refId": "A"
         }
       ],
@@ -2197,6 +2208,6 @@
   "timezone": "browser",
   "title": "DPOS - Current Validator Overview",
   "uid": "detluspo628zkf",
-  "version": 9,
+  "version": 4,
   "weekStart": ""
 }

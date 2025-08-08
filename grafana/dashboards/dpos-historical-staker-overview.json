@@ -1031,7 +1031,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "active_weight"
+              "options": "total_weight"
             },
             "properties": [
               {
@@ -1043,7 +1043,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "active_weight_accumulated"
+              "options": "total_weight_accumulated"
             },
             "properties": [
               {
@@ -1082,7 +1082,7 @@
             "uid": "eea2frhqbiuwwa"
           },
           "hide": false,
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\")\n  |> drop(columns: [\"signer\", \"chain_tag\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> drop(columns: [\"signer\", \"chain_tag\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "C"
         },
         {
@@ -1091,7 +1091,7 @@
             "uid": "eea2frhqbiuwwa"
           },
           "hide": false,
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight_accumulated\")\n  |> drop(columns: [\"signer\", \"chain_tag\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight_accumulated\")\n  |> drop(columns: [\"signer\", \"chain_tag\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
