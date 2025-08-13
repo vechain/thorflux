@@ -47,7 +47,7 @@ func NewWorkerPool(workers int, queueSize int) *WorkerPool {
 	}
 
 	// Start workers
-	for i := range workers {
+	for i := 0; i < workers; i++ {
 		pool.wg.Add(1)
 		go pool.worker(i)
 	}
@@ -102,25 +102,6 @@ func (wp *WorkerPool) processTask(task Task, workerID int) {
 	}
 }
 
-// Submit adds a task to the worker pool queue
-func (wp *WorkerPool) Submit(task Task) error {
-	wp.mu.RLock()
-	if wp.isShutdown {
-		wp.mu.RUnlock()
-		return ErrWorkerPoolShutdown
-	}
-	wp.mu.RUnlock()
-
-	select {
-	case wp.taskQueue <- task:
-		return nil
-	case <-wp.ctx.Done():
-		return ErrWorkerPoolShutdown
-	default:
-		return ErrWorkerPoolFull
-	}
-}
-
 // SubmitBatch submits multiple tasks to the worker pool
 func (wp *WorkerPool) SubmitBatch(tasks []Task) error {
 	wp.mu.RLock()
@@ -143,19 +124,6 @@ func (wp *WorkerPool) SubmitBatch(tasks []Task) error {
 	return nil
 }
 
-// Wait waits for all workers to finish and all tasks to be completed
-func (wp *WorkerPool) Wait() {
-	wp.mu.Lock()
-	if !wp.isShutdown {
-		close(wp.taskQueue)
-		wp.isShutdown = true
-	}
-	wp.mu.Unlock()
-
-	wp.wg.Wait()
-	slog.Info("Worker pool shutdown complete")
-}
-
 // Shutdown gracefully shuts down the worker pool
 func (wp *WorkerPool) Shutdown() {
 	wp.mu.Lock()
@@ -167,32 +135,6 @@ func (wp *WorkerPool) Shutdown() {
 	wp.mu.Unlock()
 
 	slog.Info("Worker pool shutdown initiated")
-}
-
-// IsShutdown returns true if the worker pool is shutdown
-func (wp *WorkerPool) IsShutdown() bool {
-	wp.mu.RLock()
-	defer wp.mu.RUnlock()
-	return wp.isShutdown
-}
-
-// Stats returns current statistics about the worker pool
-func (wp *WorkerPool) Stats() WorkerPoolStats {
-	wp.mu.RLock()
-	defer wp.mu.RUnlock()
-
-	return WorkerPoolStats{
-		Workers:    wp.workers,
-		QueueSize:  len(wp.taskQueue),
-		IsShutdown: wp.isShutdown,
-	}
-}
-
-// WorkerPoolStats contains statistics about the worker pool
-type WorkerPoolStats struct {
-	Workers    int
-	QueueSize  int
-	IsShutdown bool
 }
 
 // Error types for worker pool
