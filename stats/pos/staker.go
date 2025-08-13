@@ -177,7 +177,7 @@ func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*Validation, er
 }
 
 func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
-	to := thor.MustParseAddress(config.StakerContractAddress)
+	to := thor.MustParseAddress(config.GetValidatorsContractAddress)
 	res, err := s.staker.Raw().Client().InspectClauses(&api.BatchCallData{
 		Clauses: api.Clauses{
 			{
@@ -416,7 +416,7 @@ func (s *Staker) setPrevTotals(id thor.Bytes32) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	to := thor.MustParseAddress(config.StakerContractAddress)
+	to := thor.MustParseAddress(config.GetValidatorsContractAddress)
 	res, err := s.staker.Raw().Client().InspectClauses(&api.BatchCallData{
 		Clauses: api.Clauses{
 			{

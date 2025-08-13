@@ -10,7 +10,7 @@ import (
 const (
 	// Block intervals and timing
 	DefaultBlockInterval = 10 * time.Second
-	BlockIntervalSeconds = 10
+	BlockIntervalSeconds = thor.BlockInterval
 
 	// Epoch and period constants
 	EpochLength        = 180
@@ -45,8 +45,8 @@ const (
 	DefaultQueryStartDate = "2015-01-01T00:00:00Z"
 	DefaultQueryEndDate   = "2100-01-01T00:00:00Z"
 
-	// Staker contract address (hardcoded for now, should be configurable)
-	StakerContractAddress = "0x841a6556c524d47030762eb14dc4af897e605d9b"
+	// GetValidators contract address
+	GetValidatorsContractAddress = "0x841a6556c524d47030762eb14dc4af897e605d9b"
 
 	// Storage keys
 	EpochLengthStorageKey = "epoch-length"
