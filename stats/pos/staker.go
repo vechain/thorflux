@@ -20,6 +20,7 @@ import (
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/thorclient/builtin"
+	"github.com/vechain/thorflux/config"
 )
 
 type Validation struct {
@@ -61,8 +62,8 @@ func NewStaker(client *thorclient.Client) (*Staker, error) {
 	if err != nil {
 		return nil, err
 	}
-	epochLength := uint32(thor.CheckpointInterval)
-	key := thor.BytesToBytes32([]byte("epoch-length"))
+	epochLength := uint32(config.CheckpointInterval)
+	key := thor.BytesToBytes32([]byte(config.EpochLengthStorageKey))
 	storage, err := client.AccountStorage(staker.Raw().Address(), &key)
 	if err != nil {
 		return nil, err
@@ -75,9 +76,9 @@ func NewStaker(client *thorclient.Client) (*Staker, error) {
 		big := new(big.Int).SetBytes(bytes32.Bytes())
 		epochLength = uint32(big.Uint64())
 	}
-	cache, err := lru.New(100) // Cache size of 1000 entries
+	cache, err := lru.New(config.DefaultCacheSize)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToCreateCache, err)
 	}
 
 	return &Staker{staker: staker, client: client, epochLength: epochLength, cache: cache}, nil
@@ -115,7 +116,7 @@ func (s *Staker) MissedSlots(
 		return nil, err
 	}
 	missedSigners := make([]MissedSlot, 0)
-	for i := parent.Timestamp + thor.BlockInterval; i < block.Timestamp; i += thor.BlockInterval {
+	for i := parent.Timestamp + uint64(config.BlockIntervalSeconds); i < block.Timestamp; i += uint64(config.BlockIntervalSeconds) {
 		for master := range proposers {
 			if sched.IsScheduled(i, master) {
 				missedSigners = append(missedSigners, MissedSlot{
@@ -148,15 +149,15 @@ func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
 		return existing.(*StakerInformation), nil
 	}
 	if err := s.initABI(); err != nil {
-		return nil, fmt.Errorf("failed to initialize helper ABI: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToInitializeABI, err)
 	}
 	rawResult, err := s.fetchStakerInfo(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch staker info: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToFetchStakerInfo, err)
 	}
 	result, err := s.unpackInfo(rawResult)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unpack staker info: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToUnpackStakerInfo, err)
 	}
 	s.cache.Add(id, result)
 	return result, nil
@@ -165,7 +166,7 @@ func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
 func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*Validation, error) {
 	info, err := s.FetchAll(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch staker info: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToFetchStakerInfoFromDB, err)
 	}
 
 	validators := make(map[thor.Address]*Validation, len(info.Validations))
@@ -176,7 +177,7 @@ func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*Validation, er
 }
 
 func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
-	to := thor.MustParseAddress("0x841a6556c524d47030762eb14dc4af897e605d9b")
+	to := thor.MustParseAddress(config.StakerContractAddress)
 	res, err := s.staker.Raw().Client().InspectClauses(&api.BatchCallData{
 		Clauses: api.Clauses{
 			{
@@ -209,17 +210,17 @@ func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
 		},
 	}, thorclient.Revision(id.String()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch staker info: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToFetchStakerInfo, err)
 	}
 	expectedResultsLength := 7
 	if len(res) != expectedResultsLength {
 		// expect exactly expectedResultsLength results
-		return nil, fmt.Errorf("unexpected number of results: %d, expected %d", len(res), expectedResultsLength)
+		return nil, fmt.Errorf(config.ErrUnexpectedResults, len(res), expectedResultsLength)
 	}
 
 	for i, r := range res {
 		if r.Reverted || r.VMError != "" {
-			return nil, fmt.Errorf("call %d reverted or had VM error: %s", i, r.VMError)
+			return nil, fmt.Errorf(config.ErrCallReverted, i, r.VMError)
 		}
 	}
 	return res, nil
@@ -233,13 +234,13 @@ func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error
 
 	validators, err := s.unpackValidators(validatorsCall)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unpack validators: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToUnpackValidators, err)
 	}
 
 	// totalStakeABI returns 2 big.Ints, first is VET, second is weight
 	totalStakeBytes, err := hexutil.Decode(totalStakeCall.Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode total stake data: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToDecodeTotalStake, err)
 	}
 	totalStakeVET := new(big.Int).SetBytes(totalStakeBytes[:32])
 	totalStakeWeight := new(big.Int).SetBytes(totalStakeBytes[32:64])
@@ -247,7 +248,7 @@ func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error
 	// queuedStakeABI returns 2 big.Ints, first is VET, second is weight
 	queuedStakeBytes, err := hexutil.Decode(queuedStakeCall.Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode queued stake data: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToDecodeQueuedStake, err)
 	}
 	queuedStakeVET := new(big.Int).SetBytes(queuedStakeBytes[:32])
 	queuedStakeWeight := new(big.Int).SetBytes(queuedStakeBytes[32:64])
@@ -255,17 +256,17 @@ func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error
 	// staker contract balance
 	stakerBalanceBytes, err := hexutil.Decode(stakerBalanceCall.Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode staker balance data: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToDecodeStakerBalance, err)
 	}
 	// vtho total supply
 	totalSupplyBytes, err := hexutil.Decode(result[5].Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode total supply data: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToDecodeTotalSupply, err)
 	}
 	// total burned
 	totalBurnedBytes, err := hexutil.Decode(result[6].Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode total burned data: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToDecodeTotalBurned, err)
 	}
 
 	return &StakerInformation{
@@ -283,7 +284,7 @@ func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error
 func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error) {
 	bytes, err := hexutil.Decode(result.Data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode result data: %w", err)
+		return nil, fmt.Errorf(config.ErrFailedToDecodeResultData, err)
 	}
 	out, err := getValidatorsABI.Outputs.UnpackValues(bytes)
 	if err != nil {
@@ -415,7 +416,7 @@ func (s *Staker) setPrevTotals(id thor.Bytes32) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	to := thor.MustParseAddress("0x841a6556c524d47030762eb14dc4af897e605d9b")
+	to := thor.MustParseAddress(config.StakerContractAddress)
 	res, err := s.staker.Raw().Client().InspectClauses(&api.BatchCallData{
 		Clauses: api.Clauses{
 			{
@@ -434,23 +435,23 @@ func (s *Staker) setPrevTotals(id thor.Bytes32) error {
 
 	if err != nil {
 		slog.Error("Failed to fetch previous totals", "error", err)
-		return fmt.Errorf("failed to fetch previous totals: %w", err)
+		return fmt.Errorf(config.ErrFailedToFetchPreviousTotals, err)
 	}
 
 	if len(res) != 3 {
 		slog.Error("Unexpected number of results", "count", len(res))
-		return fmt.Errorf("unexpected number of results: %d, expected 3", len(res))
+		return fmt.Errorf(config.ErrUnexpectedResults, len(res), 3)
 	}
 
 	totalSupplyBytes, err := hexutil.Decode(res[1].Data)
 	if err != nil {
 		slog.Error("Failed to decode total supply data", "error", err)
-		return fmt.Errorf("failed to decode total supply data: %w", err)
+		return fmt.Errorf(config.ErrFailedToDecodePreviousTotalSupply, err)
 	}
 	totalBurnedBytes, err := hexutil.Decode(res[2].Data)
 	if err != nil {
 		slog.Error("Failed to decode total burned data", "error", err)
-		return fmt.Errorf("failed to decode total burned data: %w", err)
+		return fmt.Errorf(config.ErrFailedToDecodePreviousTotalBurned, err)
 	}
 
 	s.prevVTHOSupply.Store(new(big.Int).SetBytes(totalSupplyBytes))

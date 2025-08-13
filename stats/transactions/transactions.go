@@ -4,9 +4,9 @@ import (
 	"context"
 	"math"
 	"math/big"
-	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/types"
 )
 
@@ -39,7 +39,7 @@ func Write(event *types.Event) error {
 	flags["total_clauses"] = txStat.clauseCount
 	flags["vet_transfers"] = txStat.vetTransferCount
 	flags["vet_transfers_amount"] = txStat.vetTransfersAmount
-	flags["validator_rewards"] = txStat.totalRewards / math.Pow10(18)
+	flags["validator_rewards"] = txStat.totalRewards / math.Pow10(config.VETDecimals)
 
 	flags["coef_average"] = coefStat.Average
 	flags["coef_max"] = coefStat.Max
@@ -58,10 +58,10 @@ func Write(event *types.Event) error {
 	flags["legacy_txs"] = txStat.legacyCount
 	flags["dyn_fee_txs"] = txStat.dynamicFeeCount
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultTimeout)
 	defer cancel()
 
-	p := influxdb2.NewPoint("transactions", event.DefaultTags, flags, event.Timestamp)
+	p := influxdb2.NewPoint(config.TransactionsMeasurement, event.DefaultTags, flags, event.Timestamp)
 
 	return event.WriteAPI.WritePoint(ctx, p)
 }

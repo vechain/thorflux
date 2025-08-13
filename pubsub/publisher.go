@@ -20,6 +20,7 @@ import (
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/thorclient/builtin"
+	"github.com/vechain/thorflux/config"
 )
 
 type Block struct {
@@ -30,7 +31,7 @@ type Block struct {
 	DPOSActive     bool
 }
 
-const querySize = 200
+const querySize = config.DefaultQuerySize
 
 type Publisher struct {
 	thor      *thorclient.Client
@@ -76,7 +77,7 @@ func New(thorURL string, db DB, blockAmount uint32) (*Publisher, chan *Block, er
 	}
 	previous := &atomic.Pointer[api.JSONExpandedBlock]{}
 	previous.Store(start)
-	blockChan := make(chan *Block, 2000)
+	blockChan := make(chan *Block, config.DefaultChannelBuffer)
 
 	staker, err := builtin.NewStaker(tclient)
 	if err != nil {
@@ -122,20 +123,20 @@ func (s *Publisher) sync(ctx context.Context) {
 		default:
 			prev := s.previous()
 			prevTime := time.Unix(int64(prev.Timestamp), 0).UTC()
-			if time.Since(prevTime) < 10*time.Second {
-				time.Sleep(time.Until(prevTime.Add(10 * time.Second)))
+			if time.Since(prevTime) < config.DefaultBlockInterval {
+				time.Sleep(time.Until(prevTime.Add(config.DefaultBlockInterval)))
 				continue
 			}
 			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
 			if err != nil {
 				slog.Error("failed to fetch block", "error", err, "block", prev.Number+1)
-				time.Sleep(5 * time.Second)
+				time.Sleep(config.DefaultRetryDelay)
 				continue
 			}
 			seed, err := s.fetchSeed(next.ParentID)
 			if err != nil {
 				slog.Error("failed to fetch seed for block", "block", next.Number, "error", err)
-				time.Sleep(5 * time.Second)
+				time.Sleep(config.DefaultRetryDelay)
 				continue
 			}
 
@@ -150,7 +151,7 @@ func (s *Publisher) sync(ctx context.Context) {
 					finalized, err = s.thor.ExpandedBlock("finalized")
 					if err != nil {
 						slog.Error("failed to fetch finalized block", "error", err)
-						time.Sleep(5 * time.Second)
+						time.Sleep(config.DefaultRetryDelay)
 						continue
 					}
 					break
@@ -167,12 +168,12 @@ func (s *Publisher) sync(ctx context.Context) {
 			forked, active, err := s.fetchHayabusaStatus(next)
 			if err != nil {
 				slog.Error("failed to fetch hayabusa status for block", "block", next.Number, "error", err)
-				time.Sleep(5 * time.Second)
+				time.Sleep(config.DefaultRetryDelay)
 				continue
 			}
 
 			t := time.Unix(int64(next.Timestamp), 0).UTC()
-			if next.Number%250 == 0 || time.Now().UTC().Sub(t) < 5*time.Minute {
+			if next.Number%config.LogIntervalBlocks == 0 || time.Now().UTC().Sub(t) < config.RecentBlockThresholdMinutes {
 				slog.Info("✅ fetched block", "number", next.Number)
 			}
 
@@ -204,7 +205,7 @@ func (s *Publisher) fastSync(ctx context.Context) {
 			blocks, err := s.fetchBlocksAsync(querySize, s.previous().Number+1)
 			if err != nil {
 				slog.Error("failed to fetch blocks", "error", err)
-				time.Sleep(30 * time.Second)
+				time.Sleep(config.LongRetryDelay)
 			} else {
 				s.prev.Store(blocks[len(blocks)-1].Block)
 				for _, block := range blocks {
@@ -221,7 +222,7 @@ func (s *Publisher) shouldQuit() bool {
 		slog.Error("failed to get best block", "error", err)
 		return false
 	}
-	if best.Number-s.previous().Number > 300 {
+	if best.Number-s.previous().Number > config.MaxBlocksBehind {
 		return false
 	}
 	return true
