@@ -90,7 +90,6 @@ const (
 	// Worker pool error messages
 	ErrWorkerPoolShutdown = "worker pool is shutdown"
 	ErrWorkerPoolFull     = "worker pool queue is full"
-	ErrWorkerPoolTimeout  = "worker pool operation timed out"
 )
 
 // ABI method names
