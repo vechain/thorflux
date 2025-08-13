@@ -35,14 +35,29 @@ else
 		exit 1
 	fi
 
-	echo "Generating InfluxDB All Access token..."
-
 	influx config create \
 		-n token-config \
 		-u "$INFLUX_URL" \
 		-p "$INFLUX_USERNAME:$INFLUX_PASSWORD" \
 		-o "$INFLUX_ORG"
 
+	echo "Checking for existing thorflux-api-token..."
+	EXISTING_TOKEN_IDS=$(influx auth list \
+		--org "$INFLUX_ORG" \
+		--json | jq -r '.[] | select(.description == "thorflux-api-token") | .id')
+
+	# Delete all existing tokens with this description
+	if [[ -n "$EXISTING_TOKEN_IDS" ]]; then
+		echo "Found existing thorflux-api-token(s), cleaning them up..."
+		echo "$EXISTING_TOKEN_IDS" | while read -r token_id; do
+			if [[ -n "$token_id" && "$token_id" != "null" ]]; then
+				echo "Deleting token ID: $token_id"
+				influx auth delete --id "$token_id" --org "$INFLUX_ORG" || true
+			fi
+		done
+	fi
+	
+	echo "Creating new thorflux-api-token..."
 	ALL_ACCESS_TOKEN=$(influx auth create \
 		--org "$INFLUX_ORG" \
 		--read-buckets \
