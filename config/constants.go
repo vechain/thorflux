@@ -29,6 +29,10 @@ const (
 	// Cache constants
 	DefaultCacheSize = 100
 
+	// Concurrency constants
+	DefaultWorkerPoolSize = 10
+	DefaultTaskQueueSize  = 100
+
 	// Logging intervals
 	LogIntervalBlocks           = 250
 	RecentBlockThreshold        = 10 * time.Minute
