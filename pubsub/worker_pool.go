@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"sync"
 	"time"
@@ -107,7 +108,7 @@ func (wp *WorkerPool) SubmitBatch(tasks []Task) error {
 	wp.mu.RLock()
 	if wp.isShutdown {
 		wp.mu.RUnlock()
-		return ErrWorkerPoolShutdown
+		return errors.New(config.ErrWorkerPoolShutdown)
 	}
 	wp.mu.RUnlock()
 
@@ -116,9 +117,9 @@ func (wp *WorkerPool) SubmitBatch(tasks []Task) error {
 		case wp.taskQueue <- task:
 			// Task submitted successfully
 		case <-wp.ctx.Done():
-			return ErrWorkerPoolShutdown
+			return errors.New(config.ErrWorkerPoolShutdown)
 		default:
-			return ErrWorkerPoolFull
+			return errors.New(config.ErrWorkerPoolFull)
 		}
 	}
 	return nil
@@ -135,19 +136,4 @@ func (wp *WorkerPool) Shutdown() {
 	wp.mu.Unlock()
 
 	slog.Info("Worker pool shutdown initiated")
-}
-
-// Error types for worker pool
-var (
-	ErrWorkerPoolShutdown = &WorkerPoolError{msg: "worker pool is shutdown"}
-	ErrWorkerPoolFull     = &WorkerPoolError{msg: "worker pool queue is full"}
-)
-
-// WorkerPoolError represents worker pool specific errors
-type WorkerPoolError struct {
-	msg string
-}
-
-func (e *WorkerPoolError) Error() string {
-	return e.msg
 }

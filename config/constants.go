@@ -86,6 +86,11 @@ const (
 	ErrFailedToFetchPreviousTotals       = "failed to fetch previous totals: %w"
 	ErrFailedToDecodePreviousTotalSupply = "failed to decode total supply data: %w"
 	ErrFailedToDecodePreviousTotalBurned = "failed to decode total burned data: %w"
+
+	// Worker pool error messages
+	ErrWorkerPoolShutdown = "worker pool is shutdown"
+	ErrWorkerPoolFull     = "worker pool queue is full"
+	ErrWorkerPoolTimeout  = "worker pool operation timed out"
 )
 
 // ABI method names
