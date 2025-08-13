@@ -134,14 +134,14 @@ contract GetValidators {
 
             (
                 uint256 lockedStake,
-                uint256 lockedWeight,
-                uint256 queuedStake,
+                ,
+                uint256 totalQueuedStake,
                 uint256 queuedWeight,
                 uint256 exitingStake,
                 uint256 exitingWeight
             ) = STAKER.getValidationTotals(validatorId);
             delegatorsStake[i] = lockedStake- validatorStake;
-            totalQueuedStakes[i] = queuedStake;
+            totalQueuedStakes[i] = totalQueuedStake;
             totalQueuedWeights[i] = queuedWeight;
             totalExitingStakes[i] = exitingStake;
             totalExitingWeights[i] = exitingWeight;

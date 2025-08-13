@@ -211,9 +211,10 @@ func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch staker info: %w", err)
 	}
-	if len(res) != 7 {
-		// expect exactly 7 results
-		return nil, fmt.Errorf("unexpected number of results: %d, expected at least 5", len(res))
+	expectedResultsLength := 7
+	if len(res) != expectedResultsLength {
+		// expect exactly expectedResultsLength results
+		return nil, fmt.Errorf("unexpected number of results: %d, expected %d", len(res), expectedResultsLength)
 	}
 
 	for i, r := range res {
