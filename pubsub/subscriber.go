@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -26,13 +25,14 @@ import (
 type Handler func(event *types.Event) error
 
 type Subscriber struct {
-	blockChan chan *Block
-	db        *influxdb.DB
-	prevBlock *atomic.Pointer[api.JSONExpandedBlock]
-	genesis   *api.JSONCollapsedBlock
-	chainTag  string
-	handlers  map[string]Handler
-	client    *thorclient.Client
+	blockChan  chan *Block
+	db         *influxdb.DB
+	prevBlock  *atomic.Pointer[api.JSONExpandedBlock]
+	genesis    *api.JSONCollapsedBlock
+	chainTag   string
+	handlers   map[string]Handler
+	client     *thorclient.Client
+	workerPool *WorkerPool
 }
 
 func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Subscriber, error) {
@@ -61,21 +61,28 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 	handlers["blocks"] = blockstats.Write
 	handlers["utilisation"] = utilisation.Write
 
+	// Create worker pool for concurrent handler execution
+	workerPool := NewWorkerPool(config.DefaultWorkerPoolSize, config.DefaultTaskQueueSize)
+
 	return &Subscriber{
-		blockChan: blockChan,
-		db:        db,
-		prevBlock: &atomic.Pointer[api.JSONExpandedBlock]{},
-		genesis:   genesis,
-		chainTag:  chainTag,
-		handlers:  handlers,
-		client:    tclient,
+		blockChan:  blockChan,
+		db:         db,
+		prevBlock:  &atomic.Pointer[api.JSONExpandedBlock]{},
+		genesis:    genesis,
+		chainTag:   chainTag,
+		handlers:   handlers,
+		client:     tclient,
+		workerPool: workerPool,
 	}, nil
 }
 
 func (s *Subscriber) Subscribe(ctx context.Context) {
+	defer s.workerPool.Shutdown()
+
 	for {
 		select {
 		case <-ctx.Done():
+			slog.Info("Subscriber context cancelled, shutting down worker pool")
 			return
 		case b := <-s.blockChan:
 			t := time.Unix(int64(b.Block.Timestamp), 0)
@@ -119,17 +126,26 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				Timestamp:      t,
 			}
 
-			wg := &sync.WaitGroup{}
+			// Create tasks for all handlers
+			tasks := make([]Task, 0, len(s.handlers))
 			for name, handler := range s.handlers {
-				wg.Add(1)
-				go func(eventType string, handler Handler) {
-					defer wg.Done()
-					if err := handler(event); err != nil {
-						slog.Error("failed to handle event", "event_type", eventType, "error", err)
-					}
-				}(name, handler)
+				tasks = append(tasks, Task{
+					EventType: name,
+					Handler:   handler,
+					Event:     event,
+				})
 			}
-			wg.Wait()
+
+			// Submit all tasks to worker pool
+			if err := s.workerPool.SubmitBatch(tasks); err != nil {
+				slog.Error("Failed to submit tasks to worker pool", "error", err, "block_number", b.Block.Number)
+				// Fallback to synchronous execution if worker pool is full
+				for _, task := range tasks {
+					if err := task.Handler(task.Event); err != nil {
+						slog.Error("Failed to handle event (fallback)", "event_type", task.EventType, "error", err)
+					}
+				}
+			}
 			s.prevBlock.Store(b.Block)
 		}
 	}

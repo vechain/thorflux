@@ -29,6 +29,10 @@ const (
 	// Cache constants
 	DefaultCacheSize = 100
 
+	// Concurrency constants
+	DefaultWorkerPoolSize = 10
+	DefaultTaskQueueSize  = 100
+
 	// Logging intervals
 	LogIntervalBlocks           = 250
 	RecentBlockThreshold        = 10 * time.Minute
@@ -82,6 +86,10 @@ const (
 	ErrFailedToFetchPreviousTotals       = "failed to fetch previous totals: %w"
 	ErrFailedToDecodePreviousTotalSupply = "failed to decode total supply data: %w"
 	ErrFailedToDecodePreviousTotalBurned = "failed to decode total burned data: %w"
+
+	// Worker pool error messages
+	ErrWorkerPoolShutdown = "worker pool is shutdown"
+	ErrWorkerPoolFull     = "worker pool queue is full"
 )
 
 // ABI method names
