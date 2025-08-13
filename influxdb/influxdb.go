@@ -9,6 +9,7 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/vechain/thorflux/config"
 )
 
 type DB struct {
@@ -38,11 +39,11 @@ func New(url, token string, org string, bucket string) (*DB, error) {
 func (i *DB) Latest() (uint32, error) {
 	queryAPI := i.client.QueryAPI(i.org)
 	query := fmt.Sprintf(`from(bucket: "%s")
-		|> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)
-		|> filter(fn: (r) => r["_measurement"] == "block_stats")
-		|> filter(fn: (r) => r["_field"] == "best_block_number")
+		|> range(start: %s, stop: %s)
+		|> filter(fn: (r) => r["_measurement"] == "%s")
+		|> filter(fn: (r) => r["_field"] == "%s")
         |> group()
-        |> last()`, i.bucket)
+        |> last()`, i.bucket, config.DefaultQueryStartDate, config.DefaultQueryEndDate, config.BlockStatsMeasurement, config.BestBlockNumberField)
 	res, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
 		slog.Warn("failed to query latest block", "error", err)

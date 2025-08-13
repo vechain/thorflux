@@ -4,9 +4,9 @@ import (
 	"context"
 	"math"
 	"math/big"
-	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/types"
 )
 
@@ -17,23 +17,23 @@ func Write(ev *types.Event) error {
 	flags["best_block_number"] = ev.Block.Number
 	flags["block_gas_used"] = ev.Block.GasUsed
 	flags["block_gas_limit"] = ev.Block.GasLimit
-	flags["block_gas_usage"] = float64(ev.Block.GasUsed) * 100 / float64(ev.Block.GasLimit)
+	flags["block_gas_usage"] = float64(ev.Block.GasUsed) * config.GasDivisor / float64(ev.Block.GasLimit)
 	flags["storage_size"] = ev.Block.Size
 	flags["block_signer"] = ev.Block.Signer.String()
-	gap := float64(10)
+	gap := float64(config.BlockIntervalSeconds)
 	if ev.Prev != nil {
 		gap = float64(ev.Block.Timestamp - ev.Prev.Timestamp)
-		slotsSinceLastBlock := (ev.Block.Timestamp - ev.Prev.Timestamp + 9) / 10
+		slotsSinceLastBlock := (ev.Block.Timestamp - ev.Prev.Timestamp + uint64(config.BlockIntervalSeconds-1)) / uint64(config.BlockIntervalSeconds)
 		missedSlots := slotsSinceLastBlock - 1
 		flags["recent_missed_slots"] = missedSlots
 	}
 
-	flags["block_mine_gap"] = (gap - 10) / 10
+	flags["block_mine_gap"] = (gap - float64(config.BlockIntervalSeconds)) / float64(config.BlockIntervalSeconds)
 
 	genesisBlockTimestamp := ev.Genesis.Timestamp
-	slots := ((ev.Block.Timestamp - genesisBlockTimestamp) / 10) + 1
+	slots := ((ev.Block.Timestamp - genesisBlockTimestamp) / uint64(config.BlockIntervalSeconds)) + 1
 	flags["slots_per_block"] = slots
-	flags["blocks_slots_percentage"] = (float64(ev.Block.Number) / float64(slots)) * 100
+	flags["blocks_slots_percentage"] = (float64(ev.Block.Number) / float64(slots)) * config.GasDivisor
 
 	// NewExtension code to capture block base fee in wei.
 	// Since block.Block.BaseFee is a *big.Int, we'll store its string representation.
@@ -43,7 +43,7 @@ func Write(ev *types.Event) error {
 		flags["block_base_fee"] = baseFee.String()
 		totalBurnt := new(big.Int).Mul(baseFee, big.NewInt(int64(ev.Block.GasUsed)))
 		totalBurntFloat := new(big.Float).SetInt(totalBurnt)
-		divisor := new(big.Float).SetFloat64(math.Pow10(18))
+		divisor := new(big.Float).SetFloat64(math.Pow10(config.VETDecimals))
 		totalBurntFloat.Quo(totalBurntFloat, divisor)
 		totalBurntFinal, _ := totalBurntFloat.Float64()
 		flags["block_total_burnt"] = totalBurntFinal
@@ -57,8 +57,8 @@ func Write(ev *types.Event) error {
 		flags["block_base_fee"] = "0"
 	}
 
-	p := influxdb2.NewPoint("block_stats", ev.DefaultTags, flags, ev.Timestamp)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	p := influxdb2.NewPoint(config.BlockStatsMeasurement, ev.DefaultTags, flags, ev.Timestamp)
+	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultTimeout)
 	defer cancel()
 
 	return ev.WriteAPI.WritePoint(ctx, p)
