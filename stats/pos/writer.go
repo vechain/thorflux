@@ -184,7 +184,6 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 	weightProcessed := big.NewInt(0)
 	if !ok {
 		slog.Warn("Signer not found in leader group", "signer", event.Block.Signer.String())
-		return nil
 	} else {
 		weightProcessed = validator.Weight
 	}
