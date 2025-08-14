@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"maps"
 	"math"
 	"os"
 	"sort"
@@ -131,17 +130,8 @@ func (s *Publisher) sync(ctx context.Context) {
 			}
 
 			// Fetch next block with retry logic
-			next, err := s.retryWithBackoff(
-				func() (*api.JSONExpandedBlock, error) {
-					return s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
-				},
-				"fetch_block",
-				map[string]any{
-					"block": prev.Number + 1,
-				},
-			)
+			next, err := s.retryExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
 			if err != nil {
-				time.Sleep(config.DefaultRetryDelay)
 				continue
 			}
 			seed, err := s.fetchSeed(next.ParentID)
@@ -159,18 +149,8 @@ func (s *Publisher) sync(ctx context.Context) {
 				)
 
 				// Fetch finalized block with retry logic
-				finalized, err = s.retryWithBackoff(
-					func() (*api.JSONExpandedBlock, error) {
-						return s.thor.ExpandedBlock("finalized")
-					},
-					"fetch_finalized_block",
-					map[string]any{
-						"prev_block": prev.Number,
-						"next_block": next.Number,
-					},
-				)
+				finalized, err = s.retryExpandedBlock("finalized")
 				if err != nil {
-					time.Sleep(config.DefaultRetryDelay)
 					continue
 				}
 
@@ -233,39 +213,29 @@ func (s *Publisher) fastSync(ctx context.Context) {
 	}
 }
 
-// retryWithBackoff executes a function with retry logic and exponential backoff
-func (s *Publisher) retryWithBackoff(
-	operation func() (*api.JSONExpandedBlock, error),
-	operationName string,
-	contextInfo map[string]any,
-) (*api.JSONExpandedBlock, error) {
+// retryExpandedBlock fetches a block with retry logic and exponential backoff
+func (s *Publisher) retryExpandedBlock(revision string) (*api.JSONExpandedBlock, error) {
 	var result *api.JSONExpandedBlock
 	var err error
 	retryCount := 0
 
 	for retryCount < config.DefaultMaxRetries {
-		result, err = operation()
+		result, err = s.thor.ExpandedBlock(revision)
 		if err == nil {
 			return result, nil
 		}
 
 		retryCount++
-		logFields := map[string]any{
-			"error":       err,
-			"retry":       retryCount,
-			"max_retries": config.DefaultMaxRetries,
-			"operation":   operationName,
-		}
-		// Add context info to log fields
-		maps.Copy(logFields, contextInfo)
-		slog.Error("operation failed", slog.Any("details", logFields))
+		slog.Error("failed to fetch block",
+			"error", err,
+			"revision", revision,
+			"retry", retryCount,
+			"max_retries", config.DefaultMaxRetries)
 
 		if retryCount >= config.DefaultMaxRetries {
-			slog.Error("max retries exceeded",
-				"operation", operationName,
-				"total_retries", retryCount,
-				"context", contextInfo)
-
+			slog.Error("max retries exceeded for block fetch",
+				"revision", revision,
+				"total_retries", retryCount)
 			slog.Error("triggering service restart due to max retries exceeded")
 			os.Exit(1)
 		}
