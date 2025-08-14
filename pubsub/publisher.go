@@ -234,7 +234,7 @@ func (s *Publisher) databaseAhead(blockErr error) bool {
 	best, err := s.thor.Block("best")
 	if err != nil {
 		slog.Error("failed to get best block when checking for database ahead", "error", err)
-		return true
+		return false
 	}
 	return blockErr.Error() == config.ErrBlockNotFound && s.previous().Number > best.Number
 }
