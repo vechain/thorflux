@@ -52,7 +52,7 @@ else
 		echo "$EXISTING_TOKEN_IDS" | while read -r token_id; do
 			if [[ -n "$token_id" && "$token_id" != "null" ]]; then
 				echo "Deleting token ID: $token_id"
-				influx auth delete --id "$token_id" --org "$INFLUX_ORG" || true
+				influx auth delete --id "$token_id" || true
 			fi
 		done
 	fi
