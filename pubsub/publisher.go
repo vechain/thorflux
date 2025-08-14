@@ -129,11 +129,7 @@ func (s *Publisher) sync(ctx context.Context) {
 				continue
 			}
 
-			// Fetch next block with retry logic
-			next, err := s.retryExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
-			if err != nil {
-				continue
-			}
+			next := s.retryExpandedBlockWithBackoff(fmt.Sprintf("%d", prev.Number+1))
 			seed, err := s.fetchSeed(next.ParentID)
 			if err != nil {
 				slog.Error("failed to fetch seed for block", "block", next.Number, "error", err)
@@ -148,10 +144,14 @@ func (s *Publisher) sync(ctx context.Context) {
 					finalized *api.JSONExpandedBlock
 				)
 
-				// Fetch finalized block with retry logic
-				finalized, err = s.retryExpandedBlock("finalized")
-				if err != nil {
-					continue
+				for {
+					finalized, err = s.thor.ExpandedBlock("finalized")
+					if err != nil {
+						slog.Error("failed to fetch finalized block", "error", err)
+						time.Sleep(config.DefaultRetryDelay)
+						continue
+					}
+					break
 				}
 
 				s.blockChan <- &Block{
@@ -213,17 +213,15 @@ func (s *Publisher) fastSync(ctx context.Context) {
 	}
 }
 
-// retryExpandedBlock fetches a block with retry logic and exponential backoff
-func (s *Publisher) retryExpandedBlock(revision string) (*api.JSONExpandedBlock, error) {
-	var result *api.JSONExpandedBlock
-	var err error
+// retryExpandedBlockWithBackoff fetches a block with retry logic and exponential backoff
+func (s *Publisher) retryExpandedBlockWithBackoff(revision string) *api.JSONExpandedBlock {
 	retryCount := 0
 	maxRetries := 5
 
 	for retryCount < maxRetries {
-		result, err = s.thor.ExpandedBlock(revision)
+		expandedBlock, err := s.thor.ExpandedBlock(revision)
 		if err == nil {
-			return result, nil
+			return expandedBlock
 		}
 
 		retryCount++
@@ -245,7 +243,7 @@ func (s *Publisher) retryExpandedBlock(revision string) (*api.JSONExpandedBlock,
 		time.Sleep(backoffDelay)
 	}
 
-	return result, err
+	return nil
 }
 
 func (s *Publisher) shouldQuit() bool {
