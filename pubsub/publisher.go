@@ -216,7 +216,7 @@ func (s *Publisher) fastSync(ctx context.Context) {
 // retryExpandedBlockWithBackoff fetches a block with retry logic and exponential backoff
 func (s *Publisher) retryExpandedBlockWithBackoff(revision string) *api.JSONExpandedBlock {
 	retryCount := 0
-	maxRetries := 5
+	maxRetries := 3
 
 	for retryCount < maxRetries {
 		expandedBlock, err := s.thor.ExpandedBlock(revision)
