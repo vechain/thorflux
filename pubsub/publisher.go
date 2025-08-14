@@ -130,8 +130,8 @@ func (s *Publisher) sync(ctx context.Context) {
 			}
 			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
 			if err != nil {
-				if s.resetService(err) {
-					slog.Error("database reset detected, restarting service")
+				if s.databaseAhead(err) {
+					slog.Error("database ahead, restarting service")
 					os.Exit(1)
 				}
 				slog.Error("failed to fetch block", "error", err, "block", prev.Number+1)
@@ -230,10 +230,10 @@ func (s *Publisher) fastSyncComplete() bool {
 	return best.Number-s.previous().Number <= config.MaxBlocksBehind
 }
 
-func (s *Publisher) resetService(blockErr error) bool {
+func (s *Publisher) databaseAhead(blockErr error) bool {
 	best, err := s.thor.Block("best")
 	if err != nil {
-		slog.Error("failed to get best block when checking for reset", "error", err)
+		slog.Error("failed to get best block when checking for database ahead", "error", err)
 		return true
 	}
 	return blockErr.Error() == config.ErrBlockNotFound && s.previous().Number > best.Number
