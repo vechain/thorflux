@@ -218,8 +218,9 @@ func (s *Publisher) retryExpandedBlock(revision string) (*api.JSONExpandedBlock,
 	var result *api.JSONExpandedBlock
 	var err error
 	retryCount := 0
+	maxRetries := 5
 
-	for retryCount < config.DefaultMaxRetries {
+	for retryCount < maxRetries {
 		result, err = s.thor.ExpandedBlock(revision)
 		if err == nil {
 			return result, nil
@@ -230,9 +231,9 @@ func (s *Publisher) retryExpandedBlock(revision string) (*api.JSONExpandedBlock,
 			"error", err,
 			"revision", revision,
 			"retry", retryCount,
-			"max_retries", config.DefaultMaxRetries)
+			"max_retries", maxRetries)
 
-		if retryCount >= config.DefaultMaxRetries {
+		if retryCount >= maxRetries {
 			slog.Error("max retries exceeded for block fetch",
 				"revision", revision,
 				"total_retries", retryCount)
