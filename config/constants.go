@@ -33,6 +33,9 @@ const (
 	DefaultWorkerPoolSize = 10
 	DefaultTaskQueueSize  = 100
 
+	// Retry constants
+	DefaultMaxRetries = 5
+
 	// Logging intervals
 	LogIntervalBlocks           = 250
 	RecentBlockThreshold        = 10 * time.Minute

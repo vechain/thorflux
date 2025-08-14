@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"maps"
 	"math"
+	"os"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -127,9 +129,18 @@ func (s *Publisher) sync(ctx context.Context) {
 				time.Sleep(time.Until(prevTime.Add(config.DefaultBlockInterval)))
 				continue
 			}
-			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
+
+			// Fetch next block with retry logic
+			next, err := s.retryWithBackoff(
+				func() (*api.JSONExpandedBlock, error) {
+					return s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
+				},
+				"fetch_block",
+				map[string]any{
+					"block": prev.Number + 1,
+				},
+			)
 			if err != nil {
-				slog.Error("failed to fetch block", "error", err, "block", prev.Number+1)
 				time.Sleep(config.DefaultRetryDelay)
 				continue
 			}
@@ -147,14 +158,20 @@ func (s *Publisher) sync(ctx context.Context) {
 					finalized *api.JSONExpandedBlock
 				)
 
-				for {
-					finalized, err = s.thor.ExpandedBlock("finalized")
-					if err != nil {
-						slog.Error("failed to fetch finalized block", "error", err)
-						time.Sleep(config.DefaultRetryDelay)
-						continue
-					}
-					break
+				// Fetch finalized block with retry logic
+				finalized, err = s.retryWithBackoff(
+					func() (*api.JSONExpandedBlock, error) {
+						return s.thor.ExpandedBlock("finalized")
+					},
+					"fetch_finalized_block",
+					map[string]any{
+						"prev_block": prev.Number,
+						"next_block": next.Number,
+					},
+				)
+				if err != nil {
+					time.Sleep(config.DefaultRetryDelay)
+					continue
 				}
 
 				s.blockChan <- &Block{
@@ -214,6 +231,52 @@ func (s *Publisher) fastSync(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// retryWithBackoff executes a function with retry logic and exponential backoff
+func (s *Publisher) retryWithBackoff(
+	operation func() (*api.JSONExpandedBlock, error),
+	operationName string,
+	contextInfo map[string]any,
+) (*api.JSONExpandedBlock, error) {
+	var result *api.JSONExpandedBlock
+	var err error
+	retryCount := 0
+	maxRetries := config.DefaultMaxRetries
+
+	for retryCount < maxRetries {
+		result, err = operation()
+		if err == nil {
+			return result, nil
+		}
+
+		retryCount++
+		logFields := map[string]any{
+			"error":       err,
+			"retry":       retryCount,
+			"max_retries": maxRetries,
+			"operation":   operationName,
+		}
+		// Add context info to log fields
+		maps.Copy(logFields, contextInfo)
+		slog.Error("operation failed", slog.Any("details", logFields))
+
+		if retryCount >= maxRetries {
+			slog.Error("max retries exceeded",
+				"operation", operationName,
+				"total_retries", retryCount,
+				"context", contextInfo)
+
+			slog.Error("triggering service restart due to max retries exceeded")
+			os.Exit(1)
+		}
+
+		// Exponential backoff
+		backoffDelay := time.Duration(retryCount) * config.DefaultRetryDelay
+		time.Sleep(backoffDelay)
+	}
+
+	return result, err
 }
 
 func (s *Publisher) shouldQuit() bool {
