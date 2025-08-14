@@ -128,8 +128,16 @@ func (s *Publisher) sync(ctx context.Context) {
 				time.Sleep(time.Until(prevTime.Add(config.DefaultBlockInterval)))
 				continue
 			}
-
-			next := s.retryExpandedBlockWithBackoff(fmt.Sprintf("%d", prev.Number+1))
+			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
+			if err != nil {
+				if s.resetService(err) {
+					slog.Error("database reset detected, restarting service")
+					os.Exit(1)
+				}
+				slog.Error("failed to fetch block", "error", err, "block", prev.Number+1)
+				time.Sleep(config.DefaultRetryDelay)
+				continue
+			}
 			seed, err := s.fetchSeed(next.ParentID)
 			if err != nil {
 				slog.Error("failed to fetch seed for block", "block", next.Number, "error", err)
@@ -194,7 +202,7 @@ func (s *Publisher) fastSync(ctx context.Context) {
 			slog.Info("fast sync - context done")
 			return
 		default:
-			if s.shouldQuit() {
+			if s.fastSyncComplete() {
 				slog.Info("fast sync complete")
 				return
 			}
@@ -213,49 +221,22 @@ func (s *Publisher) fastSync(ctx context.Context) {
 	}
 }
 
-// retryExpandedBlockWithBackoff fetches a block with retry logic and exponential backoff
-func (s *Publisher) retryExpandedBlockWithBackoff(revision string) *api.JSONExpandedBlock {
-	retryCount := 0
-	maxRetries := 3
-
-	for retryCount < maxRetries {
-		expandedBlock, err := s.thor.ExpandedBlock(revision)
-		if err == nil {
-			return expandedBlock
-		}
-
-		retryCount++
-		slog.Error("failed to fetch block",
-			"error", err,
-			"revision", revision,
-			"retry", retryCount,
-			"max_retries", maxRetries)
-
-		if retryCount >= maxRetries {
-			slog.Error("max retries exceeded for block fetch",
-				"revision", revision,
-				"total_retries", retryCount)
-			slog.Error("triggering service restart due to max retries exceeded")
-			os.Exit(1)
-		}
-
-		backoffDelay := time.Duration(retryCount) * config.DefaultRetryDelay
-		time.Sleep(backoffDelay)
-	}
-
-	return nil
-}
-
-func (s *Publisher) shouldQuit() bool {
+func (s *Publisher) fastSyncComplete() bool {
 	best, err := s.thor.Block("best")
 	if err != nil {
-		slog.Error("failed to get best block", "error", err)
+		slog.Error("failed to get best block when checking for fast sync complete", "error", err)
 		return false
 	}
-	if best.Number-s.previous().Number > config.MaxBlocksBehind {
-		return false
+	return best.Number-s.previous().Number <= config.MaxBlocksBehind
+}
+
+func (s *Publisher) resetService(blockErr error) bool {
+	best, err := s.thor.Block("best")
+	if err != nil {
+		slog.Error("failed to get best block when checking for reset", "error", err)
+		return true
 	}
-	return true
+	return blockErr.Error() == config.ErrBlockNotFound && s.previous().Number > best.Number
 }
 
 func (s *Publisher) fetchBlocksAsync(amount int, startBlock uint32) ([]*Block, error) {
