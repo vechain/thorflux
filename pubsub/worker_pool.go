@@ -118,8 +118,6 @@ func (wp *WorkerPool) SubmitBatch(tasks []Task) error {
 			// Task submitted successfully
 		case <-wp.ctx.Done():
 			return errors.New(config.ErrWorkerPoolShutdown)
-		default:
-			return errors.New(config.ErrWorkerPoolFull)
 		}
 	}
 	return nil

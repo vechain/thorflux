@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"os"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -129,6 +130,10 @@ func (s *Publisher) sync(ctx context.Context) {
 			}
 			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
 			if err != nil {
+				if s.databaseAhead(err) {
+					slog.Error("database ahead, restarting service", "previous", prev.Number)
+					os.Exit(1)
+				}
 				slog.Error("failed to fetch block", "error", err, "block", prev.Number+1)
 				time.Sleep(config.DefaultRetryDelay)
 				continue
@@ -197,7 +202,7 @@ func (s *Publisher) fastSync(ctx context.Context) {
 			slog.Info("fast sync - context done")
 			return
 		default:
-			if s.shouldQuit() {
+			if s.fastSyncComplete() {
 				slog.Info("fast sync complete")
 				return
 			}
@@ -216,16 +221,22 @@ func (s *Publisher) fastSync(ctx context.Context) {
 	}
 }
 
-func (s *Publisher) shouldQuit() bool {
+func (s *Publisher) fastSyncComplete() bool {
 	best, err := s.thor.Block("best")
 	if err != nil {
-		slog.Error("failed to get best block", "error", err)
+		slog.Error("failed to get best block when checking for fast sync complete", "error", err)
 		return false
 	}
-	if best.Number-s.previous().Number > config.MaxBlocksBehind {
-		return false
+	return best.Number-s.previous().Number <= config.MaxBlocksBehind
+}
+
+func (s *Publisher) databaseAhead(blockErr error) bool {
+	best, err := s.thor.Block("best")
+	if err != nil {
+		slog.Error("failed to get best block when checking for database ahead", "error", err)
+		return true
 	}
-	return true
+	return blockErr.Error() == config.ErrBlockNotFound && s.previous().Number > best.Number
 }
 
 func (s *Publisher) fetchBlocksAsync(amount int, startBlock uint32) ([]*Block, error) {

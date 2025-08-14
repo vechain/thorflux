@@ -89,7 +89,9 @@ const (
 
 	// Worker pool error messages
 	ErrWorkerPoolShutdown = "worker pool is shutdown"
-	ErrWorkerPoolFull     = "worker pool queue is full"
+
+	// Block sync error messages
+	ErrBlockNotFound = "not found"
 )
 
 // ABI method names
