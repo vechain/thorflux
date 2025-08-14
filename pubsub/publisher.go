@@ -131,7 +131,7 @@ func (s *Publisher) sync(ctx context.Context) {
 			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
 			if err != nil {
 				if s.databaseAhead(err) {
-					slog.Error("database ahead, restarting service")
+					slog.Error("database ahead, restarting service", "previous", prev.Number)
 					os.Exit(1)
 				}
 				slog.Error("failed to fetch block", "error", err, "block", prev.Number+1)
