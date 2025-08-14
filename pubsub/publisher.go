@@ -242,9 +242,8 @@ func (s *Publisher) retryWithBackoff(
 	var result *api.JSONExpandedBlock
 	var err error
 	retryCount := 0
-	maxRetries := config.DefaultMaxRetries
 
-	for retryCount < maxRetries {
+	for retryCount < config.DefaultMaxRetries {
 		result, err = operation()
 		if err == nil {
 			return result, nil
@@ -254,14 +253,14 @@ func (s *Publisher) retryWithBackoff(
 		logFields := map[string]any{
 			"error":       err,
 			"retry":       retryCount,
-			"max_retries": maxRetries,
+			"max_retries": config.DefaultMaxRetries,
 			"operation":   operationName,
 		}
 		// Add context info to log fields
 		maps.Copy(logFields, contextInfo)
 		slog.Error("operation failed", slog.Any("details", logFields))
 
-		if retryCount >= maxRetries {
+		if retryCount >= config.DefaultMaxRetries {
 			slog.Error("max retries exceeded",
 				"operation", operationName,
 				"total_retries", retryCount,
@@ -271,7 +270,6 @@ func (s *Publisher) retryWithBackoff(
 			os.Exit(1)
 		}
 
-		// Exponential backoff
 		backoffDelay := time.Duration(retryCount) * config.DefaultRetryDelay
 		time.Sleep(backoffDelay)
 	}
