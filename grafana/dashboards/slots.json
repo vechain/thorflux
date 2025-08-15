@@ -413,7 +413,7 @@
   "preload": false,
   "refresh": "5s",
   "schemaVersion": 41,
-  "tags": ["thorflux-v0.0.16"],
+  "tags": [],
   "templating": {
     "list": [
       {
