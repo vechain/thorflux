@@ -18,11 +18,12 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 11,
+  "id": 209,
   "links": [],
   "panels": [
     {
       "datasource": {
+        "default": false,
         "type": "influxdb",
         "uid": "B87265B08D314AF"
       },
@@ -37,7 +38,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -49,7 +51,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 4,
         "x": 0,
         "y": 0
@@ -62,7 +64,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -70,7 +74,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "datasource": {
@@ -102,7 +106,6 @@
             "axisPlacement": "auto",
             "axisWidth": 75,
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -133,7 +136,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "yellow",
@@ -149,7 +153,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 12,
         "x": 4,
         "y": 0
@@ -163,19 +167,17 @@
           "showLegend": false
         },
         "tooltip": {
-          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"block_number\")\n  |> filter(fn: (r) => r.filled == \"0\")\n  |> group(columns: [])\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: true)\n  |> yield(name: \"count_per_day\")\n",
+          "query": "from(bucket: \"${bucket}\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"block_number\")\r\n  |> filter(fn: (r) => r.filled == \"0\")\r\n  |> group(columns: [])\r\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: true)\r\n  |> yield(name: \"count_per_day\")\r\n",
           "refId": "A"
         }
       ],
@@ -206,7 +208,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -227,7 +230,7 @@
         ]
       },
       "gridPos": {
-        "h": 16,
+        "h": 20,
         "w": 8,
         "x": 16,
         "y": 0
@@ -239,14 +242,16 @@
           "countRows": false,
           "enablePagination": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "frameIndex": 3,
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "datasource": {
@@ -276,7 +281,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -284,10 +290,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 4,
         "x": 0,
-        "y": 8
+        "y": 6
       },
       "id": 6,
       "options": {
@@ -297,7 +303,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -305,7 +313,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "datasource": {
@@ -337,7 +345,6 @@
             "axisPlacement": "auto",
             "axisWidth": 75,
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "points",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -368,7 +375,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": null
               }
             ]
           }
@@ -376,10 +384,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 12,
         "x": 4,
-        "y": 8
+        "y": 6
       },
       "id": 5,
       "options": {
@@ -390,61 +398,160 @@
           "showLegend": false
         },
         "tooltip": {
-          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"block_number\")\n  |> filter(fn: (r) => r.filled == \"0\")\n  |> yield(name: \"count_per_day\")\n",
+          "query": "from(bucket: \"${bucket}\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"block_number\")\r\n  |> filter(fn: (r) => r.filled == \"0\")\r\n  |> yield(name: \"count_per_day\")\r\n",
           "refId": "A"
         }
       ],
       "title": "Missed block numbers",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "be05e9nontwcgb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 4,
+        "y": 13
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "be05e9nontwcgb"
+          },
+          "editorMode": "code",
+          "expr": "rate(thor_metrics_block_processed_duration_ms_sum{environment=~\"prd\", network=\"${bucket}\", module=~\"authority\"}[$__rate_interval]) / rate(thor_metrics_block_processed_duration_ms_count{environment=~\"prd\", network=\"${bucket}\", module=~\"authority\"}[$__rate_interval])",
+          "instant": false,
+          "legendFormat": "{{instance_name}} - {{instance_id}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Block process duration",
+      "type": "timeseries"
     }
   ],
-  "preload": false,
-  "refresh": "5s",
-  "schemaVersion": 41,
-  "tags": [],
+  "schemaVersion": 39,
+  "tags": [
+    "thorflux-v0.0.16"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "text": "vechain",
-          "value": "vechain"
+          "selected": false,
+          "text": "mainnet",
+          "value": "mainnet"
         },
         "datasource": {
           "type": "influxdb",
           "uid": "B87265B08D314AF"
         },
         "definition": "buckets()",
+        "hide": 0,
         "includeAll": false,
         "label": "Bucket",
+        "multi": false,
         "name": "bucket",
         "options": [],
         "query": "buckets()",
         "refresh": 2,
-        "regex": "/.*vechain*./",
+        "regex": "/^(?!dev-tf-default$).*/",
+        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       }
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-30d",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Slots",
-  "uid": "be9urigr0u800z",
-  "version": 6
+  "uid": "be9urigr0u800b",
+  "version": 10,
+  "weekStart": ""
 }

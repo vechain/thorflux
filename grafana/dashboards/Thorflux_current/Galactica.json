@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 212,
   "links": [],
   "panels": [
     {
@@ -39,7 +39,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -71,7 +70,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -103,7 +103,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.0",
       "targets": [
         {
           "datasource": {
@@ -153,7 +153,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -194,7 +195,7 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 100
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.0",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      (r._field == \"legacy_txs\" or r._field == \"dyn_fee_txs\") and\n      r._value > 0\n    )\n  |> keep(columns: [\"_time\", \"block_number\", \"_field\", \"_value\"])\n  |> pivot(\n      rowKey:     [\"_time\", \"block_number\"],\n      columnKey:  [\"_field\"],\n      valueColumn:\"_value\"\n    )\n  // convert the block_number string into an integer field called \"block\"\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block: int(v: r.block_number),\n      legacy_txs: if exists r.legacy_txs then r.legacy_txs else 0,\n      dyn_fee_txs: if exists r.dyn_fee_txs then r.dyn_fee_txs else 0\n    }))\n  |> yield(name: \"txs_per_block\")\n",
@@ -219,7 +220,8 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "orange",
@@ -248,7 +250,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -256,7 +260,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) => r[\"_field\"] == \"legacy_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"legacy_txs\")",
@@ -281,7 +285,8 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "orange",
@@ -310,7 +315,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -318,7 +325,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "datasource": {
@@ -368,7 +375,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -409,14 +417,14 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 100
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.0",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      r._field       == \"validator_rewards\"\n    )\n  // only keep the raw fields well need\n  |> keep(columns: [\"block_number\", \"signer\", \"_value\"])\n  // 1) parse block_number → int “block”\n  // 2) scale non-zero tips by 10^13 → “scaled”\n  |> map(fn: (r) => ({\n      block:  int(v: r.block_number),\n      signer: r.signer,\n      scaled: if r._value == 0.0 then 0.0 else r._value / 10000000000000.0\n    }))\n  // 3) drop the now‐unused originals\n  |> drop(columns: [\"block_number\", \"_value\"])\n  // 4) merge all records together\n  |> group()\n  // 5) pivot so each signer is its own column, keyed by block\n  |> pivot(\n      rowKey:     [\"block\"],\n      columnKey:  [\"signer\"],\n      valueColumn:\"scaled\"\n    )\n  // 6) fill missing signers with zero\n  |> fill(value: 0.0)\n  // 7) sort by block ascending\n  |> sort(columns: [\"block\"])\n  |> yield(name: \"validator_tip_per_block\")\n",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      r._field       == \"validator_rewards\"\n    )\n  // only keep the raw fields well need\n  |> keep(columns: [\"block_number\", \"signer\", \"_value\"])\n  // 1) parse block_number → int “block”\n  // 2) scale non-zero tips by 10^13 → “scaled”\n  |> map(fn: (r) => ({\n      block:  int(v: r.block_number),\n      signer: r.signer,\n      scaled: if r._value == 0.0 then 0.0 else r._value / 10.0\n    }))\n  // 3) drop the now‐unused originals\n  |> drop(columns: [\"block_number\", \"_value\"])\n  // 4) merge all records together\n  |> group()\n  // 5) pivot so each signer is its own column, keyed by block\n  |> pivot(\n      rowKey:     [\"block\"],\n      columnKey:  [\"signer\"],\n      valueColumn:\"scaled\"\n    )\n  // 6) fill missing signers with zero\n  |> fill(value: 0.0)\n  // 7) sort by block ascending\n  |> sort(columns: [\"block\"])\n  |> yield(name: \"validator_tip_per_block\")\n",
           "refId": "A"
         }
       ],
@@ -447,7 +455,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -468,7 +477,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -476,7 +487,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and r[\"_field\"] == \"block_total_burnt\")\n  |> group()\n  |> sum()",
@@ -503,7 +514,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -534,7 +544,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -565,7 +576,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.0",
       "targets": [
         {
           "datasource": {
@@ -596,7 +607,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -627,7 +637,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -666,7 +677,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.0",
       "targets": [
         {
           "datasource": {
@@ -697,7 +708,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -728,7 +738,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -759,7 +770,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.0",
       "targets": [
         {
           "datasource": {
@@ -771,29 +782,21 @@
         }
       ],
       "title": "Blocks Produced By Signer",
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "_value {_start=\"[\\d\\-:. +UTC]*\", _stop=\"[\\d\\-:. +UTC]*\", signer=\"([\\dxabcdef]*)\"}",
-            "renamePattern": "$1"
-          }
-        }
-      ],
       "type": "timeseries"
     }
   ],
-  "preload": false,
   "refresh": "",
-  "schemaVersion": 41,
-  "tags": [],
+  "schemaVersion": 39,
+  "tags": [
+    "thorflux-v0.0.16"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "vechain",
-          "value": "vechain"
+          "selected": true,
+          "text": "mainnet",
+          "value": "mainnet"
         },
         "datasource": {
           "type": "influxdb",
@@ -808,7 +811,7 @@
         "options": [],
         "query": "buckets()",
         "refresh": 2,
-        "regex": ".*vechain.*",
+        "regex": "/^(?!dev-tf-default$).*/",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
@@ -816,12 +819,13 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Galactica",
   "uid": "fehlt4dw18oowa",
-  "version": 1
+  "version": 7,
+  "weekStart": ""
 }

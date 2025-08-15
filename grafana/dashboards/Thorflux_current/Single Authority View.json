@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 162,
   "links": [],
   "panels": [
     {
@@ -66,13 +66,15 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "frameIndex": 2,
         "showHeader": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "datasource": {
@@ -129,7 +131,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -137,7 +141,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "datasource": {
@@ -189,7 +193,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -197,7 +203,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "datasource": {
@@ -256,12 +262,14 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "datasource": {
@@ -321,7 +329,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -329,7 +339,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "10.4.1",
       "targets": [
         {
           "datasource": {
@@ -344,37 +354,17 @@
       "type": "stat"
     }
   ],
-  "preload": false,
-  "schemaVersion": 40,
-  "tags": [],
+  "schemaVersion": 39,
+  "tags": [
+    "thorflux-v0.0.16"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "text": "0x117683ddb6d2254084257617a9d54faf5dee0f67",
-          "value": "0x117683ddb6d2254084257617a9d54faf5dee0f67"
-        },
-        "datasource": {
-          "type": "influxdb",
-          "uid": "B87265B08D314AF"
-        },
-        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"${bucket}\", tag: \"proposer\")",
-        "includeAll": false,
-        "label": "Proposer",
-        "name": "proposer",
-        "options": [],
-        "query": {
-          "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"${bucket}\", tag: \"proposer\")"
-        },
-        "refresh": 1,
-        "regex": "",
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "vechain",
-          "value": "vechain"
+          "selected": true,
+          "text": "testnet",
+          "value": "testnet"
         },
         "datasource": {
           "type": "influxdb",
@@ -389,7 +379,31 @@
         "options": [],
         "query": "buckets()",
         "refresh": 2,
-        "regex": ".*vechain.*",
+        "regex": "/^(?!dev-tf-default$).*/",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "0x0771bc0fe8b6dcf72372440c79a309e92ffb93e8",
+          "value": "0x0771bc0fe8b6dcf72372440c79a309e92ffb93e8"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\r\n\r\nschema.tagValues(bucket: \"${bucket}\", tag: \"proposer\")",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Proposer",
+        "multi": false,
+        "name": "proposer",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\r\n\r\nschema.tagValues(bucket: \"${bucket}\", tag: \"proposer\")",
+        "refresh": 2,
+        "regex": "",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
@@ -403,7 +417,7 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Single Authority View",
-  "uid": "fe8vud5hhircwd",
-  "version": 1,
+  "uid": "aefsqnjntevi8c",
+  "version": 12,
   "weekStart": ""
 }
