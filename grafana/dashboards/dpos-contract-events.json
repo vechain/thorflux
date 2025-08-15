@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -104,7 +104,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\")\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
@@ -114,7 +114,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -154,9 +154,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "frameIndex": 1,
@@ -165,7 +163,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\")\n  |> drop(columns: [\"chain_tag\"])\n  |> group(columns: [\"_field\"], mode:\"by\")\n  |> sum(column: \"_value\")\n  |> group()\n  |> yield(name: \"_value\")\n  |> map(\n        fn: (r) => ({Event: r._field, Count: r._value}),\n    )\n  |> drop(columns: [\"_field\", \"_value\"])\n  |> group()\n  |> sort(desc: true, columns: [\"Event\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\")\n  |> drop(columns: [\"chain_tag\"])\n  |> group(columns: [\"_field\"], mode:\"by\")\n  |> sum(column: \"_value\")\n  |> group()\n  |> yield(name: \"_value\")\n  |> map(\n        fn: (r) => ({Event: r._field, Count: r._value}),\n    )\n  |> drop(columns: [\"_field\", \"_value\"])\n  |> group()\n  |> sort(desc: true, columns: [\"Event\"])",
           "refId": "A"
         }
       ],
@@ -175,7 +173,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -255,7 +253,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"ValidationQueued\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"ValidationQueued\")\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
@@ -265,7 +263,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -345,7 +343,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"DelegationAdded\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"DelegationAdded\")\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
@@ -355,7 +353,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -432,7 +430,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"ValidationSignaledExit\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"ValidationSignaledExit\")\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
@@ -442,7 +440,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -519,7 +517,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"DelegationSignaledExit\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"DelegationSignaledExit\")\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
@@ -529,7 +527,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -605,7 +603,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"ValidationWithdrawn\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"ValidationWithdrawn\")\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
@@ -615,7 +613,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -695,7 +693,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"DelegationWithdrawn\")\n  |> drop(columns: [\"chain_tag\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"staker_events\" and r[\"_field\"] == \"DelegationWithdrawn\")\n  |> drop(columns: [\"chain_tag\"])",
           "refId": "A"
         }
       ],
@@ -708,7 +706,32 @@
   "schemaVersion": 40,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "vechain",
+          "value": "vechain"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "buckets()",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Bucket",
+        "multi": false,
+        "name": "bucket",
+        "options": [],
+        "query": "buckets()",
+        "refresh": 2,
+        "regex": ".*vechain.*",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-30m",

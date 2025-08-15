@@ -7,7 +7,7 @@ datasources:
     access: proxy
     url: http://influxdb:8086
     editable: true
-    uid: eea2frhqbiuwwa
+    uid: B87265B08D314AF
     jsonData:
       defaultBucket: vechain
       httpMode: POST

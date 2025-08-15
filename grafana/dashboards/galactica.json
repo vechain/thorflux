@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "description": "unit",
       "fieldConfig": {
@@ -108,9 +108,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "import \"math\"\n\n// Main series: convert block_base_fee to float, aggregate by window,\n// and scale the value by 10^13 to work in normalized units.\nmain = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_base_fee\")\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with _value: r._value / math.pow(x: 10.0, y: 13.0) }))\n\n// Horizontal line series: reuse the main series timestamps while setting the value to 2.\n// (That is, 2 * 1e13 wei divided by 1e13 = 2.)\nhline = main\n  |> map(fn: (r) => ({ r with _value: 2.0, _field: \"Max Legacy Tx Gas Price\" }))\n\n// Union the two series so both are shown in the same panel.\nunion(tables: [main, hline])\n  |> yield(name: \"result\")\n",
+          "query": "import \"math\"\n\n// Main series: convert block_base_fee to float, aggregate by window,\n// and scale the value by 10^13 to work in normalized units.\nmain = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_base_fee\")\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with _value: r._value / math.pow(x: 10.0, y: 13.0) }))\n\n// Horizontal line series: reuse the main series timestamps while setting the value to 2.\n// (That is, 2 * 1e13 wei divided by 1e13 = 2.)\nhline = main\n  |> map(fn: (r) => ({ r with _value: 2.0, _field: \"Max Legacy Tx Gas Price\" }))\n\n// Union the two series so both are shown in the same panel.\nunion(tables: [main, hline])\n  |> yield(name: \"result\")\n",
           "refId": "A"
         }
       ],
@@ -120,7 +120,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -197,7 +197,7 @@
       "pluginVersion": "12.0.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      (r._field == \"legacy_txs\" or r._field == \"dyn_fee_txs\") and\n      r._value > 0\n    )\n  |> keep(columns: [\"_time\", \"block_number\", \"_field\", \"_value\"])\n  |> pivot(\n      rowKey:     [\"_time\", \"block_number\"],\n      columnKey:  [\"_field\"],\n      valueColumn:\"_value\"\n    )\n  // convert the block_number string into an integer field called \"block\"\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block: int(v: r.block_number),\n      legacy_txs: if exists r.legacy_txs then r.legacy_txs else 0,\n      dyn_fee_txs: if exists r.dyn_fee_txs then r.dyn_fee_txs else 0\n    }))\n  |> yield(name: \"txs_per_block\")\n",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      (r._field == \"legacy_txs\" or r._field == \"dyn_fee_txs\") and\n      r._value > 0\n    )\n  |> keep(columns: [\"_time\", \"block_number\", \"_field\", \"_value\"])\n  |> pivot(\n      rowKey:     [\"_time\", \"block_number\"],\n      columnKey:  [\"_field\"],\n      valueColumn:\"_value\"\n    )\n  // convert the block_number string into an integer field called \"block\"\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block: int(v: r.block_number),\n      legacy_txs: if exists r.legacy_txs then r.legacy_txs else 0,\n      dyn_fee_txs: if exists r.dyn_fee_txs then r.dyn_fee_txs else 0\n    }))\n  |> yield(name: \"txs_per_block\")\n",
           "refId": "A"
         }
       ],
@@ -207,7 +207,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -248,9 +248,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -261,7 +259,7 @@
       "pluginVersion": "12.0.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) => r[\"_field\"] == \"legacy_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"legacy_txs\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) => r[\"_field\"] == \"legacy_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"legacy_txs\")",
           "refId": "A"
         }
       ],
@@ -271,7 +269,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -312,9 +310,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -327,9 +323,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dyn_fee_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"total_dyn_fee_txs\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dyn_fee_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"total_dyn_fee_txs\")",
           "refId": "A"
         }
       ],
@@ -339,7 +335,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -418,9 +414,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      r._field       == \"validator_rewards\"\n    )\n  // only keep the raw fields well need\n  |> keep(columns: [\"block_number\", \"signer\", \"_value\"])\n  // 1) parse block_number → int “block”\n  // 2) scale non-zero tips by 10^13 → “scaled”\n  |> map(fn: (r) => ({\n      block:  int(v: r.block_number),\n      signer: r.signer,\n      scaled: if r._value == 0.0 then 0.0 else r._value / 10000000000000.0\n    }))\n  // 3) drop the now‐unused originals\n  |> drop(columns: [\"block_number\", \"_value\"])\n  // 4) merge all records together\n  |> group()\n  // 5) pivot so each signer is its own column, keyed by block\n  |> pivot(\n      rowKey:     [\"block\"],\n      columnKey:  [\"signer\"],\n      valueColumn:\"scaled\"\n    )\n  // 6) fill missing signers with zero\n  |> fill(value: 0.0)\n  // 7) sort by block ascending\n  |> sort(columns: [\"block\"])\n  |> yield(name: \"validator_tip_per_block\")\n",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      r._field       == \"validator_rewards\"\n    )\n  // only keep the raw fields well need\n  |> keep(columns: [\"block_number\", \"signer\", \"_value\"])\n  // 1) parse block_number → int “block”\n  // 2) scale non-zero tips by 10^13 → “scaled”\n  |> map(fn: (r) => ({\n      block:  int(v: r.block_number),\n      signer: r.signer,\n      scaled: if r._value == 0.0 then 0.0 else r._value / 10000000000000.0\n    }))\n  // 3) drop the now‐unused originals\n  |> drop(columns: [\"block_number\", \"_value\"])\n  // 4) merge all records together\n  |> group()\n  // 5) pivot so each signer is its own column, keyed by block\n  |> pivot(\n      rowKey:     [\"block\"],\n      columnKey:  [\"signer\"],\n      valueColumn:\"scaled\"\n    )\n  // 6) fill missing signers with zero\n  |> fill(value: 0.0)\n  // 7) sort by block ascending\n  |> sort(columns: [\"block\"])\n  |> yield(name: \"validator_tip_per_block\")\n",
           "refId": "A"
         }
       ],
@@ -439,7 +435,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -472,9 +468,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -485,7 +479,7 @@
       "pluginVersion": "12.0.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: 0, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and r[\"_field\"] == \"block_total_burnt\")\n  |> group()\n  |> sum()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and r[\"_field\"] == \"block_total_burnt\")\n  |> group()\n  |> sum()",
           "refId": "A"
         }
       ],
@@ -495,7 +489,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -576,9 +570,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "import \"math\"\n\nfrom(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_base_fee\")\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with _value: r._value / math.pow(x: 10.0, y: 13.0) }))\n  |> cumulativeSum(columns: [\"_value\"])\n  |> yield(name: \"cumulative_sum\")",
+          "query": "import \"math\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_base_fee\")\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with _value: r._value / math.pow(x: 10.0, y: 13.0) }))\n  |> cumulativeSum(columns: [\"_value\"])\n  |> yield(name: \"cumulative_sum\")",
           "refId": "A"
         }
       ],
@@ -588,7 +582,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -677,9 +671,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "\nt1 = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) =>\n      r[\"_field\"] == \"priority_fee_open\" or\n      r[\"_field\"] == \"priority_fee_close\" or\n      r[\"_field\"] == \"priority_fee_high\" or\n      r[\"_field\"] == \"priority_fee_low\"\n  )\n\n\nt2 = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"candlestick_tx_count\")\n  |> map(fn: (r) => ({\n      _time: r._time,\n      _value: float(v: r._value),\n      _field: r._field,\n      _measurement: r._measurement,\n      _start: r._start,\n      _stop: r._stop\n  }))\n\nunion(tables: [t1, t2])\n  |> group(columns: [])\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"_time\"])\n  |> yield(name: \"candlestick\")",
+          "query": "\nt1 = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) =>\n      r[\"_field\"] == \"priority_fee_open\" or\n      r[\"_field\"] == \"priority_fee_close\" or\n      r[\"_field\"] == \"priority_fee_high\" or\n      r[\"_field\"] == \"priority_fee_low\"\n  )\n\n\nt2 = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"candlestick_tx_count\")\n  |> map(fn: (r) => ({\n      _time: r._time,\n      _value: float(v: r._value),\n      _field: r._field,\n      _measurement: r._measurement,\n      _start: r._start,\n      _stop: r._stop\n  }))\n\nunion(tables: [t1, t2])\n  |> group(columns: [])\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"_time\"])\n  |> yield(name: \"candlestick\")",
           "refId": "A"
         }
       ],
@@ -689,7 +683,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -770,9 +764,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  // Using best_block_number to identify each block record\n  |> filter(fn: (r) => r[\"_field\"] == \"best_block_number\")\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"])\n  |> map(fn: (r) => ({ r with _value: 1 }))\n  |> cumulativeSum(columns: [\"_value\"])\n  |> yield(name: \"cumulative_blocks_produced\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  // Using best_block_number to identify each block record\n  |> filter(fn: (r) => r[\"_field\"] == \"best_block_number\")\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"])\n  |> map(fn: (r) => ({ r with _value: 1 }))\n  |> cumulativeSum(columns: [\"_value\"])\n  |> yield(name: \"cumulative_blocks_produced\")",
           "refId": "A"
         }
       ],
@@ -794,7 +788,32 @@
   "schemaVersion": 41,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "vechain",
+          "value": "vechain"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "buckets()",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Bucket",
+        "multi": false,
+        "name": "bucket",
+        "options": [],
+        "query": "buckets()",
+        "refresh": 2,
+        "regex": ".*vechain.*",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-3h",
