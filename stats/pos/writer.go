@@ -53,7 +53,7 @@ func (s *Staker) Write(event *types.Event) error {
 		points = append(points, blockPoints...)
 	}
 
-	missedSlotsPoints, err := s.createMissedSlotsPoints(event, stakerInfo)
+	missedSlotsPoints, err := s.createSlotPoints(event, stakerInfo)
 	if err != nil {
 		slog.Error("Failed to create missed slots points", "error", err)
 	}
@@ -198,20 +198,18 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"queued_stake":              vetutil.ScaleToVET(info.QueuedVET),
 		"queued_weight":             vetutil.ScaleToVET(info.QueuedWeight),
 		"withdrawn_vet":             vetutil.ScaleToVET(withdrawnFunds),
-		// TODO: This is Circulating VTHO, not VET
-		"circulating_vet":    vetutil.ScaleToVET(info.TotalSupplyVTHO),
-		"contract_vet":       vetutil.ScaleToVET(info.ContractBalance),
-		"online_stake":       vetutil.ScaleToVET(onlineStake),
-		"offline_stake":      vetutil.ScaleToVET(offlineStake),
-		"online_weight":      vetutil.ScaleToVET(onlineWeight),
-		"offline_weight":     vetutil.ScaleToVET(offlineWeight),
-		"epoch":              epoch,
-		"block_in_epoch":     block.Number % thor.CheckpointInterval,
-		"active_validators":  len(leaderGroup),
-		"online_validators":  onlineValidators,
-		"offline_validators": offlineValidators,
-		"weight_processed":   vetutil.ScaleToVET(weightProcessed),
-		"block_number":       block.Number,
+		"contract_vet":              vetutil.ScaleToVET(info.ContractBalance),
+		"online_stake":              vetutil.ScaleToVET(onlineStake),
+		"offline_stake":             vetutil.ScaleToVET(offlineStake),
+		"online_weight":             vetutil.ScaleToVET(onlineWeight),
+		"offline_weight":            vetutil.ScaleToVET(offlineWeight),
+		"epoch":                     epoch,
+		"block_in_epoch":            block.Number % thor.CheckpointInterval,
+		"active_validators":         len(leaderGroup),
+		"online_validators":         onlineValidators,
+		"offline_validators":        offlineValidators,
+		"weight_processed":          vetutil.ScaleToVET(weightProcessed),
+		"block_number":              block.Number,
 	}
 
 	if event.DPOSActive {
@@ -442,29 +440,21 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 	return points
 }
 
-func (s *Staker) createMissedSlotsPoints(event *types.Event, info *StakerInformation) ([]*write.Point, error) {
+func (s *Staker) createSlotPoints(event *types.Event, info *StakerInformation) ([]*write.Point, error) {
 	if !event.DPOSActive {
 		return nil, nil
-	}
-	validators := make(map[thor.Address]*builtin.ValidatorStake)
-	validatorsStatuses := make(map[thor.Address]*builtin.ValidatorStatus)
-	for _, v := range info.Validations {
-		if v.ValidatorStatus.Status == builtin.StakerStatusActive {
-			validators[v.ValidatorStake.Address] = v.ValidatorStake
-			validatorsStatuses[v.ValidatorStake.Address] = v.ValidatorStatus
-		}
-	}
-
-	missed, err := s.MissedSlots(validators, validatorsStatuses, event.Block, event.Seed)
-	if err != nil {
-		slog.Error("Failed to get missed slots", "error", err)
-		return nil, err
 	}
 
 	points := make([]*write.Point, 0)
 
+	// record missed slots
+	missed, err := s.MissedSlots(info.Validations, event.Block, event.Seed)
+	if err != nil {
+		slog.Error("Failed to get missed slots", "error", err)
+		return nil, err
+	}
 	for _, v := range missed {
-		slog.Warn("Missed slot for validator", "validator", v.Signer, "block", event.Block.Number, "slot", v.Slot)
+		slog.Warn("Missed slot for validator", "validator", v.Signer, "block", event.Block.Number)
 
 		point := influxdb2.NewPoint(
 			"dpos_missed_slots",
@@ -473,8 +463,29 @@ func (s *Staker) createMissedSlotsPoints(event *types.Event, info *StakerInforma
 				"signer":    v.Signer.String(),
 			},
 			map[string]interface{}{
-				"slot":         v.Slot,
 				"block_number": event.Block.Number,
+			},
+			event.Timestamp,
+		)
+		points = append(points, point)
+	}
+
+	// record future slots
+	future, err := s.FutureSlots(info.Validations, event.Block, event.Seed)
+	if err != nil {
+		slog.Error("Failed to get future slots", "error", err)
+		return nil, err
+	}
+	for _, f := range future {
+		point := influxdb2.NewPoint(
+			"dpos_future_slots",
+			map[string]string{
+				"chain_tag": event.ChainTag,
+				"signer":    f.Signer.String(),
+			},
+			map[string]interface{}{
+				"block_number":   f.Block,
+				"block_in_epoch": f.Block % s.epochLength,
 			},
 			event.Timestamp,
 		)

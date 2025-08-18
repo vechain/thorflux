@@ -1,0 +1,569 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 11,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "description": "Only blocks in the current epoch can be predicted. If we are viewing the last block in the current epoch, this list will be empty",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block Number"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 177
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block In Epoch"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 217
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
+          },
+          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_future_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_future_slots\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> keep(columns: [\"signer\", \"block_in_epoch\", \"block_number\"])\n  |> sort(columns: [\"block_number\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "🔮🔮 Future Slots",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "block_in_epoch": 0,
+              "block_number": 1,
+              "signer": 2
+            },
+            "renameByName": {
+              "block_in_epoch": "Block In Epoch",
+              "block_number": "Block Number",
+              "signer": "Validator"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block Number"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 208
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block In Epoch"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 261
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 213
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
+          },
+          "query": "from(bucket: \"vechain\")\n  |> range(start: -10y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_missed_slots\")\n  |> limit(n: 200)\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> keep(columns: [\"_time\", \"block_number\", \"signer\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "🚨🚨 Missed Slots",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "_time": 0,
+              "block_number": 1,
+              "signer": 2,
+              "slot": 3
+            },
+            "renameByName": {
+              "_time": "Time",
+              "block_in_epoch": "Block In Epoch",
+              "block_number": "Block Number",
+              "signer": "Validator",
+              "slot": "Slot"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 11
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"_field\"] == \"block_number\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group(columns: [\"signer\"])\n  |> map(fn: (r) => ({r with _value: 1}))\n  |> count(column: \"_value\")\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n",
+          "refId": "A"
+        }
+      ],
+      "title": "👑👑 Filled Slot Leader board",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "_value": "Proposed",
+              "signer": "Validator"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 11
+      },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "query": "from(bucket: \"vechain\")\n  |> range(start: -10y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_missed_slots\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group(columns: [\"signer\"])\n  |> map(fn: (r) => ({r with _value: 1}))\n  |> count(column: \"_value\")\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n",
+          "refId": "A"
+        }
+      ],
+      "title": "😈😈 Missed Slot Leader board",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "_value": "Missed ",
+              "signer": "Validator"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "eea2frhqbiuwwa"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 253
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block In Epoch"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 181
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block Number"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 178
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Validator"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 518
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 19,
+        "x": 0,
+        "y": 22
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "eea2frhqbiuwwa"
+          },
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"block_in_epoch\" or r[\"_field\"] == \"block_number\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> sort(desc: true, columns: [\"_time\"])\n  |> keep(columns: [\"_time\", \"block_in_epoch\", \"block_number\", \"epoch\", \"signer\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "Previously Filled",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "_time": 0,
+              "block_in_epoch": 1,
+              "block_number": 2,
+              "epoch": 4,
+              "signer": 3
+            },
+            "renameByName": {
+              "_time": "Time",
+              "block_in_epoch": "Block In Epoch",
+              "block_number": "Block Number",
+              "epoch": "Epoch",
+              "signer": "Validator"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "DPoS - Slots",
+  "uid": "fevd1jv7bemf4c",
+  "version": 23,
+  "weekStart": ""
+}
