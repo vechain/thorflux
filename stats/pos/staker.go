@@ -4,11 +4,10 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"sync/atomic"
-
 	"log/slog"
 	"math/big"
 	"sync"
+	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -84,29 +83,31 @@ func NewStaker(client *thorclient.Client) (*Staker, error) {
 	return &Staker{staker: staker, client: client, epochLength: epochLength, cache: cache}, nil
 }
 
+func createProposers(validators []*Validation) map[thor.Address]*validation.Validation {
+	proposers := make(map[thor.Address]*validation.Validation)
+	for _, v := range validators {
+		if v.Status != builtin.StakerStatusActive {
+			continue
+		}
+		// scheduler doesn't need any other fields
+		proposers[v.ValidatorStatus.Address] = &validation.Validation{
+			Online: v.Online,
+			Weight: v.Weight,
+		}
+	}
+	return proposers
+}
+
 type MissedSlot struct {
-	Slot   uint64
 	Signer thor.Address
 }
 
 func (s *Staker) MissedSlots(
-	validatorsStake map[thor.Address]*builtin.ValidatorStake,
-	validatorsStatus map[thor.Address]*builtin.ValidatorStatus,
+	validators []*Validation,
 	block *api.JSONExpandedBlock,
 	seed []byte,
 ) ([]MissedSlot, error) {
-	proposers := make(map[thor.Address]*validation.Validation)
-	for id, v := range validatorsStake {
-		valStatus := validatorsStatus[id]
-		if valStatus.Status != builtin.StakerStatusActive {
-			continue
-		}
-		// scheduler doesn't need any other fields
-		proposers[id] = &validation.Validation{
-			Online: valStatus.Online,
-			Weight: v.Weight,
-		}
-	}
+	proposers := createProposers(validators)
 	parent, err := s.client.Block(block.ParentID.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch parent block %s: %w", block.ParentID, err)
@@ -116,17 +117,52 @@ func (s *Staker) MissedSlots(
 		return nil, err
 	}
 	missedSigners := make([]MissedSlot, 0)
-	for i := parent.Timestamp + uint64(config.BlockIntervalSeconds); i < block.Timestamp; i += uint64(config.BlockIntervalSeconds) {
+	for i := parent.Timestamp + config.BlockIntervalSeconds; i < block.Timestamp; i += config.BlockIntervalSeconds {
 		for master := range proposers {
 			if sched.IsScheduled(i, master) {
 				missedSigners = append(missedSigners, MissedSlot{
-					Slot:   i,
 					Signer: master,
 				})
 			}
 		}
 	}
 	return missedSigners, nil
+}
+
+type FutureSlot struct {
+	Block  uint32
+	Signer thor.Address
+}
+
+func (s *Staker) FutureSlots(validators []*Validation, block *api.JSONExpandedBlock, seed []byte) ([]FutureSlot, error) {
+	// max amount of blocks that we can predict
+	// eg epoch length = 180, block number = 177, then we can predict, 178, 179. 180 is a new epoch
+	blockInEpoch := block.Number % s.epochLength
+	predictableSlots := s.epochLength - blockInEpoch - 1
+	slots := make([]FutureSlot, 0)
+
+	proposers := createProposers(validators)
+
+	for i := range predictableSlots {
+		parent := block.Number + i
+		parentTimestamp := block.Timestamp + uint64(i)*config.BlockIntervalSeconds
+		newTimestamp := parentTimestamp + config.BlockIntervalSeconds
+		sched, err := pos.NewScheduler(block.Signer, proposers, parent, parentTimestamp, seed)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create scheduler for block %d: %w", parent, err)
+		}
+		for master := range proposers {
+			if sched.IsScheduled(newTimestamp, master) {
+				slots = append(slots, FutureSlot{
+					Block:  parent + 1,
+					Signer: master,
+				})
+				break // we only need one signer per block
+			}
+		}
+	}
+
+	return slots, nil
 }
 
 //go:embed compiled/GetValidators.abi
