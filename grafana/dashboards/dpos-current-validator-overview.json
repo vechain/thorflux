@@ -2234,11 +2234,6 @@
         "type": "textbox"
       },
       {
-        "current": {
-          "selected": false,
-          "text": "vechain",
-          "value": "vechain"
-        },
         "datasource": {
           "type": "influxdb",
           "uid": "B87265B08D314AF"
@@ -2252,7 +2247,7 @@
         "options": [],
         "query": "buckets()",
         "refresh": 2,
-        "regex": ".*vechain.*",
+        "regex": "^[^_].*",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
