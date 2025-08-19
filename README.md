@@ -44,4 +44,4 @@ In an aim to align dashboards across public and private repositories in the foun
 'Dashboard Template' as the starting point for any new dashboards. This introduces a standardised way
 to configure the InfluxDB data source.
 
-*For foundation members please see [this](https://vechain.atlassian.net/wiki/spaces/NodeOps/pages/1480556571/Thorflux) (**Note:** this will be unavailable to external collaborators)*
+*For foundation members please see [this](https://vechain.atlassian.net/wiki/x/G4A-W) (**Note:** this will be unavailable to external collaborators)*
