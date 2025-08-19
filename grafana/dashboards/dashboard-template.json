@@ -18,16 +18,47 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 11,
+  "id": 3,
   "links": [],
-  "panels": [],
+  "panels": [
+    {
+      "description": "",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "code": {
+          "language": "markdown",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "# Dashboard Template\n\nPlease use this Dashboard as a starting point for new dashboards.\n\nIt comes with the 'Bucket' template variable which can be used in your InfluxDB queries like so:\n<pre><code>\nfrom(bucket: \"&#36;{bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r.\n  .\n  .\n</code></pre>\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.2.0-17027759091",
+      "title": "",
+      "type": "text"
+    }
+  ],
   "preload": false,
-  "refresh": "5s",
+  "refresh": "",
   "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
       {
+        "current": {
+          "text": "vechain",
+          "value": "vechain"
+        },
         "datasource": {
           "type": "influxdb",
           "uid": "B87265B08D314AF"
@@ -53,5 +84,5 @@
   "timezone": "browser",
   "title": "Dashboard Template",
   "uid": "be9urigr0u800u",
-  "version": 3
+  "version": 7
 }

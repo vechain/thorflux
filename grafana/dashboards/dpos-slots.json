@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "description": "Only blocks in the current epoch can be predicted. If we are viewing the last block in the current epoch, this list will be empty",
       "fieldConfig": {
@@ -90,9 +90,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
@@ -103,9 +101,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_future_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_future_slots\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> keep(columns: [\"signer\", \"block_in_epoch\", \"block_number\"])\n  |> sort(columns: [\"block_number\"])",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_future_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_future_slots\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> keep(columns: [\"signer\", \"block_in_epoch\", \"block_number\"])\n  |> sort(columns: [\"block_number\"])",
           "refId": "A"
         }
       ],
@@ -134,7 +132,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "description": "",
       "fieldConfig": {
@@ -213,9 +211,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
@@ -226,9 +222,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: -10y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_missed_slots\")\n  |> limit(n: 200)\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> keep(columns: [\"_time\", \"block_number\", \"signer\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: -10y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_missed_slots\")\n  |> limit(n: 200)\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> keep(columns: [\"_time\", \"block_number\", \"signer\"])",
           "refId": "A"
         }
       ],
@@ -260,7 +256,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -303,9 +299,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -313,7 +307,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"_field\"] == \"block_number\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group(columns: [\"signer\"])\n  |> map(fn: (r) => ({r with _value: 1}))\n  |> count(column: \"_value\")\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"_field\"] == \"block_number\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group(columns: [\"signer\"])\n  |> map(fn: (r) => ({r with _value: 1}))\n  |> count(column: \"_value\")\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n",
           "refId": "A"
         }
       ],
@@ -337,7 +331,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -380,9 +374,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -390,7 +382,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: -10y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_missed_slots\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group(columns: [\"signer\"])\n  |> map(fn: (r) => ({r with _value: 1}))\n  |> count(column: \"_value\")\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: -10y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_missed_slots\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group(columns: [\"signer\"])\n  |> map(fn: (r) => ({r with _value: 1}))\n  |> count(column: \"_value\")\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n",
           "refId": "A"
         }
       ],
@@ -414,7 +406,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -503,9 +495,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
@@ -516,9 +506,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"block_in_epoch\" or r[\"_field\"] == \"block_number\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> sort(desc: true, columns: [\"_time\"])\n  |> keep(columns: [\"_time\", \"block_in_epoch\", \"block_number\", \"epoch\", \"signer\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"block_in_epoch\" or r[\"_field\"] == \"block_number\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> sort(desc: true, columns: [\"_time\"])\n  |> keep(columns: [\"_time\", \"block_in_epoch\", \"block_number\", \"epoch\", \"signer\"])",
           "refId": "A"
         }
       ],
@@ -554,7 +544,27 @@
   "schemaVersion": 40,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "buckets()",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Bucket",
+        "multi": false,
+        "name": "bucket",
+        "options": [],
+        "query": "buckets()",
+        "refresh": 2,
+        "regex": "^[^_].*",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-6h",
