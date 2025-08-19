@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./compiled/Staker.sol";
+import {Staker} from "./compiled/Staker.sol";
 
 interface Energy {
     function totalSupply() external view returns (uint256);
@@ -44,6 +44,7 @@ contract GetValidators {
         address[] memory, // endorsors
         uint8[] memory, // statuses
         bool[] memory,    // onlines
+        uint32[] memory, // offlineBlocks
         uint32[] memory, // stakingPeriodLengths
         uint32[] memory, // startBlocks
         uint32[] memory, // exitBlocks
@@ -81,6 +82,7 @@ contract GetValidators {
         address[] memory endorsors = new address[](count);
         uint8[] memory statuses = new uint8[](count);
         bool[] memory onlines = new bool[](count);
+        uint32[] memory offlineBlocks = new uint32[](count);
         uint32[] memory stakingPeriodLengths = new uint32[](count);
         uint32[] memory startBlocks = new uint32[](count);
         uint32[] memory exitBlocks = new uint32[](count);
@@ -116,10 +118,12 @@ contract GetValidators {
 
             (
                 uint8 validatorStatus,
-                bool isOnline
+                bool isOnline,
+                uint32 offlineBlock
             ) = STAKER.getValidatorStatus(validatorId);
             statuses[i] = validatorStatus;
             onlines[i] = isOnline;
+            offlineBlocks[i] = offlineBlock;
 
             (
                 uint32 period,
@@ -153,6 +157,7 @@ contract GetValidators {
             endorsors,
             statuses,
             onlines,
+            offlineBlocks,
             stakingPeriodLengths,
             startBlocks,
             exitBlocks,
