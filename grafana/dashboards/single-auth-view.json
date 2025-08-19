@@ -25,7 +25,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -66,9 +66,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "frameIndex": 2,
@@ -79,9 +77,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"1\" and r.proposer == \"${proposer}\")\n  |> limit(n: 1000)\n  |> map(fn: (r) => ({ slot: r._value, time: r._time}))\n  |> keep(columns: [\"slot\", \"time\"])\n  ",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"1\" and r.proposer == \"${proposer}\")\n  |> limit(n: 1000)\n  |> map(fn: (r) => ({ slot: r._value, time: r._time}))\n  |> keep(columns: [\"slot\", \"time\"])\n  ",
           "refId": "A"
         }
       ],
@@ -92,7 +90,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -131,9 +129,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -146,9 +142,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"0\")\n  |> group()\n  |> count()\n  |> yield(name: \"_value\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"0\")\n  |> group()\n  |> count()\n  |> yield(name: \"_value\")",
           "refId": "A"
         }
       ],
@@ -159,7 +155,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -193,9 +189,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -208,9 +202,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"1\")\n  |> group()\n  |> count()\n  |> yield(name: \"_value\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"1\")\n  |> group()\n  |> count()\n  |> yield(name: \"_value\")",
           "refId": "A"
         }
       ],
@@ -221,7 +215,7 @@
       "datasource": {
         "default": true,
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -262,9 +256,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -274,9 +266,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"0\" and r.proposer == \"${proposer}\")\n  |> map(fn: (r) => ({ slot: r._value, time: r._time}))\n  |> keep(columns: [\"slot\", \"time\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\" and r.filled == \"0\" and r.proposer == \"${proposer}\")\n  |> map(fn: (r) => ({ slot: r._value, time: r._time}))\n  |> keep(columns: [\"slot\", \"time\"])",
           "refId": "A"
         }
       ],
@@ -286,7 +278,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -329,9 +321,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -344,9 +334,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "a = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"0\")\n  |> group()\n  |> count()\n      |> map(\n        fn: (r) => ({\n            _join: 0,\n            _value_a: r._value\n        }),\n    )\n\nb = from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"1\")\n  |> group()\n  |> count()\n      |> map(\n        fn: (r) => ({\n            _join: 0,\n            _value_b: r._value\n        }),\n    )\n\njoin(tables: {a: a, b: b}, on: [\"_join\"])\n  |> drop(columns: [\"_join\"])\n  |> map(\n        fn: (r) => ({\n            _value: float(v: r._value_a) / float(v: r._value_b) * 100.0\n        }),\n    )\n\n\n",
+          "query": "a = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"0\")\n  |> group()\n  |> count()\n      |> map(\n        fn: (r) => ({\n            _join: 0,\n            _value_a: r._value\n        }),\n    )\n\nb = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r[\"proposer\"] == \"${proposer}\")\n  |> filter(fn: (r) => r[\"filled\"] == \"1\")\n  |> group()\n  |> count()\n      |> map(\n        fn: (r) => ({\n            _join: 0,\n            _value_b: r._value\n        }),\n    )\n\njoin(tables: {a: a, b: b}, on: [\"_join\"])\n  |> drop(columns: [\"_join\"])\n  |> map(\n        fn: (r) => ({\n            _value: float(v: r._value_a) / float(v: r._value_b) * 100.0\n        }),\n    )\n\n\n",
           "refId": "A"
         }
       ],
@@ -366,18 +356,37 @@
         },
         "datasource": {
           "type": "influxdb",
-          "uid": "eea2frhqbiuwwa"
+          "uid": "B87265B08D314AF"
         },
-        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"vechain\", tag: \"proposer\")",
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"${bucket}\", tag: \"proposer\")",
         "includeAll": false,
         "label": "Proposer",
         "name": "proposer",
         "options": [],
         "query": {
-          "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"vechain\", tag: \"proposer\")"
+          "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"${bucket}\", tag: \"proposer\")"
         },
         "refresh": 1,
         "regex": "",
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "buckets()",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Bucket",
+        "multi": false,
+        "name": "bucket",
+        "options": [],
+        "query": "buckets()",
+        "refresh": 2,
+        "regex": "^[^_].*",
+        "skipUrlSync": false,
+        "sort": 1,
         "type": "query"
       }
     ]
