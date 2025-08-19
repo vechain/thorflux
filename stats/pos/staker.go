@@ -112,6 +112,7 @@ func (s *Staker) MissedSlots(
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch parent block %s: %w", block.ParentID, err)
 	}
+
 	sched, err := pos.NewScheduler(block.Signer, proposers, parent.Number, parent.Timestamp, seed)
 	if err != nil {
 		return nil, err
@@ -125,6 +126,34 @@ func (s *Staker) MissedSlots(
 				})
 			}
 		}
+	}
+
+	// go through offline validators, forcing them online one by one
+	for offlineProposer, value := range proposers {
+		// we already went through online validators
+		if value.Online {
+			continue
+		}
+		// force validator to become online
+		value.Online = true
+
+		sched, err := pos.NewScheduler(block.Signer, proposers, parent.Number, parent.Timestamp, seed)
+		if err != nil {
+			return nil, err
+		}
+
+		// NOTE: We do not check for the skipped slots for offline validators
+		if sched.IsScheduled(block.Timestamp, offlineProposer) &&
+			block.Signer != offlineProposer {
+			// if an offline validator could be scheduled for this block
+			// but the signer is different
+			missedSigners = append(missedSigners, MissedSlot{
+				Signer: offlineProposer,
+			})
+		}
+
+		// put validator back to offline
+		value.Online = false
 	}
 	return missedSigners, nil
 }
