@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -58,9 +58,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -73,9 +71,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"start_block\")\n  |> group()\n  |> last()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"start_block\")\n  |> group()\n  |> last()",
           "refId": "A"
         }
       ],
@@ -84,7 +82,7 @@
     },
     {
       "datasource": {
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -131,9 +129,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -141,7 +137,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"start_block\")\n  |> first()\n  |> map(fn: (r) => ({ _time: r._time, _value: r.status }))",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"start_block\")\n  |> first()\n  |> map(fn: (r) => ({ _time: r._time, _value: r.status }))",
           "refId": "A"
         }
       ],
@@ -151,7 +147,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -227,9 +223,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -237,7 +231,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"online_changed\" or r[\"_field\"] == \"status_changed\" or r[\"_field\"] == \"weight_changed\" or r[\"_field\"] == \"stake_changed\" or r[\"_field\"] == \"exit_block_changed\")\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\n  |> group()\n  |> keep(columns: [\"_field\", \"_time\", \"status\"])\n  |> sort(columns: [\"_time\"], desc: true)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"online_changed\" or r[\"_field\"] == \"status_changed\" or r[\"_field\"] == \"weight_changed\" or r[\"_field\"] == \"stake_changed\" or r[\"_field\"] == \"exit_block_changed\")\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\n  |> group()\n  |> keep(columns: [\"_field\", \"_time\", \"status\"])\n  |> sort(columns: [\"_time\"], desc: true)",
           "refId": "A"
         }
       ],
@@ -247,7 +241,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -281,9 +275,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -296,9 +288,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"exit_block\")\n  |> group()\n  |> last()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"exit_block\")\n  |> group()\n  |> last()",
           "refId": "A"
         }
       ],
@@ -308,7 +300,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -343,9 +335,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -358,9 +348,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\" and r[\"signer\"] == \"${staker}\" and r[\"_field\"] == \"validators_share\")\n  |> sum()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\" and r[\"signer\"] == \"${staker}\" and r[\"_field\"] == \"validators_share\")\n  |> sum()",
           "refId": "A"
         }
       ],
@@ -370,7 +360,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -405,9 +395,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -420,9 +408,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\" and r[\"signer\"] == \"${staker}\" and r[\"_field\"] == \"validators_share\")\n  |> sum()\n  |> map(fn: (r) => ({r with _value: float(v: r._value) * float(v: \"${vtho_price}\")}))\n  ",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\" and r[\"signer\"] == \"${staker}\" and r[\"_field\"] == \"validators_share\")\n  |> sum()\n  |> map(fn: (r) => ({r with _value: float(v: r._value) * float(v: \"${vtho_price}\")}))\n  ",
           "refId": "A"
         }
       ],
@@ -432,7 +420,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -532,9 +520,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -542,7 +528,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"signer\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"signer_probability\" or r[\"_field\"] == \"block_number\" or  r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"block_in_epoch\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> sort(columns: [\"block_number\"], desc: true)\n  |> drop(columns: [\"_start\", \"_stop\", \"chain_tag\", \"signer\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"signer\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"signer_probability\" or r[\"_field\"] == \"block_number\" or  r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"block_in_epoch\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> sort(columns: [\"block_number\"], desc: true)\n  |> drop(columns: [\"_start\", \"_stop\", \"chain_tag\", \"signer\"])",
           "refId": "A"
         }
       ],
@@ -569,7 +555,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -604,9 +590,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -619,9 +603,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"validator\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.validator_staked }))\n  |> last()\n  |> drop(columns: [\"delegators_staked\", \"validator_staked\"])\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: \"${vet_price}\")}))",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"validator\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.validator_staked }))\n  |> last()\n  |> drop(columns: [\"delegators_staked\", \"validator_staked\"])\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: \"${vet_price}\")}))",
           "refId": "A"
         }
       ],
@@ -631,7 +615,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -666,9 +650,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -681,9 +663,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"validator\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.validator_staked }))\n  |> last()\n  |> drop(columns: [\"delegators_staked\", \"validator_staked\"])",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"validator\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.validator_staked }))\n  |> last()\n  |> drop(columns: [\"delegators_staked\", \"validator_staked\"])",
           "refId": "A"
         }
       ],
@@ -693,7 +675,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -775,7 +757,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"validator\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.validator_staked }))\n  |> drop(columns: [\"delegators_staked\", \"validator_staked\"])",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> pivot(\n        rowKey:[\"_time\", \"validator\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> map(fn: (r) => ({ r with _value: r.delegators_staked + r.validator_staked }))\n  |> drop(columns: [\"delegators_staked\", \"validator_staked\"])",
           "refId": "A"
         }
       ],
@@ -785,7 +767,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -820,9 +802,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -835,9 +815,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
           "refId": "A"
         }
       ],
@@ -847,7 +827,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -882,9 +862,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -897,9 +875,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()",
           "refId": "A"
         }
       ],
@@ -909,7 +887,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -990,7 +968,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> keep(columns: [\"_value\", \"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> keep(columns: [\"_value\", \"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -1000,7 +978,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1035,9 +1013,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1050,9 +1026,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: \"${vet_price}\")}))",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> last()\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: \"${vet_price}\")}))",
           "refId": "A"
         }
       ],
@@ -1062,7 +1038,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1097,9 +1073,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1112,9 +1086,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> last()",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> last()",
           "refId": "A"
         }
       ],
@@ -1124,7 +1098,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1159,9 +1133,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1174,9 +1146,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> last()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> last()",
           "refId": "A"
         }
       ],
@@ -1186,7 +1158,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1220,9 +1192,7 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1235,9 +1205,9 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()",
           "refId": "A"
         }
       ],
@@ -1247,7 +1217,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1325,7 +1295,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> keep(columns: [\"_value\", \"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> keep(columns: [\"_value\", \"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -1335,7 +1305,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1413,7 +1383,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> keep(columns: [\"_value\", \"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> keep(columns: [\"_value\", \"_time\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -1423,7 +1393,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1466,9 +1436,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -1476,7 +1444,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "from(bucket: \"vechain\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validation_queued\" or r[\"_measurement\"] == \"validation_withdrawn\" or r[\"_measurement\"] == \"validation_signaled_exit\" or r[\"_measurement\"] == \"stake_increased\" or r[\"_measurement\"] == \"stake_decreased\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> group()\n  |> drop(columns: [\"_stop\", \"_start\"])\n  |> sort(columns: [\"_time\"], desc: true)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validation_queued\" or r[\"_measurement\"] == \"validation_withdrawn\" or r[\"_measurement\"] == \"validation_signaled_exit\" or r[\"_measurement\"] == \"stake_increased\" or r[\"_measurement\"] == \"stake_decreased\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> group()\n  |> drop(columns: [\"_stop\", \"_start\"])\n  |> sort(columns: [\"_time\"], desc: true)",
           "refId": "A"
         }
       ],
@@ -1486,7 +1454,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1562,9 +1530,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": true
         },
         "showHeader": true
@@ -1572,7 +1538,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "staker=\"0xf514f19cd174de4f33874256c0748a98a031d73a\"\nvet_price=\"0.02\"\n\nlatestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"total_weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"start_period\")\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> filter(fn: (r) => r[\"start_period\"] <= current)\n   |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"total_weight\": r.total_weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"total_weight\", \"_time\", \"Stake USD\"])\n  |> sort(columns: [\"Stake USD\"], desc: true)",
+          "query": "staker=\"0xf514f19cd174de4f33874256c0748a98a031d73a\"\nvet_price=\"0.02\"\n\nlatestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"total_weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"start_period\")\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> filter(fn: (r) => r[\"start_period\"] <= current)\n   |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"total_weight\": r.total_weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"total_weight\", \"_time\", \"Stake USD\"])\n  |> sort(columns: [\"Stake USD\"], desc: true)",
           "refId": "A"
         }
       ],
@@ -1600,7 +1566,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1676,9 +1642,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": true
         },
         "showHeader": true
@@ -1686,7 +1650,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"total_weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"start_period\")\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> filter(fn: (r) => r[\"start_period\"] > current)\n   |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"total_weight\": r.total_weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"total_weight\", \"_time\", \"Stake USD\"])\n  |> sort(columns: [\"Stake USD\"], desc: true)",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"total_weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"start_period\")\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> filter(fn: (r) => r[\"start_period\"] > current)\n   |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"total_weight\": r.total_weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"total_weight\", \"_time\", \"Stake USD\"])\n  |> sort(columns: [\"Stake USD\"], desc: true)",
           "refId": "A"
         }
       ],
@@ -1714,7 +1678,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1753,9 +1717,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": true
         },
         "showHeader": true
@@ -1763,7 +1725,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "\nlatestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"vechain\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_signaled_exit\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => \n    r[\"_field\"] == \"block\" or \n    r[\"_field\"] == \"exit_period\" or \n    r[\"_field\"] == \"multiplier\" or \n    r[\"_field\"] == \"validator_staking_period\" or \n    r[\"_field\"] == \"validator_start_block\" or \n    r[\"_field\"] == \"total_weight\" or\n    r[\"_field\"] == \"exit_block\" or\n    r[\"_field\"] == \"stake\"\n  )\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()",
+          "query": "\nlatestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_signaled_exit\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => \n    r[\"_field\"] == \"block\" or \n    r[\"_field\"] == \"exit_period\" or \n    r[\"_field\"] == \"multiplier\" or \n    r[\"_field\"] == \"validator_staking_period\" or \n    r[\"_field\"] == \"validator_start_block\" or \n    r[\"_field\"] == \"total_weight\" or\n    r[\"_field\"] == \"exit_block\" or\n    r[\"_field\"] == \"stake\"\n  )\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> group()",
           "refId": "A"
         }
       ],
@@ -1773,7 +1735,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1832,9 +1794,7 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1847,7 +1807,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> last()\n  |> keep(columns: [\"_value\", \"_field\"])",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\" or r[\"_field\"] == \"delegators_staked\")\n  |> last()\n  |> keep(columns: [\"_value\", \"_field\"])",
           "refId": "A"
         }
       ],
@@ -1857,7 +1817,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -1916,9 +1876,7 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1931,7 +1889,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"vechain\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"vechain\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_weight\" or r[\"_field\"] == \"delegators_weight\")\n  |> last()\n  |> keep(columns: [\"_value\", \"_field\"])",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_weight\" or r[\"_field\"] == \"delegators_weight\")\n  |> last()\n  |> keep(columns: [\"_value\", \"_field\"])",
           "refId": "A"
         }
       ],
@@ -1950,11 +1908,11 @@
           "text": "0xd607e5a75478d0460a477b3c2208626c718d6705",
           "value": "0xd607e5a75478d0460a477b3c2208626c718d6705"
         },
-        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"vechain\", tag: \"validator\")",
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"${bucket}\", tag: \"validator\")",
         "name": "staker",
         "options": [],
         "query": {
-          "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"vechain\", tag: \"validator\")"
+          "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"${bucket}\", tag: \"validator\")"
         },
         "refresh": 1,
         "regex": "",
@@ -1993,6 +1951,25 @@
         ],
         "query": "0.001883",
         "type": "textbox"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "buckets()",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Bucket",
+        "multi": false,
+        "name": "bucket",
+        "options": [],
+        "query": "buckets()",
+        "refresh": 2,
+        "regex": "^[^_].*",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
       }
     ]
   },

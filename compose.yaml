@@ -60,7 +60,7 @@ services:
     networks:
       - monitoring
     environment:
-      - THOR_URL=http://host.docker.internal:8569
+      - THOR_URL=https://mainnet.vechain.org
       - INFLUX_URL=http://influxdb:8086
       - THOR_BLOCKS=200
       - INFLUX_USERNAME=admin
