@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -75,7 +75,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r.filled == \"0\")\n  |> group()\n  |> count()\n  |> yield(name: \"_value\")",
           "refId": "A"
@@ -87,7 +87,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -173,7 +173,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"block_number\")\n  |> filter(fn: (r) => r.filled == \"0\")\n  |> group(columns: [])\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: true)\n  |> yield(name: \"count_per_day\")\n",
           "refId": "A"
@@ -185,7 +185,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -251,7 +251,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\")\n  |> filter(fn: (r) => r[\"filled\"] == \"0\")\n  |> group(columns: [\"proposer\"])\n  |> count(column: \"_value\")\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n  |> map(fn: (r) => ({ r with count: r._value / 2})) \n  |> keep(columns: [\"count\", \"proposer\"])",
           "refId": "A"
@@ -263,7 +263,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -310,7 +310,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"recent_slots\" and r[\"_field\"] == \"block_number\")\n  |> filter(fn: (r) => r.filled == \"1\")\n  |> group()\n  |> count()\n  |> yield(name: \"_value\")",
           "refId": "A"
@@ -322,7 +322,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "eea2frhqbiuwwa"
+        "uid": "B87265B08D314AF"
       },
       "fieldConfig": {
         "defaults": {
@@ -400,7 +400,7 @@
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "eea2frhqbiuwwa"
+            "uid": "B87265B08D314AF"
           },
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"recent_slots\" and r._field == \"block_number\")\n  |> filter(fn: (r) => r.filled == \"0\")\n  |> yield(name: \"count_per_day\")\n",
           "refId": "A"
@@ -413,17 +413,13 @@
   "preload": false,
   "refresh": "5s",
   "schemaVersion": 41,
-  "tags": ["thorflux-v0.0.16"],
+  "tags": [],
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "vechain",
-          "value": "vechain"
-        },
         "datasource": {
           "type": "influxdb",
-          "uid": "eea2frhqbiuwwa"
+          "uid": "B87265B08D314AF"
         },
         "definition": "buckets()",
         "includeAll": false,
@@ -432,7 +428,7 @@
         "options": [],
         "query": "buckets()",
         "refresh": 2,
-        "regex": "/.*vechain*./",
+        "regex": "^[^_].*",
         "sort": 1,
         "type": "query"
       }

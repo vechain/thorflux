@@ -4,10 +4,12 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"math"
+	"sync/atomic"
+
 	"log/slog"
 	"math/big"
 	"sync"
-	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,14 +25,14 @@ import (
 )
 
 type Validation struct {
-	*builtin.ValidatorStake
-	*builtin.ValidatorStatus
-	*builtin.ValidatorPeriodDetails
+	*validation.Validation
 	*builtin.ValidationTotals
-	DelegatorStake        *big.Int // Total stake of delegators for this validator
-	DelegatorWeight       *big.Int // Total weight of delegators for this validator
-	DelegatorQueuedStake  *big.Int // Total queued stake of delegators for this validator
-	DelegatorQueuedWeight *big.Int // Total queued weight of delegators for this validator
+	Address               thor.Address // Address of the validator stake contract
+	Online                bool         // Whether the validator is online
+	DelegatorStake        *big.Int     // Total stake of delegators for this validator
+	DelegatorWeight       *big.Int     // Total weight of delegators for this validator
+	DelegatorQueuedStake  *big.Int     // Total queued stake of delegators for this validator
+	DelegatorQueuedWeight *big.Int     // Total queued weight of delegators for this validator
 }
 
 type StakerInformation struct {
@@ -86,13 +88,8 @@ func NewStaker(client *thorclient.Client) (*Staker, error) {
 func createProposers(validators []*Validation) map[thor.Address]*validation.Validation {
 	proposers := make(map[thor.Address]*validation.Validation)
 	for _, v := range validators {
-		if v.Status != builtin.StakerStatusActive {
-			continue
-		}
-		// scheduler doesn't need any other fields
-		proposers[v.ValidatorStatus.Address] = &validation.Validation{
-			Online: v.Online,
-			Weight: v.Weight,
+		if v.Status == validation.StatusActive {
+			proposers[v.Address] = v.Validation
 		}
 	}
 	return proposers
@@ -236,7 +233,7 @@ func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*Validation, er
 
 	validators := make(map[thor.Address]*Validation, len(info.Validations))
 	for _, v := range info.Validations {
-		validators[(v.ValidatorStake.Address)] = v
+		validators[(v.Address)] = v
 	}
 	return validators, nil
 }
@@ -356,46 +353,35 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 		return nil, err
 	}
 
+	current := 0
+	next := func() interface{} {
+		res := out[current]
+		current++
+		return res
+	}
+
 	validators := make([]*Validation, 0)
-	masters := out[0].([]common.Address)
-	endorsors := out[1].([]common.Address)
-	statuses := out[2].([]uint8)
-	onlines := out[3].([]bool)
-	stakingPeriodLengths := out[4].([]uint32)
-	startBlocks := out[5].([]uint32)
-	exitBlocks := out[6].([]uint32)
-	completedPeriods := out[7].([]uint32)
-	validatorLockedVETs := out[8].([]*big.Int)
-	validatorLockedWeights := out[9].([]*big.Int)
-	delegatorsStakes := out[10].([]*big.Int)
-	validatorQueuedStakes := out[11].([]*big.Int)
-	totalQueuedStakes := out[12].([]*big.Int)
-	totalQueuedWeights := out[13].([]*big.Int)
-	exitingStakes := out[14].([]*big.Int)
-	exitingWeights := out[15].([]*big.Int)
+	masters := next().([]common.Address)
+	endorsors := next().([]common.Address)
+	statuses := next().([]uint8)
+	onlines := next().([]bool)
+	offlineBlocks := next().([]uint32)
+	stakingPeriodLengths := next().([]uint32)
+	startBlocks := next().([]uint32)
+	exitBlocks := next().([]uint32)
+	completedPeriods := next().([]uint32)
+	validatorLockedVETs := next().([]*big.Int)
+	validatorLockedWeights := next().([]*big.Int)
+	delegatorsStakes := next().([]*big.Int)
+	validatorQueuedStakes := next().([]*big.Int)
+	totalQueuedStakes := next().([]*big.Int)
+	totalQueuedWeights := next().([]*big.Int)
+	exitingStakes := next().([]*big.Int)
+	exitingWeights := next().([]*big.Int)
 
 	for i := range masters {
-		vStake := &builtin.ValidatorStake{
-			Address:     (thor.Address)(masters[i]),
-			Endorsor:    (thor.Address)(endorsors[i]),
-			Stake:       validatorLockedVETs[i],
-			Weight:      validatorLockedWeights[i],
-			QueuedStake: validatorQueuedStakes[i],
-		}
-		vStatus := &builtin.ValidatorStatus{
-			Address: (thor.Address)(masters[i]),
-			Status:  builtin.StakerStatus(statuses[i]),
-			Online:  onlines[i],
-		}
-		vPeriodDetails := &builtin.ValidatorPeriodDetails{
-			Address:          (thor.Address)(masters[i]),
-			Period:           stakingPeriodLengths[i],
-			StartBlock:       startBlocks[i],
-			ExitBlock:        exitBlocks[i],
-			CompletedPeriods: completedPeriods[i],
-		}
 		totals := &builtin.ValidationTotals{
-			TotalLockedStake:   new(big.Int).Add(vStake.Stake, delegatorsStakes[i]),
+			TotalLockedStake:   new(big.Int).Add(validatorLockedVETs[i], delegatorsStakes[i]),
 			TotalLockedWeight:  validatorLockedWeights[i],
 			TotalQueuedStake:   totalQueuedStakes[i],
 			TotalQueuedWeight:  totalQueuedWeights[i],
@@ -403,16 +389,40 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 			TotalExitingWeight: exitingWeights[i],
 		}
 
-		validators = append(validators, &Validation{
-			ValidatorStake:         vStake,
-			ValidatorStatus:        vStatus,
-			ValidatorPeriodDetails: vPeriodDetails,
-			ValidationTotals:       totals,
-			DelegatorStake:         delegatorsStakes[i],
-			DelegatorWeight:        new(big.Int).Sub(validatorLockedWeights[i], big.NewInt(0).Mul(validatorLockedVETs[i], big.NewInt(2))),
-			DelegatorQueuedStake:   new(big.Int).Sub(totalQueuedStakes[i], validatorQueuedStakes[i]),
-			DelegatorQueuedWeight:  new(big.Int).Sub(totalQueuedWeights[i], big.NewInt(0).Mul(validatorQueuedStakes[i], big.NewInt(2))),
-		})
+		v := &Validation{
+			Validation: &validation.Validation{
+				Endorser:           (thor.Address)(endorsors[i]),
+				Beneficiary:        nil, // Beneficiary is not used in this context
+				Period:             stakingPeriodLengths[i],
+				CompleteIterations: completedPeriods[i],
+				Status:             statuses[i],
+				StartBlock:         startBlocks[i],
+				LockedVET:          validatorLockedVETs[i],
+				// TODO: find the validator exiting VET
+				PendingUnlockVET: big.NewInt(0),
+				QueuedVET:        validatorQueuedStakes[i],
+				// TODO: Can we capture this?
+				CooldownVET: big.NewInt(0),
+				// TODO: Do we care about this?
+				WithdrawableVET: big.NewInt(0),
+				Weight:          validatorLockedWeights[i],
+			},
+			Address:               (thor.Address)(masters[i]),
+			Online:                onlines[i],
+			ValidationTotals:      totals,
+			DelegatorStake:        delegatorsStakes[i],
+			DelegatorWeight:       new(big.Int).Sub(validatorLockedWeights[i], big.NewInt(0).Mul(validatorLockedVETs[i], big.NewInt(2))),
+			DelegatorQueuedStake:  new(big.Int).Sub(totalQueuedStakes[i], validatorQueuedStakes[i]),
+			DelegatorQueuedWeight: new(big.Int).Sub(totalQueuedWeights[i], big.NewInt(0).Mul(validatorQueuedStakes[i], big.NewInt(2))),
+		}
+		if exitBlocks[i] != uint32(math.MaxUint32) {
+			v.ExitBlock = &exitBlocks[i]
+		}
+		if offlineBlocks[i] != uint32(math.MaxUint32) {
+			v.OfflineBlock = &offlineBlocks[i]
+		}
+
+		validators = append(validators, v)
 	}
 
 	return validators, nil

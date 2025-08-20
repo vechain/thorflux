@@ -5,7 +5,6 @@ import (
 	_ "embed"
 
 	"log/slog"
-	"math"
 	"math/big"
 	"strconv"
 	"time"
@@ -14,8 +13,8 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thor/v2/api"
+	"github.com/vechain/thor/v2/builtin/staker/validation"
 	"github.com/vechain/thor/v2/thor"
-	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thorflux/types"
 	"github.com/vechain/thorflux/vetutil"
 )
@@ -135,7 +134,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 	block := event.Block
 	epoch := block.Number / thor.CheckpointInterval
 
-	leaderGroup := make(map[thor.Address]*builtin.ValidatorStake)
+	leaderGroup := make(map[thor.Address]*Validation)
 
 	onlineValidators := 0
 	onlineStake := big.NewInt(0)
@@ -147,24 +146,25 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 	offlineWeight := big.NewInt(0)
 	accumulatedWeight := big.NewInt(0)
 
+	// accumulated stakes and weights. We can use this to compare with contract totals
 	for _, v := range info.Validations {
-		if v.ValidatorStatus.Status != builtin.StakerStatusActive {
+		if v.Status != validation.StatusActive {
 			continue
 		}
-		accumulatedStake.Add(accumulatedStake, v.ValidatorStake.Stake)
+		accumulatedStake.Add(accumulatedStake, v.LockedVET)
 		accumulatedStake.Add(accumulatedStake, v.DelegatorStake)
-		accumulatedWeight.Add(accumulatedWeight, v.ValidatorStake.Weight)
-		leaderGroup[v.ValidatorStake.Address] = v.ValidatorStake
-		if v.ValidatorStatus.Online {
+		accumulatedWeight.Add(accumulatedWeight, v.Weight)
+		leaderGroup[v.Address] = v
+		if v.Online {
 			onlineValidators++
 			onlineStake.Add(onlineStake, v.TotalLockedStake)
 			onlineStake.Add(onlineStake, v.DelegatorStake)
-			onlineWeight.Add(onlineWeight, v.ValidatorStake.Weight)
+			onlineWeight.Add(onlineWeight, v.Weight)
 		} else {
 			offlineValidators++
 			offlineStake.Add(offlineStake, v.TotalLockedStake)
 			offlineStake.Add(offlineStake, v.DelegatorStake)
-			offlineWeight.Add(offlineWeight, v.ValidatorStake.Weight)
+			offlineWeight.Add(offlineWeight, v.Weight)
 		}
 	}
 
@@ -180,17 +180,8 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		}
 	}
 
-	validator, ok := leaderGroup[event.Block.Signer]
-	weightProcessed := big.NewInt(0)
-	if !ok {
-		slog.Warn("Signer not found in leader group", "signer", event.Block.Signer.String())
-	} else {
-		weightProcessed = validator.Weight
-	}
-
 	flags := map[string]interface{}{
-		"total_stake": vetutil.ScaleToVET(big.NewInt(0).Add(info.TotalVET, info.QueuedVET)),
-		// storing accumulated and contract totals for chart comparison - we can ensure consistency
+		"total_stake":               vetutil.ScaleToVET(big.NewInt(0).Add(info.TotalVET, info.QueuedVET)),
 		"active_stake":              vetutil.ScaleToVET(info.TotalVET),
 		"active_stake_accumulated":  vetutil.ScaleToVET(accumulatedStake),
 		"active_weight":             vetutil.ScaleToVET(info.TotalWeight),
@@ -208,18 +199,17 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"active_validators":         len(leaderGroup),
 		"online_validators":         onlineValidators,
 		"offline_validators":        offlineValidators,
-		"weight_processed":          vetutil.ScaleToVET(weightProcessed),
 		"block_number":              block.Number,
 	}
 
 	if event.DPOSActive {
 		signer, ok := leaderGroup[event.Block.Signer]
 		if ok {
-			flags["signer_weight"] = vetutil.ScaleToVET(signer.Weight)
 			signerProbability := big.NewFloat(0).Mul(big.NewFloat(0).SetInt(signer.Weight), big.NewFloat(100))
 			signerProbability = signerProbability.Quo(signerProbability, big.NewFloat(0).SetInt(onlineWeight))
 			probability, _ := signerProbability.Float64()
 			flags["signer_probability"] = probability
+			flags["weight_processed"] = vetutil.ScaleToVET(signer.Weight)
 		}
 	}
 
@@ -310,13 +300,13 @@ func (s *Staker) createEnergyStats(event *types.Event, info *StakerInformation) 
 	return []*write.Point{heatmapPoint}, nil
 }
 
-func statusToString(status builtin.StakerStatus) string {
+func statusToString(status validation.Status) string {
 	switch status {
-	case builtin.StakerStatusQueued:
+	case validation.StatusQueued:
 		return "queued"
-	case builtin.StakerStatusActive:
+	case validation.StatusActive:
 		return "active"
-	case builtin.StakerStatusExited:
+	case validation.StatusExit:
 		return "exited"
 	default:
 		return "unknown"
@@ -327,8 +317,8 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 	queueOrder := make(map[thor.Address]int)
 	queueCount := 0
 	for _, validator := range info.Validations {
-		if validator.ValidatorStatus.Status == builtin.StakerStatusQueued {
-			queueOrder[validator.ValidatorStake.Address] = queueCount
+		if validator.Status == validation.StatusActive {
+			queueOrder[validator.Address] = queueCount
 			queueCount++
 		}
 	}
@@ -351,7 +341,13 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			continue
 		}
 		flags := map[string]any{
-			"status_changed": builtin.StakerStatusExited,
+			"status_changed": statusToString(validation.StatusExit),
+		}
+		exitType := "previously_queued"
+		exited := validator.ExitBlock != nil
+		if exited {
+			flags["cooldown_vet"] = vetutil.ScaleToVET(validator.LockedVET)
+			exitType = "previously_active"
 		}
 
 		p := influxdb2.NewPoint(
@@ -359,10 +355,11 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			map[string]string{
 				"chain_tag":             ev.ChainTag,
 				"validator":             addr.String(),
-				"endorsor":              validator.Endorsor.String(),
-				"status":                statusToString(builtin.StakerStatusExited),
-				"signalled_exit":        strconv.FormatBool(validator.ExitBlock != math.MaxUint32),
+				"endorsor":              validator.Endorser.String(),
+				"status":                statusToString(validation.StatusExit),
+				"signalled_exit":        strconv.FormatBool(exited),
 				"staking_period_length": strconv.FormatUint(uint64(validator.Period), 10),
+				"exit_type":             exitType,
 			},
 			flags,
 			ev.Timestamp,
@@ -374,10 +371,9 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 	// process all current validators, queued and active
 	for _, validator := range info.Validations {
 		flags := map[string]any{
-			"online":            validator.ValidatorStatus.Online,
-			"start_block":       validator.ValidatorPeriodDetails.StartBlock,
-			"completed_periods": validator.ValidatorPeriodDetails.CompletedPeriods,
-			"exit_block":        validator.ValidatorPeriodDetails.ExitBlock,
+			"online":            validator.Online,
+			"start_block":       validator.StartBlock,
+			"completed_periods": validator.CompleteIterations,
 			"current_block":     ev.Block.Number,
 
 			// combined totals, validator + delegators
@@ -389,22 +385,30 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			"total_exiting_weight": vetutil.ScaleToVET(validator.TotalExitingWeight),
 
 			// validator only
-			"validator_staked":     vetutil.ScaleToVET(validator.ValidatorStake.Stake),
-			"validator_weight":     vetutil.ScaleToVET(big.NewInt(0).Mul(big.NewInt(2), validator.ValidatorStake.Stake)),
-			"validator_queued_vet": vetutil.ScaleToVET(validator.QueuedStake),
+			"validator_staked": vetutil.ScaleToVET(validator.LockedVET),
+			// TODO: this is not true anymore
+			"validator_weight":     vetutil.ScaleToVET(big.NewInt(0).Mul(big.NewInt(2), validator.LockedVET)),
+			"validator_queued_vet": vetutil.ScaleToVET(validator.QueuedVET),
 
 			// delegator only
 			"delegators_staked":    vetutil.ScaleToVET(validator.DelegatorStake),
 			"delegators_weight":    vetutil.ScaleToVET(validator.DelegatorWeight),
 			"delegator_queued_vet": vetutil.ScaleToVET(validator.DelegatorQueuedStake),
 		}
-		prevEntry, ok := prevValidators[validator.ValidatorStake.Address]
+		if validator.OfflineBlock != nil {
+			flags["offline_block"] = *validator.OfflineBlock
+		}
+		if validator.ExitBlock != nil {
+			flags["exit_block"] = *validator.ExitBlock
+		}
+
+		prevEntry, ok := prevValidators[validator.Address]
 		if ok {
-			if prevEntry.Weight.Cmp(validator.ValidatorStake.Weight) != 0 {
-				flags["weight_changed"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.ValidatorStake.Weight, prevEntry.Weight))
+			if prevEntry.Weight.Cmp(validator.Weight) != 0 {
+				flags["weight_changed"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.Weight, prevEntry.Weight))
 			}
-			if prevEntry.Stake.Cmp(validator.ValidatorStake.Stake) != 0 {
-				flags["stake_changed"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.ValidatorStake.Stake, prevEntry.Stake))
+			if prevEntry.LockedVET.Cmp(validator.LockedVET) != 0 {
+				flags["stake_changed"] = vetutil.ScaleToVET(big.NewInt(0).Sub(validator.LockedVET, prevEntry.LockedVET))
 			}
 			if prevEntry.ExitBlock != prevEntry.ExitBlock {
 				flags["exit_block_changed"] = prevEntry.ExitBlock
@@ -416,19 +420,19 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 		if prevEntry == nil || prevEntry.Status != validator.Status {
 			flags["status_changed"] = statusToString(validator.Status)
 		}
-		if validator.ValidatorStatus.Status == builtin.StakerStatusQueued {
-			flags["queue_position"] = queueOrder[validator.ValidatorStake.Address]
+		if validator.Status == validation.StatusQueued {
+			flags["queue_position"] = queueOrder[validator.Address]
 		}
 
 		p := influxdb2.NewPoint(
 			"individual_validators",
 			map[string]string{
 				"chain_tag":             ev.ChainTag,
-				"validator":             validator.ValidatorStake.Address.String(),
-				"endorsor":              validator.ValidatorStake.Endorsor.String(),
-				"status":                statusToString(validator.ValidatorStatus.Status),
-				"signalled_exit":        strconv.FormatBool(validator.ValidatorPeriodDetails.ExitBlock != math.MaxUint32),
-				"staking_period_length": strconv.FormatUint(uint64(validator.ValidatorPeriodDetails.Period), 10),
+				"validator":             validator.Address.String(),
+				"endorsor":              validator.Endorser.String(),
+				"status":                statusToString(validator.Status),
+				"signalled_exit":        strconv.FormatBool(validator.ExitBlock != nil),
+				"staking_period_length": strconv.FormatUint(uint64(validator.Period), 10),
 			},
 			flags,
 			ev.Timestamp,
