@@ -459,7 +459,6 @@ func (s *Staker) createSlotPoints(event *types.Event, info *StakerInformation) (
 	}
 	for _, v := range missedOnline {
 		slog.Warn("Missed slot for an online validator", "validator", v.Signer, "block", event.Block.Number)
-
 		point := influxdb2.NewPoint(
 			"dpos_missed_slots",
 			map[string]string{
@@ -474,8 +473,6 @@ func (s *Staker) createSlotPoints(event *types.Event, info *StakerInformation) (
 		points = append(points, point)
 	}
 	for _, v := range missedOffline {
-		slog.Warn("Missed slot for an offline validator", "validator", v.Signer, "block", event.Block.Number)
-
 		point := influxdb2.NewPoint(
 			"dpos_offline_missed_slots",
 			map[string]string{
