@@ -452,16 +452,29 @@ func (s *Staker) createSlotPoints(event *types.Event, info *StakerInformation) (
 	points := make([]*write.Point, 0)
 
 	// record missed slots
-	missed, err := s.MissedSlots(info.Validations, event.Block, event.Seed)
+	missedOnline, missedOffline, err := s.MissedSlots(info.Validations, event.Block, event.Seed)
 	if err != nil {
 		slog.Error("Failed to get missed slots", "error", err)
 		return nil, err
 	}
-	for _, v := range missed {
-		slog.Warn("Missed slot for validator", "validator", v.Signer, "block", event.Block.Number)
-
+	for _, v := range missedOnline {
+		slog.Warn("Missed slot for an online validator", "validator", v.Signer, "block", event.Block.Number)
 		point := influxdb2.NewPoint(
 			"dpos_missed_slots",
+			map[string]string{
+				"chain_tag": event.ChainTag,
+				"signer":    v.Signer.String(),
+			},
+			map[string]interface{}{
+				"block_number": event.Block.Number,
+			},
+			event.Timestamp,
+		)
+		points = append(points, point)
+	}
+	for _, v := range missedOffline {
+		point := influxdb2.NewPoint(
+			"dpos_offline_missed_slots",
 			map[string]string{
 				"chain_tag": event.ChainTag,
 				"signer":    v.Signer.String(),
