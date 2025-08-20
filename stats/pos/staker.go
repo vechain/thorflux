@@ -128,11 +128,12 @@ func (s *Staker) MissedSlots(
 	// go through offline validators, forcing them online one by one
 	for offlineProposer, value := range proposers {
 		// we already went through online validators
-		if value.Online {
+		if value.OfflineBlock != nil {
 			continue
 		}
+		prevOfflineBlock := value.OfflineBlock
 		// force validator to become online
-		value.Online = true
+		value.OfflineBlock = nil
 
 		sched, err := pos.NewScheduler(block.Signer, proposers, parent.Number, parent.Timestamp, seed)
 		if err != nil {
@@ -150,7 +151,7 @@ func (s *Staker) MissedSlots(
 		}
 
 		// put validator back to offline
-		value.Online = false
+		value.OfflineBlock = prevOfflineBlock
 	}
 	return missedSigners, nil
 }
