@@ -103,22 +103,22 @@ func (s *Staker) MissedSlots(
 	validators []*Validation,
 	block *api.JSONExpandedBlock,
 	seed []byte,
-) ([]MissedSlot, error) {
+) ([]MissedSlot, []MissedSlot, error) {
 	proposers := createProposers(validators)
 	parent, err := s.client.Block(block.ParentID.String())
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch parent block %s: %w", block.ParentID, err)
+		return nil, nil, fmt.Errorf("failed to fetch parent block %s: %w", block.ParentID, err)
 	}
 
 	sched, err := pos.NewScheduler(block.Signer, proposers, parent.Number, parent.Timestamp, seed)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	missedSigners := make([]MissedSlot, 0)
+	missedOnlineSigners := make([]MissedSlot, 0)
 	for i := parent.Timestamp + config.BlockIntervalSeconds; i < block.Timestamp; i += config.BlockIntervalSeconds {
 		for master := range proposers {
 			if sched.IsScheduled(i, master) {
-				missedSigners = append(missedSigners, MissedSlot{
+				missedOnlineSigners = append(missedOnlineSigners, MissedSlot{
 					Signer: master,
 				})
 			}
@@ -126,6 +126,7 @@ func (s *Staker) MissedSlots(
 	}
 
 	// go through offline validators, forcing them online one by one
+	missedOfflineSigners := make([]MissedSlot, 0)
 	for offlineProposer, value := range proposers {
 		// we already went through online validators
 		if value.OfflineBlock != nil {
@@ -137,7 +138,7 @@ func (s *Staker) MissedSlots(
 
 		sched, err := pos.NewScheduler(block.Signer, proposers, parent.Number, parent.Timestamp, seed)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		// NOTE: We do not check for the skipped slots for offline validators
@@ -145,7 +146,7 @@ func (s *Staker) MissedSlots(
 			block.Signer != offlineProposer {
 			// if an offline validator could be scheduled for this block
 			// but the signer is different
-			missedSigners = append(missedSigners, MissedSlot{
+			missedOfflineSigners = append(missedOfflineSigners, MissedSlot{
 				Signer: offlineProposer,
 			})
 		}
@@ -153,7 +154,7 @@ func (s *Staker) MissedSlots(
 		// put validator back to offline
 		value.OfflineBlock = prevOfflineBlock
 	}
-	return missedSigners, nil
+	return missedOnlineSigners, missedOfflineSigners, nil
 }
 
 type FutureSlot struct {
