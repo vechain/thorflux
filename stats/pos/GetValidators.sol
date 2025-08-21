@@ -118,8 +118,8 @@ contract GetValidators {
             validatorLockedWeights[i] = combinedWeight;
             validatorQueuedStakes[i] = queuedStakeAmount;
             statuses[i] = status;
-            onlines[i] = status == 1; // TODO: is this right?
             offlineBlocks[i] = offlineBlock;
+            onlines[i] = offlineBlock == type(uint32).max;
 
             (
                 uint32 period,
