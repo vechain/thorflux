@@ -109,20 +109,16 @@ contract GetValidators {
                 address endorsor,
                 uint256 validatorStake,
                 uint256 combinedWeight,
-                uint256 queuedStakeAmount
-            ) = STAKER.getValidatorStake(validatorId);
+                uint256 queuedStakeAmount,
+                uint8 status,
+                uint32 offlineBlock
+            ) = STAKER.getValidation(validatorId);
             endorsors[i] = endorsor;
             validatorLockedStakes[i] = validatorStake;
             validatorLockedWeights[i] = combinedWeight;
             validatorQueuedStakes[i] = queuedStakeAmount;
-
-            (
-                uint8 validatorStatus,
-                bool isOnline,
-                uint32 offlineBlock
-            ) = STAKER.getValidatorStatus(validatorId);
-            statuses[i] = validatorStatus;
-            onlines[i] = isOnline;
+            statuses[i] = status;
+            onlines[i] = status == 1; // TODO: is this right?
             offlineBlocks[i] = offlineBlock;
 
             (
@@ -130,7 +126,7 @@ contract GetValidators {
                 uint32 start,
                 uint32 exit,
                 uint32 compPeriods
-            ) = STAKER.getValidatorPeriodDetails(validatorId);
+            ) = STAKER.getValidationPeriodDetails(validatorId);
             stakingPeriodLengths[i] = period;
             startBlocks[i] = start;
             exitBlocks[i] = exit;
