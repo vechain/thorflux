@@ -73,10 +73,6 @@ func (s *Staker) Write(event *types.Event) error {
 }
 
 func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]*write.Point, error) {
-	if !event.HayabusaForked {
-		return nil, nil
-	}
-
 	abi := s.staker.Raw().ABI()
 
 	eventAbiByHash := make(map[thor.Bytes32]ethabi.Event)
