@@ -1012,7 +1012,7 @@
         "type": "influxdb",
         "uid": "B87265B08D314AF"
       },
-      "description": "Two types of yields are excluded here:\n\n- Yields equal to zero, ie a validator with no delegators\n- Yields greater than 50%, ie a validator with a very low amount of delegations (Sometimes it can be ver large, eg 100% and the rest of the chart is not consumable)\n\nTo see outliers pleas see the `Validator List` table and sort by the avg delegator yield column",
+      "description": "Two types of yields are excluded here:\n\n- Yields equal to zero, ie a validator with no delegators\n- Yields greater than 50%, ie a validator with a very low amount of delegations (Sometimes it can be very large, eg 100% and the rest of the chart is not consumable)\n\nTo see outliers please see the `Validator List` table and sort by the avg delegator yield column",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2980,6 +2980,6 @@
   "timezone": "browser",
   "title": "DPOS - Current Validator Overview",
   "uid": "detluspo628zkf",
-  "version": 11,
+  "version": 13,
   "weekStart": ""
 }
