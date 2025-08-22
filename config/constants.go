@@ -6,15 +6,18 @@ import (
 	"github.com/vechain/thor/v2/thor"
 )
 
+var (
+	BlockIntervalSeconds = thor.BlockInterval()
+	CheckpointInterval   = thor.SeederInterval()
+)
+
 // Blockchain constants
 const (
 	// Block intervals and timing
 	DefaultBlockInterval = 10 * time.Second
-	BlockIntervalSeconds = thor.BlockInterval
 
 	// Epoch and period constants
-	EpochLength        = 180
-	CheckpointInterval = thor.CheckpointInterval
+	EpochLength = 180
 
 	// Timeout constants
 	DefaultTimeout    = 10 * time.Second

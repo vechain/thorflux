@@ -128,7 +128,7 @@ func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]
 
 func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInformation) []*write.Point {
 	block := event.Block
-	epoch := block.Number / thor.CheckpointInterval
+	epoch := block.Number / thor.EpochLength()
 
 	leaderGroup := make(map[thor.Address]*Validation)
 
@@ -191,7 +191,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"online_weight":             vetutil.ScaleToVET(onlineWeight),
 		"offline_weight":            vetutil.ScaleToVET(offlineWeight),
 		"epoch":                     epoch,
-		"block_in_epoch":            block.Number % thor.CheckpointInterval,
+		"block_in_epoch":            block.Number % thor.EpochLength(),
 		"active_validators":         len(leaderGroup),
 		"online_validators":         onlineValidators,
 		"offline_validators":        offlineValidators,
