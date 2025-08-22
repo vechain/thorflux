@@ -1032,13 +1032,11 @@
             },
             "pointShape": "circle",
             "pointSize": {
-              "fixed": 5,
-              "max": -2
+              "fixed": 5
             },
             "pointStrokeWidth": 1,
             "scaleDistribution": {
-              "log": 2,
-              "type": "log"
+              "type": "linear"
             },
             "show": "points"
           },
@@ -1120,7 +1118,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nissuance = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_issued\")\n  |> drop(columns: [\"chain_tag\"])\n  |> group(columns: [\"id\"])\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) * float(v: \"${vtho_price}\")})) // convert VTHO to USD\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\n\nblocks_per_year = float(v: 360 * 24) * float(v: 365.25)\n\nweight_sum = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\")\n  |> pivot(\n      rowKey:[\"_time\", \"validator\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.validator,\n      \"Completed Periods\": r.completed_periods,\n      \"Online\": r.online,\n      \"total_weight\": r.total_weight,\n      \"Block Probability\": float(v: r.total_weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.total_weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Validator TVL\": float(v: r.validator_staked) * float(v: \"${vet_price}\"),\n      \"Delegator TVL\": float(v: r.delegators_staked) * float(v: \"${vet_price}\"),\n      \"Staking Period Length\": r.staking_period_length,\n      \"Exit Signalled\": r.signalled_exit,\n      \"Total Weight\": r.total_weight      \n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Validator TVL\",\n      \"Delegator TVL\",      \n      \"Staking Period Length\",\n      \"Exit Signalled\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n      \"Total Weight\"\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Blocks Per Year\": blocks_per_year * r[\"Block Probability\"] / float(v:100),\n      \"Has Delegations\": r[\"Delegator TVL\"] != float(v: 0),\n      \"Validator TVL %\": r[ \"Validator TVL\"] / (r[\"Delegator TVL\"] + r[\"Validator TVL\"]),\n    }))\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"],\n      \"Validator Yield\": \n        if r[\"Has Delegations\"] then ((r[\"Blocks Per Year\"] * issuance._value / r[\"Validator TVL\"] * float(v: 0.3))) * float(v: 100)\n        else (r[\"Blocks Per Year\"] * issuance._value / r[\"Validator TVL\"] * float(v: 100)),\n      \"TVL Based Yield\":\n        if r[\"Has Delegations\"] then ((r[\"Blocks Per Year\"] * issuance._value / r[\"Validator TVL\"] * r[\"Validator TVL %\"])) * float(v: 100)\n        else (r[\"Blocks Per Year\"] * issuance._value / r[\"Validator TVL\"] * float(v: 100)),\n      \"Avg Delegator Yield\": \n        if r[\"Has Delegations\"] then ((r[\"Blocks Per Year\"] * issuance._value / r[\"Delegator TVL\"] * float(v: 0.7))) * float(v: 100)\n        else float(v: 0),\n      \"Validator TVL %\": r[\"Validator TVL %\"] * float(v: 100)\n    }))\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n  |> keep(columns: [\"Total TVL\", \"Validator\", \"Avg Delegator Yield\"])\n",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nissuance = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"hayabusa_gas\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_issued\")\n  |> drop(columns: [\"chain_tag\"])\n  |> group(columns: [\"id\"])\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) * float(v: \"${vtho_price}\")})) // convert VTHO to USD\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\n\nblocks_per_year = float(v: 360 * 24) * float(v: 365.25)\n\nweight_sum = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\")\n  |> pivot(\n      rowKey:[\"_time\", \"validator\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with \n//TODO: this is a bit a hack. Grafana thinks the hex is a very big integer and display is wrong. also, the data link doesn't work unless we have this\n      \"Validator\": \"=\" + r.validator,\n      \"Completed Periods\": r.completed_periods,\n      \"Online\": r.online,\n      \"total_weight\": r.total_weight,\n      \"Block Probability\": float(v: r.total_weight) * 100.0 / float(v: weight_sum._value),\n      \"Blocks Per Epoch\": float(v: r.total_weight) * 180.0 / float(v: weight_sum._value),\n      \"Start Block\": r.start_block,\n      \"Validator TVL\": float(v: r.validator_staked) * float(v: \"${vet_price}\"),\n      \"Delegator TVL\": float(v: r.delegators_staked) * float(v: \"${vet_price}\"),\n      \"Staking Period Length\": r.staking_period_length,\n      \"Exit Signalled\": r.signalled_exit,\n      \"Total Weight\": r.total_weight      \n    }))\n  |> keep(columns: [\n      \"Validator\",\n      \"Completed Periods\",\n      \"Online\",\n      \"Start Block\",\n      \"Staked Amount\",\n      \"Validator TVL\",\n      \"Delegator TVL\",      \n      \"Staking Period Length\",\n      \"Exit Signalled\",\n      \"Block Probability\",\n      \"Blocks Per Epoch\",\n      \"Total Weight\"\n  ])\n  |> map(fn: (r) => ({ r with \n      \"Blocks Per Year\": blocks_per_year * r[\"Block Probability\"] / float(v:100),\n      \"Has Delegations\": r[\"Delegator TVL\"] != float(v: 0),\n      \"Validator TVL %\": r[ \"Validator TVL\"] / (r[\"Delegator TVL\"] + r[\"Validator TVL\"]),\n    }))\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n  |> map(fn: (r) => ({ r with \n      \"Total TVL\": r[\"Delegator TVL\"] + r[\"Validator TVL\"],\n      \"Validator Yield\": \n        if r[\"Has Delegations\"] then ((r[\"Blocks Per Year\"] * issuance._value / r[\"Validator TVL\"] * float(v: 0.3))) * float(v: 100)\n        else (r[\"Blocks Per Year\"] * issuance._value / r[\"Validator TVL\"] * float(v: 100)),\n      \"TVL Based Yield\":\n        if r[\"Has Delegations\"] then ((r[\"Blocks Per Year\"] * issuance._value / r[\"Validator TVL\"] * r[\"Validator TVL %\"])) * float(v: 100)\n        else (r[\"Blocks Per Year\"] * issuance._value / r[\"Validator TVL\"] * float(v: 100)),\n      \"Avg Delegator Yield\": \n        if r[\"Has Delegations\"] then ((r[\"Blocks Per Year\"] * issuance._value / r[\"Delegator TVL\"] * float(v: 0.7))) * float(v: 100)\n        else float(v: 0),\n      \"Validator TVL %\": r[\"Validator TVL %\"] * float(v: 100)\n    }))\n  |> sort(columns: [\"Blocks Per Epoch\"], desc: true)\n  |> keep(columns: [\"Total TVL\", \"Validator\", \"Avg Delegator Yield\"])\n  |> filter(fn: (r) => r[\"Avg Delegator Yield\"] != float(v: 0) and r[\"Avg Delegator Yield\"] < float(v: 50))\n",
           "refId": "A"
         }
       ],
@@ -1767,46 +1765,24 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Evicting Block"
+              "options": "Status"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 159
+                "value": 91
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "Remaining Blocks"
+              "options": "Evicting Block"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 184
-              },
-              {
-                "id": "color",
-                "value": {
-                  "mode": "thresholds"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "green",
-                      "value": 8640
-                    }
-                  ]
-                }
+                "value": 159
               }
             ]
           }
@@ -1836,7 +1812,7 @@
       "pluginVersion": "11.5.2",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nlatest_block = from(bucket: \"${bucket}\")\n   |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n   |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n   |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n   |> group()\n   |> last()\n   |> findRecord(fn: (key) => true, idx: 0)\n\nweight_sum = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\" and r[\"_field\"] == \"offline_block\")\n  |> map(fn: (r) => ({r with forced_exit_block: r._value + uint(v: 336 * 180), offline_block: r._value, validator: string(v: \"=\" + r.validator)}))\n  |> keep(columns: [\"forced_exit_block\", \"offline_block\", \"signalled_exit\", \"validator\" ])\n  |> group()\n  |> sort(columns: [\"forced_exit_block\"], desc: false)\n  |> map(fn: (r) => ({ r with remaining_blocks: r[\"forced_exit_block\"] - latest_block._value}))",
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nweight_sum = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"total_weight\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\" and r[\"status\"] == \"active\" and r[\"_field\"] == \"offline_block\")\n  |> map(fn: (r) => ({r with forced_exit_block: r._value + uint(v: 336 * 180), offline_block: r._value, validator: string(v: \"=\" + r.validator)}))\n  |> keep(columns: [\"forced_exit_block\", \"offline_block\", \"signalled_exit\", \"status\", \"validator\" ])\n  |> group()\n  |> sort(columns: [\"forced_exit_block\"], desc: false)\n  ",
           "refId": "A"
         }
       ],
@@ -1865,7 +1841,6 @@
               "Validator": "",
               "forced_exit_block": "Evicting Block",
               "offline_block": "Offline Block",
-              "remaining_blocks": "Remaining Blocks",
               "signalled_exit": "Exit Signalled",
               "status": "Status",
               "validator": "Validator"
@@ -3005,6 +2980,6 @@
   "timezone": "browser",
   "title": "DPOS - Current Validator Overview",
   "uid": "detluspo628zkf",
-  "version": 19,
+  "version": 15,
   "weekStart": ""
 }
