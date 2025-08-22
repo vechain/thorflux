@@ -298,11 +298,11 @@ func (s *Publisher) fetchBlocksAsync(amount int, startBlock uint32) ([]*Block, e
 
 func (s *Publisher) fetchSeed(parentID thor.Bytes32) ([]byte, error) {
 	blockNum := binary.BigEndian.Uint32(parentID[:]) + 1
-	epoch := blockNum / thor.SeederInterval
+	epoch := blockNum / thor.SeederInterval()
 	if epoch <= 1 {
 		return []byte{}, nil
 	}
-	seedNum := (epoch - 1) * thor.SeederInterval
+	seedNum := (epoch - 1) * thor.SeederInterval()
 
 	seedBlock, err := s.thor.Block(fmt.Sprintf("%d", seedNum))
 	if err != nil {

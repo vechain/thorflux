@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/golang-lru v0.0.0-20160813221303-0a025b7e63ad
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
-	github.com/vechain/thor/v2 v2.3.2-0.20250818153431-3f55dea59741
+	github.com/vechain/thor/v2 v2.3.2-0.20250822071032-a9abf9af4633
 )
 
 require (

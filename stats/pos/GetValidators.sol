@@ -109,28 +109,24 @@ contract GetValidators {
                 address endorsor,
                 uint256 validatorStake,
                 uint256 combinedWeight,
-                uint256 queuedStakeAmount
-            ) = STAKER.getValidatorStake(validatorId);
+                uint256 queuedStakeAmount,
+                uint8 status,
+                uint32 offlineBlock
+            ) = STAKER.getValidation(validatorId);
             endorsors[i] = endorsor;
             validatorLockedStakes[i] = validatorStake;
             validatorLockedWeights[i] = combinedWeight;
             validatorQueuedStakes[i] = queuedStakeAmount;
-
-            (
-                uint8 validatorStatus,
-                bool isOnline,
-                uint32 offlineBlock
-            ) = STAKER.getValidatorStatus(validatorId);
-            statuses[i] = validatorStatus;
-            onlines[i] = isOnline;
+            statuses[i] = status;
             offlineBlocks[i] = offlineBlock;
+            onlines[i] = offlineBlock == type(uint32).max;
 
             (
                 uint32 period,
                 uint32 start,
                 uint32 exit,
                 uint32 compPeriods
-            ) = STAKER.getValidatorPeriodDetails(validatorId);
+            ) = STAKER.getValidationPeriodDetails(validatorId);
             stakingPeriodLengths[i] = period;
             startBlocks[i] = start;
             exitBlocks[i] = exit;
