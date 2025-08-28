@@ -39,7 +39,6 @@ type StakerInformation struct {
 	Validations     []*Validation
 	ContractBalance *big.Int // Balance of the staker contract
 	QueuedVET       *big.Int // Total VET queued for staking
-	QueuedWeight    *big.Int // Total weight of queued validators
 	TotalVET        *big.Int // Total VET staked in the network
 	TotalWeight     *big.Int // Total weight of all validators
 	TotalSupplyVTHO *big.Int // Total supply of VTHO in the network
@@ -310,7 +309,6 @@ func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error
 		return nil, fmt.Errorf(config.ErrFailedToDecodeQueuedStake, err)
 	}
 	queuedStakeVET := new(big.Int).SetBytes(queuedStakeBytes[:32])
-	queuedStakeWeight := new(big.Int).SetBytes(queuedStakeBytes[32:64])
 
 	// staker contract balance
 	stakerBalanceBytes, err := hexutil.Decode(stakerBalanceCall.Data)
@@ -332,7 +330,6 @@ func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error
 		Validations:     validators,
 		ContractBalance: new(big.Int).SetBytes(stakerBalanceBytes),
 		QueuedVET:       queuedStakeVET,
-		QueuedWeight:    queuedStakeWeight,
 		TotalVET:        totalStakeVET,
 		TotalWeight:     totalStakeWeight,
 		TotalSupplyVTHO: new(big.Int).SetBytes(totalSupplyBytes),
@@ -372,18 +369,16 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 	delegatorsStakes := next().([]*big.Int)
 	validatorQueuedStakes := next().([]*big.Int)
 	totalQueuedStakes := next().([]*big.Int)
-	totalQueuedWeights := next().([]*big.Int)
 	exitingStakes := next().([]*big.Int)
-	exitingWeights := next().([]*big.Int)
+	nextPeriodWeight := next().([]*big.Int)
 
 	for i := range masters {
 		totals := &builtin.ValidationTotals{
-			TotalLockedStake:   new(big.Int).Add(validatorLockedVETs[i], delegatorsStakes[i]),
-			TotalLockedWeight:  validatorLockedWeights[i],
-			TotalQueuedStake:   totalQueuedStakes[i],
-			TotalQueuedWeight:  totalQueuedWeights[i],
-			TotalExitingStake:  exitingStakes[i],
-			TotalExitingWeight: exitingWeights[i],
+			TotalLockedStake:  new(big.Int).Add(validatorLockedVETs[i], delegatorsStakes[i]),
+			TotalLockedWeight: validatorLockedWeights[i],
+			TotalQueuedStake:  totalQueuedStakes[i],
+			NextPeriodWeight:  nextPeriodWeight[i],
+			TotalExitingStake: exitingStakes[i],
 		}
 
 		v := &Validation{
@@ -394,15 +389,15 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 				CompleteIterations: completedPeriods[i],
 				Status:             statuses[i],
 				StartBlock:         startBlocks[i],
-				LockedVET:          validatorLockedVETs[i],
+				LockedVET:          validatorLockedVETs[i].Uint64(),
 				// TODO: find the validator exiting VET
-				PendingUnlockVET: big.NewInt(0),
-				QueuedVET:        validatorQueuedStakes[i],
+				PendingUnlockVET: uint64(0),
+				QueuedVET:        validatorQueuedStakes[i].Uint64(),
 				// TODO: Can we capture this?
-				CooldownVET: big.NewInt(0),
+				CooldownVET: uint64(0),
 				// TODO: Do we care about this?
-				WithdrawableVET: big.NewInt(0),
-				Weight:          validatorLockedWeights[i],
+				WithdrawableVET: uint64(0),
+				Weight:          validatorLockedWeights[i].Uint64(),
 			},
 			Address:               (thor.Address)(masters[i]),
 			Online:                onlines[i],
@@ -410,7 +405,7 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 			DelegatorStake:        delegatorsStakes[i],
 			DelegatorWeight:       new(big.Int).Sub(validatorLockedWeights[i], big.NewInt(0).Mul(validatorLockedVETs[i], big.NewInt(2))),
 			DelegatorQueuedStake:  new(big.Int).Sub(totalQueuedStakes[i], validatorQueuedStakes[i]),
-			DelegatorQueuedWeight: new(big.Int).Sub(totalQueuedWeights[i], big.NewInt(0).Mul(validatorQueuedStakes[i], big.NewInt(2))),
+			DelegatorQueuedWeight: new(big.Int).Sub(big.NewInt(0).Sub(nextPeriodWeight[i], validatorLockedWeights[i]), big.NewInt(0).Mul(validatorQueuedStakes[i], big.NewInt(2))),
 		}
 		if exitBlocks[i] != uint32(math.MaxUint32) {
 			v.ExitBlock = &exitBlocks[i]
