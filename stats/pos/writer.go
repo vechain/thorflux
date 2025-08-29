@@ -134,33 +134,32 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 
 	onlineValidators := 0
 	onlineStake := big.NewInt(0)
-	onlineWeight := big.NewInt(0)
-	accumulatedStake := big.NewInt(0)
+	onlineWeight := uint64(0)
+	accumulatedStake := uint64(0)
 
 	offlineValidators := 0
 	offlineStake := big.NewInt(0)
-	offlineWeight := big.NewInt(0)
-	accumulatedWeight := big.NewInt(0)
+	offlineWeight := uint64(0)
+	accumulatedWeight := uint64(0)
 
 	// accumulated stakes and weights. We can use this to compare with contract totals
 	for _, v := range info.Validations {
 		if v.Status != validation.StatusActive {
 			continue
 		}
-		accumulatedStake.Add(accumulatedStake, big.NewInt(0).SetUint64(v.LockedVET))
-		accumulatedStake.Add(accumulatedStake, v.DelegatorStake)
-		accumulatedWeight.Add(accumulatedWeight, big.NewInt(0).SetUint64(v.Weight))
+		accumulatedStake += v.LockedVET
+		accumulatedStake += vetutil.ScaleToVET(v.DelegatorStake)
 		leaderGroup[v.Address] = v
 		if v.Online {
 			onlineValidators++
 			onlineStake.Add(onlineStake, v.TotalLockedStake)
 			onlineStake.Add(onlineStake, v.DelegatorStake)
-			onlineWeight.Add(onlineWeight, big.NewInt(0).SetUint64(v.Weight))
+			onlineWeight += v.Weight
 		} else {
 			offlineValidators++
 			offlineStake.Add(offlineStake, v.TotalLockedStake)
 			offlineStake.Add(offlineStake, v.DelegatorStake)
-			offlineWeight.Add(offlineWeight, big.NewInt(0).SetUint64(v.Weight))
+			offlineWeight += v.Weight
 		}
 	}
 
@@ -179,16 +178,16 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 	flags := map[string]interface{}{
 		"total_stake":               vetutil.ScaleToVET(big.NewInt(0).Add(info.TotalVET, info.QueuedVET)),
 		"active_stake":              vetutil.ScaleToVET(info.TotalVET),
-		"active_stake_accumulated":  vetutil.ScaleToVET(accumulatedStake),
+		"active_stake_accumulated":  accumulatedStake,
 		"active_weight":             vetutil.ScaleToVET(info.TotalWeight),
-		"active_weight_accumulated": vetutil.ScaleToVET(accumulatedWeight),
+		"active_weight_accumulated": accumulatedWeight,
 		"queued_stake":              vetutil.ScaleToVET(info.QueuedVET),
 		"withdrawn_vet":             vetutil.ScaleToVET(withdrawnFunds),
 		"contract_vet":              vetutil.ScaleToVET(info.ContractBalance),
 		"online_stake":              vetutil.ScaleToVET(onlineStake),
 		"offline_stake":             vetutil.ScaleToVET(offlineStake),
-		"online_weight":             vetutil.ScaleToVET(onlineWeight),
-		"offline_weight":            vetutil.ScaleToVET(offlineWeight),
+		"online_weight":             onlineWeight,
+		"offline_weight":            offlineWeight,
 		"epoch":                     epoch,
 		"block_in_epoch":            block.Number % thor.EpochLength(),
 		"active_validators":         len(leaderGroup),
@@ -200,11 +199,10 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 	if event.DPOSActive {
 		signer, ok := leaderGroup[event.Block.Signer]
 		if ok {
-			signerProbability := big.NewFloat(0).Mul(big.NewFloat(0).SetUint64(signer.Weight), big.NewFloat(100))
-			signerProbability = signerProbability.Quo(signerProbability, big.NewFloat(0).SetInt(onlineWeight))
-			probability, _ := signerProbability.Float64()
-			flags["signer_probability"] = probability
-			flags["weight_processed"] = vetutil.ScaleToVET(big.NewInt(0).SetUint64(signer.Weight))
+			signerProbability := float64(signer.Weight) * 100
+			signerProbability = signerProbability / float64(onlineWeight)
+			flags["signer_probability"] = signerProbability
+			flags["weight_processed"] = signer.Weight
 		}
 	}
 
@@ -341,7 +339,7 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 		exitType := "previously_queued"
 		exited := validator.ExitBlock != nil
 		if exited {
-			flags["cooldown_vet"] = vetutil.ScaleToVET(big.NewInt(0).SetUint64(validator.LockedVET))
+			flags["cooldown_vet"] = validator.LockedVET
 			exitType = "previously_active"
 		}
 
@@ -365,9 +363,9 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 
 	// process all current validators, queued and active
 	for _, validator := range info.Validations {
-		multiplier := big.NewInt(1)
+		multiplier := uint64(1)
 		if validator.DelegatorStake.Sign() > 0 {
-			multiplier = big.NewInt(2)
+			multiplier = uint64(2)
 		}
 		flags := map[string]any{
 			"online":            validator.Online,
@@ -377,16 +375,16 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 
 			// combined totals, validator + delegators
 			"total_staked":       vetutil.ScaleToVET(validator.TotalLockedStake),
-			"total_weight":       vetutil.ScaleToVET(big.NewInt(0).SetUint64(validator.Weight)),
+			"total_weight":       validator.Weight,
 			"total_queued_vet":   vetutil.ScaleToVET(validator.TotalQueuedStake),
 			"total_exiting_vet":  vetutil.ScaleToVET(validator.TotalExitingStake),
 			"next_period_weight": vetutil.ScaleToVET(validator.NextPeriodWeight),
 
 			// validator only
-			"validator_staked": vetutil.ScaleToVET(big.NewInt(0).SetUint64(validator.LockedVET)),
+			"validator_staked": validator.LockedVET,
 
-			"validator_weight":     vetutil.ScaleToVET(big.NewInt(0).Mul(multiplier, big.NewInt(0).SetUint64(validator.LockedVET))),
-			"validator_queued_vet": vetutil.ScaleToVET(big.NewInt(0).SetUint64(validator.QueuedVET)),
+			"validator_weight":     validator.LockedVET * multiplier,
+			"validator_queued_vet": validator.QueuedVET,
 
 			// delegator only
 			"delegators_staked":    vetutil.ScaleToVET(validator.DelegatorStake),
@@ -403,10 +401,10 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 		prevEntry, ok := prevValidators[validator.Address]
 		if ok {
 			if prevEntry.Weight != validator.Weight {
-				flags["weight_changed"] = vetutil.ScaleToVET(big.NewInt(0).SetUint64(validator.Weight - prevEntry.Weight))
+				flags["weight_changed"] = validator.Weight - prevEntry.Weight
 			}
 			if prevEntry.LockedVET != validator.LockedVET {
-				flags["stake_changed"] = vetutil.ScaleToVET(big.NewInt(0).SetUint64(validator.LockedVET - prevEntry.LockedVET))
+				flags["stake_changed"] = validator.LockedVET - prevEntry.LockedVET
 			}
 			if prevEntry.ExitBlock != prevEntry.ExitBlock {
 				flags["exit_block_changed"] = prevEntry.ExitBlock
