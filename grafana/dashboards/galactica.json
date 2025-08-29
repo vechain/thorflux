@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 12,
   "links": [],
   "panels": [
     {
@@ -103,7 +103,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -194,7 +194,7 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 100
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      (r._field == \"legacy_txs\" or r._field == \"dyn_fee_txs\") and\n      r._value > 0\n    )\n  |> keep(columns: [\"_time\", \"block_number\", \"_field\", \"_value\"])\n  |> pivot(\n      rowKey:     [\"_time\", \"block_number\"],\n      columnKey:  [\"_field\"],\n      valueColumn:\"_value\"\n    )\n  // convert the block_number string into an integer field called \"block\"\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block: int(v: r.block_number),\n      legacy_txs: if exists r.legacy_txs then r.legacy_txs else 0,\n      dyn_fee_txs: if exists r.dyn_fee_txs then r.dyn_fee_txs else 0\n    }))\n  |> yield(name: \"txs_per_block\")\n",
@@ -248,7 +248,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -256,7 +258,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"transactions\")\n  |> filter(fn: (r) => r[\"_field\"] == \"legacy_txs\")\n  |> filter(fn: (r) => r[\"_value\"] > 0)\n  |> drop(columns: [\"block_number\", \"chain_tag\", \"signer\"])\n  |> sum()\n  |> yield(name: \"legacy_txs\")",
@@ -310,7 +312,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -318,7 +322,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -409,7 +413,7 @@
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 100
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -468,7 +472,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -476,7 +482,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: 0, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and r[\"_field\"] == \"block_total_burnt\")\n  |> group()\n  |> sum()",
@@ -502,28 +508,16 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 80,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
             "lineWidth": 1,
-            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -551,33 +545,42 @@
         "x": 0,
         "y": 16
       },
-      "id": 2,
+      "id": 13,
       "options": {
+        "barRadius": 0,
+        "barWidth": 0.5,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
           "sort": "none"
-        }
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 200
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "B87265B08D314AF"
           },
-          "query": "import \"math\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_base_fee\")\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with _value: r._value / math.pow(x: 10.0, y: 13.0) }))\n  |> cumulativeSum(columns: [\"_value\"])\n  |> yield(name: \"cumulative_sum\")",
+          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and r[\"_field\"] == \"block_total_burnt\" )\n  |> group()\n  |> aggregateWindow(every: ${interval}, fn: sum)",
           "refId": "A"
         }
       ],
-      "title": "Cumulative Block Base Burn",
-      "type": "timeseries"
+      "title": "Total Burned Interval",
+      "type": "barchart"
     },
     {
       "datasource": {
@@ -666,7 +669,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -745,6 +748,99 @@
         "x": 0,
         "y": 24
       },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "B87265B08D314AF"
+          },
+          "query": "import \"math\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_base_fee\")\n  |> map(fn: (r) => ({ r with _value: float(v: r._value) }))\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ r with _value: r._value / math.pow(x: 10.0, y: 13.0) }))\n  |> cumulativeSum(columns: [\"_value\"])\n  |> yield(name: \"cumulative_sum\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Cumulative Block Base Burn",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "B87265B08D314AF"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
       "id": 6,
       "options": {
         "legend": {
@@ -759,7 +855,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.0.1",
       "targets": [
         {
           "datasource": {
@@ -784,39 +880,87 @@
     }
   ],
   "preload": false,
-  "refresh": "",
+  "refresh": "10s",
   "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
       {
+        "current": {
+          "text": "vechain",
+          "value": "vechain"
+        },
         "datasource": {
           "type": "influxdb",
           "uid": "B87265B08D314AF"
         },
         "definition": "buckets()",
-        "hide": 0,
         "includeAll": false,
         "label": "Bucket",
-        "multi": false,
         "name": "bucket",
         "options": [],
         "query": "buckets()",
         "refresh": 2,
         "regex": "^[^_].*",
-        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": {
+          "text": "15m",
+          "value": "15m"
+        },
+        "label": "Interval",
+        "name": "interval",
+        "options": [
+          {
+            "selected": false,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": true,
+            "text": "15m",
+            "value": "15m"
+          },
+          {
+            "selected": false,
+            "text": "30m",
+            "value": "30m"
+          },
+          {
+            "selected": false,
+            "text": "1h",
+            "value": "1h"
+          },
+          {
+            "selected": false,
+            "text": "6h",
+            "value": "6h"
+          },
+          {
+            "selected": false,
+            "text": "12h",
+            "value": "12h"
+          },
+          {
+            "selected": false,
+            "text": "1d",
+            "value": "1d"
+          }
+        ],
+        "query": "5m,15m,30m,1h,6h,12h,1d",
+        "type": "custom"
       }
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Galactica",
   "uid": "fehlt4dw18oowa",
-  "version": 1
+  "version": 2
 }
