@@ -22,7 +22,7 @@ contract GetValidators {
         return STAKER.totalStake();
     }
 
-    function queuedStake() public view returns (uint256, uint256) {
+    function queuedStake() public view returns (uint256) {
         return STAKER.queuedStake();
     }
 
@@ -54,9 +54,8 @@ contract GetValidators {
         uint256[] memory, // delegatorsStake
         uint256[] memory, // validatorQueuedStakes
         uint256[] memory, // totalQueuedStakes
-        uint256[] memory, // totalQueuedWeights
         uint256[] memory, // totalExitingStakes
-        uint256[] memory  // totalExitingWeights
+        uint256[] memory  // totalNextPeriodWeights
     ) {
         address[1000] memory idBuffer;
         uint count = 0;
@@ -94,10 +93,9 @@ contract GetValidators {
 
         uint256[] memory validatorQueuedStakes = new uint256[](count);
         uint256[] memory totalQueuedStakes = new uint256[](count);
-        uint256[] memory totalQueuedWeights = new uint256[](count);
 
         uint256[] memory totalExitingStakes = new uint256[](count);
-        uint256[] memory totalExitingWeights = new uint256[](count);
+        uint256[] memory totalNextPeriodWeights = new uint256[](count);
 
 
         for (uint i = 0; i < count; i++) {
@@ -136,15 +134,13 @@ contract GetValidators {
                 uint256 lockedStake,
                 ,
                 uint256 totalQueuedStake,
-                uint256 queuedWeight,
                 uint256 exitingStake,
-                uint256 exitingWeight
+                uint256 nextPeriodWeight
             ) = STAKER.getValidationTotals(validatorId);
             delegatorsStake[i] = lockedStake- validatorStake;
             totalQueuedStakes[i] = totalQueuedStake;
-            totalQueuedWeights[i] = queuedWeight;
             totalExitingStakes[i] = exitingStake;
-            totalExitingWeights[i] = exitingWeight;
+            totalNextPeriodWeights[i] = nextPeriodWeight;
         }
 
 
@@ -163,9 +159,8 @@ contract GetValidators {
             delegatorsStake,
             validatorQueuedStakes,
             totalQueuedStakes,
-            totalQueuedWeights,
             totalExitingStakes,
-            totalExitingWeights
+            totalNextPeriodWeights
         );
     }
 }
