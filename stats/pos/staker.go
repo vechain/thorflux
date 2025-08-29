@@ -22,6 +22,7 @@ import (
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thorflux/config"
+	"github.com/vechain/thorflux/vetutil"
 )
 
 type Validation struct {
@@ -389,15 +390,15 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 				CompleteIterations: completedPeriods[i],
 				Status:             statuses[i],
 				StartBlock:         startBlocks[i],
-				LockedVET:          validatorLockedVETs[i].Uint64(),
+				LockedVET:          vetutil.ScaleToVET(validatorLockedVETs[i]),
 				// TODO: find the validator exiting VET
-				PendingUnlockVET: uint64(0),
-				QueuedVET:        validatorQueuedStakes[i].Uint64(),
+				PendingUnlockVET: 0,
+				QueuedVET:        vetutil.ScaleToVET(validatorQueuedStakes[i]),
 				// TODO: Can we capture this?
-				CooldownVET: uint64(0),
+				CooldownVET: 0,
 				// TODO: Do we care about this?
-				WithdrawableVET: uint64(0),
-				Weight:          validatorLockedWeights[i].Uint64(),
+				WithdrawableVET: 0,
+				Weight:          vetutil.ScaleToVET(validatorLockedWeights[i]),
 			},
 			Address:               (thor.Address)(masters[i]),
 			Online:                onlines[i],

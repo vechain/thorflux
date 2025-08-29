@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	thorFlag        = flag.String("thor-url", config.DefaultThorURL, "thor node URL, (env var: THOR_URL)")
+	thorFlag        = flag.String("thor-url", "https://hayabusa.live.dev.node.vechain.org", "thor node URL, (env var: THOR_URL)")
 	blocksFlag      = flag.Uint64("thor-blocks", config.DefaultThorBlocks, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
 	syncBlockFlag   = flag.Uint64("sync-from-block", 0, "start sync from block height - takes precedence to thor-blocks is set (env var: SYNC_FROM_BLOCK)")
 	influxUrlFlag   = flag.String("influx-url", config.DefaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
