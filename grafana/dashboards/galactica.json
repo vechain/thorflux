@@ -575,7 +575,7 @@
             "type": "influxdb",
             "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and r[\"_field\"] == \"block_total_burnt\" )\n  |> group()\n  |> aggregateWindow(every: ${interval}, fn: sum)",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" and r[\"_field\"] == \"block_total_burnt\" )\n  |> group()\n  |> aggregateWindow(every: ${interval}, fn: sum)",
           "refId": "A"
         }
       ],
