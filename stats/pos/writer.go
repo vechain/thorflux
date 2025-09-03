@@ -310,7 +310,7 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 	queueOrder := make(map[thor.Address]int)
 	queueCount := 0
 	for _, validator := range info.Validations {
-		if validator.Status == validation.StatusActive {
+		if validator.Status == validation.StatusQueued {
 			queueOrder[validator.Address] = queueCount
 			queueCount++
 		}
@@ -419,7 +419,6 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 		if validator.Status == validation.StatusQueued {
 			flags["queue_position"] = queueOrder[validator.Address]
 		}
-
 		p := influxdb2.NewPoint(
 			"individual_validators",
 			map[string]string{
