@@ -140,6 +140,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 	offlineValidators := 0
 	offlineStake := big.NewInt(0)
 	offlineWeight := uint64(0)
+	accumulatedWeight := uint64(0)
 
 	// accumulated stakes and weights. We can use this to compare with contract totals
 	for _, v := range info.Validations {
@@ -160,6 +161,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 			offlineStake.Add(offlineStake, v.DelegatorStake)
 			offlineWeight += v.Weight
 		}
+		accumulatedWeight += v.Weight
 	}
 
 	withdrawnFunds := big.NewInt(0)
@@ -180,6 +182,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"active_stake_accumulated":  accumulatedStake,
 		"active_weight":             vetutil.ScaleToVET(info.TotalWeight),
 		"active_weight_accumulated": onlineWeight,
+		"accumulated_weight":        accumulatedWeight,
 		"queued_stake":              vetutil.ScaleToVET(info.QueuedVET),
 		"withdrawn_vet":             vetutil.ScaleToVET(withdrawnFunds),
 		"contract_vet":              vetutil.ScaleToVET(info.ContractBalance),

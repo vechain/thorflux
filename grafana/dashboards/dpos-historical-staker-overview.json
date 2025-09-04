@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 4,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -1082,7 +1082,7 @@
             "uid": "B87265B08D314AF"
           },
           "hide": false,
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\" or r[\"_field\"] == \"active_weight_accumulated\")\n  |> drop(columns: [\"signer\", \"chain_tag\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"active_weight\" or r[\"_field\"] == \"accumulated_weight\")\n  |> drop(columns: [\"signer\", \"chain_tag\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> yield(name: \"mean\")",
           "refId": "C"
         },
         {
