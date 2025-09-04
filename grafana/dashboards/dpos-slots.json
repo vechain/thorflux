@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 11,
+  "id": 8,
   "links": [],
   "panels": [
     {
@@ -46,7 +46,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -90,13 +90,15 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -115,9 +117,9 @@
             "excludeByName": {},
             "includeByName": {},
             "indexByName": {
-              "block_in_epoch": 0,
-              "block_number": 1,
-              "signer": 2
+              "block_in_epoch": 1,
+              "block_number": 2,
+              "signer": 0
             },
             "renameByName": {
               "block_in_epoch": "Block In Epoch",
@@ -155,7 +157,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -211,13 +213,15 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -236,10 +240,9 @@
             "excludeByName": {},
             "includeByName": {},
             "indexByName": {
-              "_time": 0,
-              "block_number": 1,
-              "signer": 2,
-              "slot": 3
+              "_time": 1,
+              "block_number": 2,
+              "signer": 0
             },
             "renameByName": {
               "_time": "Time",
@@ -276,7 +279,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -299,12 +302,14 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"_field\"] == \"block_number\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group(columns: [\"signer\"])\n  |> map(fn: (r) => ({r with _value: 1}))\n  |> count(column: \"_value\")\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n",
@@ -351,7 +356,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -374,12 +379,14 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: -10y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"dpos_missed_slots\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group(columns: [\"signer\"])\n  |> map(fn: (r) => ({r with _value: 1}))\n  |> count(column: \"_value\")\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)\n",
@@ -427,7 +434,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -495,13 +502,15 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -520,11 +529,11 @@
             "excludeByName": {},
             "includeByName": {},
             "indexByName": {
-              "_time": 0,
-              "block_in_epoch": 1,
-              "block_number": 2,
+              "_time": 1,
+              "block_in_epoch": 2,
+              "block_number": 3,
               "epoch": 4,
-              "signer": 3
+              "signer": 0
             },
             "renameByName": {
               "_time": "Time",
@@ -541,26 +550,27 @@
   ],
   "preload": false,
   "refresh": "",
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
       {
+        "current": {
+          "text": "vechain",
+          "value": "vechain"
+        },
         "datasource": {
           "type": "influxdb",
           "uid": "B87265B08D314AF"
         },
         "definition": "buckets()",
-        "hide": 0,
         "includeAll": false,
         "label": "Bucket",
-        "multi": false,
         "name": "bucket",
         "options": [],
         "query": "buckets()",
         "refresh": 2,
         "regex": "^[^_].*",
-        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       }
@@ -574,6 +584,5 @@
   "timezone": "browser",
   "title": "DPoS - Slots",
   "uid": "fevd1jv7bemf4c",
-  "version": 23,
-  "weekStart": ""
+  "version": 4
 }
