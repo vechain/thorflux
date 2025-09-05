@@ -24,6 +24,7 @@ func (s *Staker) ProcessEvents(
 ) ([]*write.Point, error) {
 
 	points := make([]*write.Point, 0)
+	eventCounts := make(map[string]int)
 
 	for _, logs := range events {
 		for _, log := range logs {
@@ -50,10 +51,13 @@ func (s *Staker) ProcessEvents(
 				processor = s.processDelegationWithdrawn
 			case "DelegationSignaledExit":
 				processor = s.processDelegationSignaledExit
+			case "BeneficiarySet":
+				processor = processBeneficiarySet
 			default:
 				slog.Warn("unknown event type", "event", eventABI.Name)
 				continue
 			}
+			eventCounts[eventABI.Name]++
 			point, err := processor(revision, log, eventABI, timestamp)
 			if err != nil {
 				slog.Error("failed to process event", "event", eventABI.Name, "error", err)
@@ -61,10 +65,49 @@ func (s *Staker) ProcessEvents(
 			}
 			points = append(points, point)
 		}
+	}
 
+	if len(eventCounts) > 0 {
+		countPoint := write.NewPoint(
+			"staker_event_counts",
+			map[string]string{},
+			map[string]interface{}{},
+			timestamp,
+		)
+		for eventName, count := range eventCounts {
+			countPoint.AddTag("event", eventName)
+			countPoint.AddField("count", count)
+		}
+		points = append(points, countPoint)
 	}
 
 	return points, nil
+}
+
+func processBeneficiarySet(_ thor.Bytes32, event *api.JSONEvent, abi abi.Event, timestamp time.Time) (*write.Point, error) {
+	validator := thor.BytesToAddress(event.Topics[1][:]) // indexed
+	out, err := abi.Inputs.UnpackValues(hexutil.MustDecode(event.Data))
+	if err != nil {
+		slog.Error("failed to unpack event data", "event", abi.Name, "error", err)
+		return nil, err
+	}
+	beneficiary, ok := out[0].(thor.Address)
+	if !ok {
+		slog.Error("failed to cast beneficiary", "event", abi.Name, "value", out[0])
+		return nil, err
+	}
+
+	return write.NewPoint(
+		"beneficiary_set",
+		map[string]string{
+			"validator":   validator.String(),
+			"beneficiary": beneficiary.String(),
+		},
+		map[string]interface{}{
+			"null": true,
+		},
+		timestamp,
+	), nil
 }
 
 func processValidationQueued(_ thor.Bytes32, event *api.JSONEvent, abi abi.Event, timestamp time.Time) (*write.Point, error) {
