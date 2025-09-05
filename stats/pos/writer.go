@@ -408,7 +408,7 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			if prevEntry.LockedVET != validator.LockedVET {
 				flags["stake_changed"] = validator.LockedVET - prevEntry.LockedVET
 			}
-			if prevEntry.ExitBlock != prevEntry.ExitBlock {
+			if prevEntry.ExitBlock != validator.ExitBlock {
 				flags["exit_block_changed"] = prevEntry.ExitBlock
 			}
 		}
