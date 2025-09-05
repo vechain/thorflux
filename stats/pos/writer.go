@@ -161,6 +161,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 			offlineStake.Add(offlineStake, v.DelegatorStake)
 			offlineWeight += v.Weight
 		}
+		accumulatedWeight += v.Weight
 	}
 
 	withdrawnFunds := big.NewInt(0)
@@ -180,7 +181,8 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"active_stake":              vetutil.ScaleToVET(info.TotalVET),
 		"active_stake_accumulated":  accumulatedStake,
 		"active_weight":             vetutil.ScaleToVET(info.TotalWeight),
-		"active_weight_accumulated": accumulatedWeight,
+		"active_weight_accumulated": onlineWeight,
+		"accumulated_weight":        accumulatedWeight,
 		"queued_stake":              vetutil.ScaleToVET(info.QueuedVET),
 		"withdrawn_vet":             vetutil.ScaleToVET(withdrawnFunds),
 		"contract_vet":              vetutil.ScaleToVET(info.ContractBalance),
