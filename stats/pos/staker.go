@@ -222,17 +222,30 @@ func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
 	return result, nil
 }
 
+func (s *Staker) createValidatorMap(info *StakerInformation) map[thor.Address]*Validation {
+	validators := make(map[thor.Address]*Validation, len(info.Validations))
+	for _, v := range info.Validations {
+		validators[v.Address] = v
+	}
+	return validators
+}
+
 func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*Validation, error) {
+	s.mu.Lock()
+	existing, ok := s.cache.Get(id)
+	s.mu.Unlock()
+
+	if ok {
+		info := existing.(*StakerInformation)
+		return s.createValidatorMap(info), nil
+	}
+
 	info, err := s.FetchAll(id)
 	if err != nil {
 		return nil, fmt.Errorf(config.ErrFailedToFetchStakerInfoFromDB, err)
 	}
 
-	validators := make(map[thor.Address]*Validation, len(info.Validations))
-	for _, v := range info.Validations {
-		validators[(v.Address)] = v
-	}
-	return validators, nil
+	return s.createValidatorMap(info), nil
 }
 
 func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
