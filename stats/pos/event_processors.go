@@ -25,6 +25,9 @@ func (s *Staker) ProcessEvents(
 
 	points := make([]*write.Point, 0)
 	eventCounts := make(map[string]int)
+	for _, e := range eventABIs {
+		eventCounts[e.Name] = 0
+	}
 
 	for _, logs := range events {
 		for _, log := range logs {
