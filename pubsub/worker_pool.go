@@ -133,5 +133,10 @@ func (wp *WorkerPool) Shutdown() {
 	}
 	wp.mu.Unlock()
 
-	slog.Info("Worker pool shutdown initiated")
+	slog.Info("Worker pool shutdown initiated, waiting for workers to complete")
+
+	// Wait for all workers to finish processing their current tasks
+	wp.wg.Wait()
+
+	slog.Info("Worker pool shutdown completed")
 }
