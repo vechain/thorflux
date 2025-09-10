@@ -29,14 +29,14 @@ contract Staker {
     /**
      * @dev totalStake returns all stakes and weight by active validators.
      */
-    function totalStake() public view returns (uint256 totalStake, uint256 totalWeight) {
+    function totalStake() public view returns (uint256 totalVET, uint256 totalWeight) {
         return StakerNative(address(this)).native_totalStake();
     }
 
     /**
      * @dev queuedStake returns all stakes by queued validators.
      */
-    function queuedStake() public view returns (uint256 queuedStake) {
+    function queuedStake() public view returns (uint256 queuedVET) {
         return StakerNative(address(this)).native_queuedStake();
     }
 
@@ -180,15 +180,15 @@ contract Staker {
             address endorser,
             uint256 stake,
             uint256 weight,
-            uint256 queuedStake,
+            uint256 queuedVET,
             uint8 status,
             uint32 offlineBlock
         )
     {
-        (endorser, stake, weight, queuedStake, status, offlineBlock, , , , ) = StakerNative(
+        (endorser, stake, weight, queuedVET, status, offlineBlock, , , , ) = StakerNative(
             address(this)
         ).native_getValidation(validator);
-        return (endorser, stake, weight, queuedStake, status, offlineBlock);
+        return (endorser, stake, weight, queuedVET, status, offlineBlock);
     }
 
     /**
@@ -216,14 +216,14 @@ contract Staker {
     /**
      * @dev firstActive returns the head validatorId of the active validators.
      */
-    function firstActive() public view returns (address firstActive) {
+    function firstActive() public view returns (address first) {
         return StakerNative(address(this)).native_firstActive();
     }
 
     /**
      * @dev firstQueued returns the head validatorId of the queued validators.
      */
-    function firstQueued() public view returns (address firstQueued) {
+    function firstQueued() public view returns (address first) {
         return StakerNative(address(this)).native_firstQueued();
     }
 
@@ -267,7 +267,7 @@ contract Staker {
     /**
      * @dev getValidationsNum returns the number of active and queued validators.
      */
-    function getValidationsNum() public view returns (uint256 activeCount, uint256 queuedCount) {
+    function getValidationsNum() public view returns (uint64 activeCount, uint64 queuedCount) {
         return StakerNative(address(this)).native_getValidationsNum();
     }
 
@@ -381,7 +381,7 @@ interface StakerNative {
         address validator
     ) external view returns (uint256, uint256, uint256, uint256, uint256);
 
-    function native_getValidationsNum() external view returns (uint256, uint256);
+    function native_getValidationsNum() external view returns (uint64, uint64);
 
     function native_issuance() external view returns (uint256);
 
