@@ -291,7 +291,7 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 	amount, _ := big.NewInt(0).SetString(data[:64], 16)
 	data = data[64:]
 
-	candidates := make([]Candidate, amount.Uint64(), amount.Uint64())
+	candidates := make([]Candidate, amount.Uint64())
 	for index := uint64(0); index < amount.Uint64(); index++ {
 		master := thor.MustParseAddress(data[24:64])
 		data = data[64:]
