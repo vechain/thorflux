@@ -81,6 +81,16 @@ func (wp *WorkerPool) worker(id int) {
 
 // processTask executes a single task with error handling and metrics
 func (wp *WorkerPool) processTask(task Task, workerID int) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("Worker panic recovered", 
+				"worker_id", workerID, 
+				"event_type", task.EventType,
+				"block_number", task.Event.Block.Number,
+				"panic", r)
+		}
+	}()
+
 	start := time.Now()
 
 	slog.Debug("Processing task",
