@@ -61,7 +61,11 @@ func (i *DB) Latest() (uint32, error) {
 		slog.Warn("failed to query latest block", "error", err)
 		return 0, err
 	}
-	defer res.Close()
+	defer func() {
+		if err := res.Close(); err != nil {
+			slog.Error("Failed to close query result", "error", err)
+		}
+	}()
 
 	if res.Next() {
 		blockNum := res.Record().ValueByKey("block_number")

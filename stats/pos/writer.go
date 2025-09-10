@@ -87,9 +87,8 @@ func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]
 				if log.Address != *s.staker.Raw().Address() {
 					continue // Skip logs that are not from the staker contract
 				}
-				if allEvents, ok := eventsByTopic[log.Topics[0]]; !ok {
-					allEvents = make([]*api.JSONEvent, 0)
-					eventsByTopic[log.Topics[0]] = allEvents
+				if eventsByTopic[log.Topics[0]] == nil {
+					eventsByTopic[log.Topics[0]] = make([]*api.JSONEvent, 0)
 				}
 				eventsByTopic[log.Topics[0]] = append(eventsByTopic[log.Topics[0]], log)
 			}

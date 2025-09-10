@@ -260,6 +260,7 @@ func (s *Publisher) fetchBlocksAsync(amount int, startBlock uint32) ([]*Block, e
 			seed, err := s.fetchSeed(block.ParentID)
 			if err != nil {
 				mu.Lock()
+				// nolint:ineffassign,staticcheck
 				err = fmt.Errorf("failed to fetch seed for block %d: %w", block.Number, err)
 				mu.Unlock()
 				return
@@ -268,6 +269,7 @@ func (s *Publisher) fetchBlocksAsync(amount int, startBlock uint32) ([]*Block, e
 			forked, active, err := s.fetchHayabusaStatus(block)
 			if err != nil {
 				mu.Lock()
+				// nolint:ineffassign,staticcheck
 				err = fmt.Errorf("failed to fetch hayabusa status for block %d: %w", block.Number, err)
 				mu.Unlock()
 				return
