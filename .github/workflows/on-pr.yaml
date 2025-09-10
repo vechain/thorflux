@@ -1,0 +1,9 @@
+name: Pull Request CI
+
+on:
+  pull_request:
+
+jobs:
+    lint:
+        name: Lint
+        uses: ./.github/workflows/lint-go.yaml
