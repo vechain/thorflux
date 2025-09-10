@@ -285,7 +285,7 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 
 	valueType, _ := big.NewInt(0).SetString(data[:64], 16)
 	if valueType.Cmp(big.NewInt(32)) != 0 {
-		return nil, errors.New("Wrong type returned by the contract")
+		return nil, errors.New("wrong type returned by the contract")
 	}
 	data = data[64:]
 	amount, _ := big.NewInt(0).SetString(data[:64], 16)
