@@ -30,7 +30,7 @@ services:
 
   grafana:
     user: "0"
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.4.19 # same as AWS version
     container_name: grafana
     restart: unless-stopped
     networks:
