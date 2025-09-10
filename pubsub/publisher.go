@@ -243,9 +243,9 @@ func (s *Publisher) fetchBlocksAsync(amount int, startBlock uint32) ([]*Block, e
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var err error
-	blks := make([]*Block, 0)
+	blks := make([]*Block, 0, amount)
 
-	for i := 0; i < amount; i++ {
+	for i := range amount {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
