@@ -2,9 +2,9 @@ package influxdb
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -38,13 +38,25 @@ func New(url, token string, org string, bucket string) (*DB, error) {
 // Latest returns the latest block number stored in the database
 func (i *DB) Latest() (uint32, error) {
 	queryAPI := i.client.QueryAPI(i.org)
-	query := fmt.Sprintf(`from(bucket: "%s")
-		|> range(start: %s, stop: %s)
-		|> filter(fn: (r) => r["_measurement"] == "%s")
-		|> filter(fn: (r) => r["_field"] == "%s")
+	
+	var query strings.Builder
+	query.WriteString(`from(bucket: "`)
+	query.WriteString(i.bucket)
+	query.WriteString(`")
+		|> range(start: `)
+	query.WriteString(config.DefaultQueryStartDate)
+	query.WriteString(`, stop: `)
+	query.WriteString(config.DefaultQueryEndDate)
+	query.WriteString(`)
+		|> filter(fn: (r) => r["_measurement"] == "`)
+	query.WriteString(config.BlockStatsMeasurement)
+	query.WriteString(`")
+		|> filter(fn: (r) => r["_field"] == "`)
+	query.WriteString(config.BestBlockNumberField)
+	query.WriteString(`")
         |> group()
-        |> last()`, i.bucket, config.DefaultQueryStartDate, config.DefaultQueryEndDate, config.BlockStatsMeasurement, config.BestBlockNumberField)
-	res, err := queryAPI.Query(context.Background(), query)
+        |> last()`)
+	res, err := queryAPI.Query(context.Background(), query.String())
 	if err != nil {
 		slog.Warn("failed to query latest block", "error", err)
 		return 0, err

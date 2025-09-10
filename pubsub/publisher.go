@@ -335,14 +335,9 @@ func (s *Publisher) fetchSeed(parentID thor.Bytes32) ([]byte, error) {
 }
 
 func (s *Publisher) fetchHayabusaStatus(block *api.JSONExpandedBlock) (bool, bool, error) {
-	forked := false
-	if s.hayabusaForkBlock < block.Number {
-		forked = true
-	}
-	active := false
-	if s.dposActiveBlock < block.Number {
-		active = true
-	}
+	forked := s.hayabusaForkBlock < block.Number
+
+	active := s.dposActiveBlock < block.Number
 
 	if !forked {
 		code, err := s.thor.AccountCode(&builtin2.Staker.Address, thorclient.Revision(block.ID.String()))

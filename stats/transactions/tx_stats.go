@@ -26,9 +26,10 @@ func (s *txStats) processTx(t *api.JSONEmbeddedTx) {
 		s.totalRewards += rewardFloat
 	}
 
-	if t.Type == tx.TypeLegacy {
+	switch t.Type {
+	case tx.TypeLegacy:
 		s.legacyCount++
-	} else if t.Type == tx.TypeDynamicFee {
+	case tx.TypeDynamicFee:
 		s.dynamicFeeCount++
 	}
 }
