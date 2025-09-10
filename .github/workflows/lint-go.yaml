@@ -33,6 +33,6 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.2.1
-          args: --timeout=30m
+          args: --timeout=30m # Not using custom config for now
           only-new-issues: false
           skip-cache: true
