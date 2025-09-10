@@ -1,0 +1,38 @@
+name: Lint
+
+on:
+  # Should only be used by other workflows
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  golangci:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+
+      - name: Check `stats/pos` directory
+        # if it has any changes in the 'stats/pos' dir after running `go generate`, echo an error and fail the workflow
+        run: |
+          go generate ./stats/pos
+          git diff --exit-code stats/pos || (echo "\n\n\nstats/pos directory is not up to date, run 'go generate ./...' to update it" && exit 1)
+
+      # TODO: Add this in a separate PR since it could modify plenty of files
+      # - name: Check `modernize` (code style)
+      #   run: |
+      #     go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@v0.18.1 ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.2.1
+          args: --timeout=30m # Not using custom config for now
+          only-new-issues: false
+          skip-cache: true

@@ -285,13 +285,13 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 
 	valueType, _ := big.NewInt(0).SetString(data[:64], 16)
 	if valueType.Cmp(big.NewInt(32)) != 0 {
-		return nil, errors.New("Wrong type returned by the contract")
+		return nil, errors.New("wrong type returned by the contract")
 	}
 	data = data[64:]
 	amount, _ := big.NewInt(0).SetString(data[:64], 16)
 	data = data[64:]
 
-	candidates := make([]Candidate, amount.Uint64(), amount.Uint64())
+	candidates := make([]Candidate, amount.Uint64())
 	for index := uint64(0); index < amount.Uint64(); index++ {
 		master := thor.MustParseAddress(data[24:64])
 		data = data[64:]
