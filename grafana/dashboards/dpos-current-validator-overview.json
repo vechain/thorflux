@@ -1825,17 +1825,15 @@
               "Staking Period Length": 11,
               "Start Block": 10,
               "Total TVL": 2,
-              "Validator": 0,
+              "validator": 0,
               "Validator TVL": 3,
               "Weight": 5
             },
             "renameByName": {
-              "Validator": "",
               "forced_exit_block": "Evicting Block",
               "offline_block": "Offline Block",
               "signalled_exit": "Exit Signalled",
-              "status": "Status",
-              "validator": "Validator"
+              "status": "Status"
             }
           }
         }
