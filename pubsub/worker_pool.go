@@ -3,7 +3,9 @@ package pubsub
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"runtime"
 	"sync"
 	"time"
 
@@ -83,11 +85,23 @@ func (wp *WorkerPool) worker(id int) {
 func (wp *WorkerPool) processTask(task Task, workerID int) {
 	defer func() {
 		if r := recover(); r != nil {
-			slog.Error("Worker panic recovered", 
-				"worker_id", workerID, 
+			buf := make([]byte, 1024)
+			for {
+				n := runtime.Stack(buf, false)
+				if n < len(buf) {
+					buf = buf[:n]
+					break
+				}
+				buf = make([]byte, 2*len(buf))
+			}
+			slog.Error("Worker panic recovered",
+				"worker_id", workerID,
 				"event_type", task.EventType,
 				"block_number", task.Event.Block.Number,
 				"panic", r)
+
+			// fmt so \n and \t are interpreted correctly
+			fmt.Printf("Stack trace:\n%s\n", string(buf))
 		}
 	}()
 
