@@ -45,6 +45,8 @@ type StakerInformation struct {
 	TotalSupplyVTHO *big.Int // Total supply of VTHO in the network
 	TotalBurnedVTHO *big.Int // Total VTHO burned in the network
 	IssuanceVTHO    *big.Int // Total VTHO issued in the network
+	CooldownVET     uint64   // Total VET in cooldown
+	WithdrawableVET uint64   // Total VET withdrawable
 }
 
 type Staker struct {
@@ -63,20 +65,8 @@ func NewStaker(client *thorclient.Client) (*Staker, error) {
 	if err != nil {
 		return nil, err
 	}
-	epochLength := uint32(config.CheckpointInterval)
-	key := thor.BytesToBytes32([]byte(config.EpochLengthStorageKey))
-	storage, err := client.AccountStorage(staker.Raw().Address(), &key)
-	if err != nil {
-		return nil, err
-	}
-	bytes32, err := thor.ParseBytes32(storage.Value)
-	if err != nil {
-		return nil, err
-	}
-	if !bytes32.IsZero() {
-		big := new(big.Int).SetBytes(bytes32.Bytes())
-		epochLength = uint32(big.Uint64())
-	}
+	epochLength := thor.EpochLength()
+
 	cache, err := lru.New(config.DefaultCacheSize)
 	if err != nil {
 		return nil, fmt.Errorf(config.ErrFailedToCreateCache, err)
@@ -85,11 +75,15 @@ func NewStaker(client *thorclient.Client) (*Staker, error) {
 	return &Staker{staker: staker, client: client, epochLength: epochLength, cache: cache}, nil
 }
 
-func createProposers(validators []*Validation) map[thor.Address]*validation.Validation {
-	proposers := make(map[thor.Address]*validation.Validation)
+func createProposers(validators []*Validation) []pos.Proposer {
+	proposers := make([]pos.Proposer, 0)
 	for _, v := range validators {
 		if v.Status == validation.StatusActive {
-			proposers[v.Address] = v.Validation
+			proposers = append(proposers, pos.Proposer{
+				Address: v.Address,
+				Active:  v.Online,
+				Weight:  v.Weight,
+			})
 		}
 	}
 	return proposers
@@ -116,10 +110,10 @@ func (s *Staker) MissedSlots(
 	}
 	missedOnlineSigners := make([]MissedSlot, 0)
 	for i := parent.Timestamp + config.BlockIntervalSeconds; i < block.Timestamp; i += config.BlockIntervalSeconds {
-		for master := range proposers {
-			if sched.IsScheduled(i, master) {
+		for _, master := range proposers {
+			if sched.IsScheduled(i, master.Address) {
 				missedOnlineSigners = append(missedOnlineSigners, MissedSlot{
-					Signer: master,
+					Signer: master.Address,
 				})
 			}
 		}
@@ -127,24 +121,27 @@ func (s *Staker) MissedSlots(
 
 	// go through offline validators, forcing them online one by one
 	missedOfflineSigners := make([]MissedSlot, 0)
-	for offlineProposer, value := range proposers {
+	for _, val := range validators {
+		if val.Status != validation.StatusActive {
+			continue
+		}
 		// we already went through online validators
-		if value.OfflineBlock != nil {
+		if val.OfflineBlock != nil {
 			continue
 		}
 
-		sched, err := pos.NewScheduler(offlineProposer, proposers, parent.Number, parent.Timestamp, seed)
+		sched, err := pos.NewScheduler(val.Address, proposers, parent.Number, parent.Timestamp, seed)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		// NOTE: We do not check for the skipped slots for offline validators
-		if sched.IsScheduled(block.Timestamp, offlineProposer) &&
-			block.Signer != offlineProposer {
+		if sched.IsScheduled(block.Timestamp, val.Address) &&
+			block.Signer != val.Address {
 			// if an offline validator could be scheduled for this block
 			// but the signer is different
 			missedOfflineSigners = append(missedOfflineSigners, MissedSlot{
-				Signer: offlineProposer,
+				Signer: val.Address,
 			})
 		}
 
@@ -174,11 +171,11 @@ func (s *Staker) FutureSlots(validators []*Validation, block *api.JSONExpandedBl
 		if err != nil {
 			return nil, fmt.Errorf("failed to create scheduler for block %d: %w", parent, err)
 		}
-		for master := range proposers {
-			if sched.IsScheduled(newTimestamp, master) {
+		for _, master := range proposers {
+			if sched.IsScheduled(newTimestamp, master.Address) {
 				slots = append(slots, FutureSlot{
 					Block:  parent + 1,
-					Signer: master,
+					Signer: master.Address,
 				})
 				break // we only need one signer per block
 			}
@@ -237,44 +234,68 @@ func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*Validation, er
 
 func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
 	to := thor.MustParseAddress(config.GetValidatorsContractAddress)
-	res, err := s.staker.Raw().Client().InspectClauses(&api.BatchCallData{
-		Clauses: api.Clauses{
-			{
-				Data: "0x" + bytecode,
-			},
-			{
-				To:   &to,
-				Data: hexutil.Encode(getValidatorsABI.Id()),
-			},
-			{
-				To:   &to,
-				Data: hexutil.Encode(stakerBalanceABI.Id()),
-			},
-			{
-				To:   &to,
-				Data: hexutil.Encode(totalStakeABI.Id()),
-			},
-			{
-				To:   &to,
-				Data: hexutil.Encode(queuedStakeABI.Id()),
-			},
-			{
-				To:   &to,
-				Data: hexutil.Encode(totalSupplyABI.Id()),
-			},
-			{
-				To:   &to,
-				Data: hexutil.Encode(totalBurnedABI.Id()),
-			},
+
+	withdrawCounterPosition := thor.BytesToBytes32([]byte("withdrawable-stake"))
+	cooldownCounterPosition := thor.BytesToBytes32([]byte("cooldown-stake"))
+
+	withdrawableCallData, err := stakerStorageABI.Inputs.Pack(withdrawCounterPosition)
+	if err != nil {
+		return nil, fmt.Errorf("failed to pack withdrawable stake call data: %w", err)
+	}
+	stakerStorageCallData, err := stakerStorageABI.Inputs.Pack(cooldownCounterPosition)
+	if err != nil {
+		return nil, fmt.Errorf("failed to pack cooldown stake call data: %w", err)
+	}
+	withdrawableCallData = append(stakerStorageABI.Id(), withdrawableCallData...)
+	stakerStorageCallData = append(stakerStorageABI.Id(), stakerStorageCallData...)
+
+	clauses := api.Clauses{
+		{
+			Data: "0x" + bytecode,
 		},
+		{
+			To:   &to,
+			Data: hexutil.Encode(getValidatorsABI.Id()),
+		},
+		{
+			To:   &to,
+			Data: hexutil.Encode(stakerBalanceABI.Id()),
+		},
+		{
+			To:   &to,
+			Data: hexutil.Encode(totalStakeABI.Id()),
+		},
+		{
+			To:   &to,
+			Data: hexutil.Encode(queuedStakeABI.Id()),
+		},
+		{
+			To:   &to,
+			Data: hexutil.Encode(totalSupplyABI.Id()),
+		},
+		{
+			To:   &to,
+			Data: hexutil.Encode(totalBurnedABI.Id()),
+		},
+		{
+			To:   &to,
+			Data: hexutil.Encode(withdrawableCallData),
+		},
+		{
+			To:   &to,
+			Data: hexutil.Encode(stakerStorageCallData),
+		},
+	}
+
+	res, err := s.staker.Raw().Client().InspectClauses(&api.BatchCallData{
+		Clauses: clauses,
 	}, thorclient.Revision(id.String()))
 	if err != nil {
 		return nil, fmt.Errorf(config.ErrFailedToFetchStakerInfo, err)
 	}
-	expectedResultsLength := 7
-	if len(res) != expectedResultsLength {
+	if len(res) != len(clauses) {
 		// expect exactly expectedResultsLength results
-		return nil, fmt.Errorf(config.ErrUnexpectedResults, len(res), expectedResultsLength)
+		return nil, fmt.Errorf(config.ErrUnexpectedResults, len(res), len(clauses))
 	}
 
 	for i, r := range res {
@@ -326,6 +347,16 @@ func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error
 	if err != nil {
 		return nil, fmt.Errorf(config.ErrFailedToDecodeTotalBurned, err)
 	}
+	// withdrawable stake
+	withdrawableBytes, err := hexutil.Decode(result[7].Data)
+	if err != nil {
+		return nil, fmt.Errorf(config.ErrFailedToDecodeWithdrawableStake, err)
+	}
+	// cooldown stake
+	cooldownBytes, err := hexutil.Decode(result[8].Data)
+	if err != nil {
+		return nil, fmt.Errorf(config.ErrFailedToDecodeCooldownStake, err)
+	}
 
 	return &StakerInformation{
 		Validations:     validators,
@@ -335,6 +366,8 @@ func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error
 		TotalWeight:     totalStakeWeight,
 		TotalSupplyVTHO: new(big.Int).SetBytes(totalSupplyBytes),
 		TotalBurnedVTHO: new(big.Int).SetBytes(totalBurnedBytes),
+		CooldownVET:     new(big.Int).SetBytes(cooldownBytes).Uint64(),
+		WithdrawableVET: new(big.Int).SetBytes(withdrawableBytes).Uint64(),
 	}, nil
 }
 
@@ -384,13 +417,13 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 
 		v := &Validation{
 			Validation: &validation.Validation{
-				Endorser:           (thor.Address)(endorsors[i]),
-				Beneficiary:        nil, // Beneficiary is not used in this context
-				Period:             stakingPeriodLengths[i],
-				CompleteIterations: completedPeriods[i],
-				Status:             statuses[i],
-				StartBlock:         startBlocks[i],
-				LockedVET:          vetutil.ScaleToVET(validatorLockedVETs[i]),
+				Endorser:         (thor.Address)(endorsors[i]),
+				Beneficiary:      nil, // Beneficiary is not used in this context
+				Period:           stakingPeriodLengths[i],
+				CompletedPeriods: completedPeriods[i],
+				Status:           statuses[i],
+				StartBlock:       startBlocks[i],
+				LockedVET:        vetutil.ScaleToVET(validatorLockedVETs[i]),
 				// TODO: find the validator exiting VET
 				PendingUnlockVET: 0,
 				QueuedVET:        vetutil.ScaleToVET(validatorQueuedStakes[i]),
@@ -427,6 +460,7 @@ var totalStakeABI abi.Method
 var queuedStakeABI abi.Method
 var totalSupplyABI abi.Method
 var totalBurnedABI abi.Method
+var stakerStorageABI abi.Method
 
 var once sync.Once
 
@@ -474,6 +508,12 @@ func (s *Staker) initABI() error {
 		if !ok {
 			err = fmt.Errorf("totalBurned method not found in staker contract ABI")
 			slog.Error("Failed to find totalBurned method", "error", err)
+			return
+		}
+		stakerStorageABI, ok = helperABI.Methods["stakerStorage"]
+		if !ok {
+			err = fmt.Errorf("stakerStorage method not found in staker contract ABI")
+			slog.Error("Failed to find stakerStorage method", "error", err)
 			return
 		}
 	})

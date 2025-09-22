@@ -134,12 +134,14 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 	onlineValidators := 0
 	onlineStake := big.NewInt(0)
 	onlineWeight := uint64(0)
+
 	accumulatedStake := uint64(0)
+	accumulatedWeight := uint64(0)
 
 	offlineValidators := 0
 	offlineStake := big.NewInt(0)
 	offlineWeight := uint64(0)
-	accumulatedWeight := uint64(0)
+	exitingVET := big.NewInt(0)
 
 	// accumulated stakes and weights. We can use this to compare with contract totals
 	for _, v := range info.Validations {
@@ -159,6 +161,9 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 			offlineStake.Add(offlineStake, v.TotalLockedStake)
 			offlineStake.Add(offlineStake, v.DelegatorStake)
 			offlineWeight += v.Weight
+		}
+		if v.ExitBlock != nil {
+			exitingVET.Add(exitingVET, v.TotalExitingStake)
 		}
 		accumulatedWeight += v.Weight
 	}
@@ -185,6 +190,9 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"queued_stake":              vetutil.ScaleToVET(info.QueuedVET),
 		"withdrawn_vet":             vetutil.ScaleToVET(withdrawnFunds),
 		"contract_vet":              vetutil.ScaleToVET(info.ContractBalance),
+		"cooldown_vet_contract":     info.CooldownVET,
+		"withdrawable_vet_contract": info.WithdrawableVET,
+		"exiting_vet":               vetutil.ScaleToVET(exitingVET),
 		"online_stake":              vetutil.ScaleToVET(onlineStake),
 		"offline_stake":             vetutil.ScaleToVET(offlineStake),
 		"online_weight":             onlineWeight,
@@ -371,7 +379,7 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 		flags := map[string]any{
 			"online":            validator.Online,
 			"start_block":       validator.StartBlock,
-			"completed_periods": validator.CompleteIterations,
+			"completed_periods": validator.CompletedPeriods,
 			"current_block":     ev.Block.Number,
 
 			// combined totals, validator + delegators

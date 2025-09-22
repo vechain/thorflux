@@ -13,12 +13,6 @@ var (
 
 // Blockchain constants
 const (
-	// Block intervals and timing
-	DefaultBlockInterval = 10 * time.Second
-
-	// Epoch and period constants
-	EpochLength = 180
-
 	// Timeout constants
 	DefaultTimeout    = 10 * time.Second
 	DefaultRetryDelay = 5 * time.Second
@@ -54,9 +48,6 @@ const (
 
 	// GetValidators contract address
 	GetValidatorsContractAddress = "0x841a6556c524d47030762eb14dc4af897e605d9b"
-
-	// Storage keys
-	EpochLengthStorageKey = "epoch-length"
 )
 
 // Default configuration values
@@ -81,6 +72,8 @@ const (
 	ErrFailedToFetchStakerInfoFromDB     = "failed to fetch staker info from DB: %w"
 	ErrFailedToDecodeTotalStake          = "failed to decode total stake data: %w"
 	ErrFailedToDecodeQueuedStake         = "failed to decode queued stake data: %w"
+	ErrFailedToDecodeWithdrawableStake   = "failed to decode withdrawable stake data: %w"
+	ErrFailedToDecodeCooldownStake       = "failed to decode cooldown stake data: %w"
 	ErrFailedToDecodeStakerBalance       = "failed to decode staker balance data: %w"
 	ErrFailedToDecodeTotalSupply         = "failed to decode total supply data: %w"
 	ErrFailedToDecodeTotalBurned         = "failed to decode total burned data: %w"

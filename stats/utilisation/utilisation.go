@@ -5,13 +5,14 @@ import (
 	"strconv"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/types"
 )
 
 func Write(ev *types.Event) error {
-	epoch := ev.Block.Number / config.EpochLength
-	blockInEpoch := ev.Block.Number % config.EpochLength
+	epoch := ev.Block.Number / thor.EpochLength()
+	blockInEpoch := ev.Block.Number % thor.EpochLength()
 
 	flags := make(map[string]any)
 

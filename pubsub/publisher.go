@@ -124,8 +124,8 @@ func (s *Publisher) sync(ctx context.Context) {
 		default:
 			prev := s.previous()
 			prevTime := time.Unix(int64(prev.Timestamp), 0).UTC()
-			if time.Since(prevTime) < config.DefaultBlockInterval {
-				time.Sleep(time.Until(prevTime.Add(config.DefaultBlockInterval)))
+			if time.Since(prevTime) < time.Duration(thor.BlockInterval()) {
+				time.Sleep(time.Until(prevTime.Add(time.Duration(thor.BlockInterval()))))
 				continue
 			}
 			next, err := s.thor.ExpandedBlock(fmt.Sprintf("%d", prev.Number+1))
