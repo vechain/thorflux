@@ -137,7 +137,11 @@ func setGenesisConfig(genesisURL string) error {
 	if err != nil || res.StatusCode != http.StatusOK {
 		return errors.New("failed to fetch genesis config")
 	}
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			slog.Warn("failed to close genesis response body", "error", err)
+		}
+	}()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
