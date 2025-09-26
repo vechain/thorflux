@@ -6,6 +6,7 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/types"
@@ -22,13 +23,13 @@ func New(client *thorclient.Client) *Liveness {
 }
 
 func (l *Liveness) Write(ev *types.Event) error {
-	epoch := ev.Block.Number / config.EpochLength
+	epoch := ev.Block.Number / thor.EpochLength()
 
 	flags := make(map[string]any)
 
-	currentEpoch := (ev.Block.Number / config.EpochLength) * config.EpochLength
-	esitmatedFinalized := currentEpoch - (config.EpochLength * 2)
-	esitmatedJustified := currentEpoch - config.EpochLength
+	currentEpoch := (ev.Block.Number / thor.EpochLength()) * thor.EpochLength()
+	esitmatedFinalized := currentEpoch - (thor.EpochLength() * 2)
+	esitmatedJustified := currentEpoch - thor.EpochLength()
 	flags["current_epoch"] = currentEpoch
 	flags["epoch"] = epoch
 	flags["current_block"] = ev.Block.Number
@@ -45,12 +46,12 @@ func (l *Liveness) Write(ev *types.Event) error {
 			justified, _ := l.client.Block("justified")
 			flags["finalized"] = finalized.Number
 			flags["justified_block"] = justified.Number
-			flags["liveness"] = (currentEpoch - finalized.Number) / config.EpochLength
+			flags["liveness"] = (currentEpoch - finalized.Number) / thor.EpochLength()
 		}
 	} else {
 		flags["finalized"] = esitmatedFinalized
 		flags["justified_block"] = esitmatedJustified
-		flags["liveness"] = (currentEpoch - esitmatedFinalized) / config.EpochLength
+		flags["liveness"] = (currentEpoch - esitmatedFinalized) / thor.EpochLength()
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultTimeout)

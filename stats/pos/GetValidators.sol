@@ -9,9 +9,14 @@ interface Energy {
     function totalBurned() external view returns (uint256);
 }
 
+interface Prototype {
+    function storageFor(address _self, bytes32 _key) external view returns(bytes32);
+}
+
 contract GetValidators {
     Staker private constant STAKER = Staker(payable(0x00000000000000000000000000005374616B6572));
     Energy private constant ENERGY = Energy(0x0000000000000000000000000000456E65726779);
+    Prototype private constant PROTOTYPE = Prototype(0x000000000000000000000050726f746F74797065);
 
     // staker stats
     function stakerBalance() public view returns (uint256) {
@@ -20,6 +25,10 @@ contract GetValidators {
 
     function totalStake() public view returns (uint256, uint256) {
         return STAKER.totalStake();
+    }
+
+    function stakerStorage(bytes32 key) public view returns (bytes32) {
+        return PROTOTYPE.storageFor(address(STAKER), key);
     }
 
     function queuedStake() public view returns (uint256) {
