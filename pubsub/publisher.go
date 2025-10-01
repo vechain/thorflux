@@ -22,6 +22,7 @@ import (
 	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thor/v2/thorclient/httpclient"
 	"github.com/vechain/thorflux/config"
+	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/types"
 )
 
@@ -42,7 +43,7 @@ type Publisher struct {
 	hayabusaStatus types.HayabusaStatus
 }
 
-func NewPublisher(thorURL string, backSyncBlocks uint32) (*Publisher, chan *Block, error) {
+func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publisher, chan *Block, error) {
 	client := thorclient.New(thorURL)
 	staker, err := builtin.NewStaker(client)
 	if err != nil {
@@ -59,6 +60,19 @@ func NewPublisher(thorURL string, backSyncBlocks uint32) (*Publisher, chan *Bloc
 	}
 	prev := &atomic.Pointer[api.JSONExpandedBlock]{}
 	prev.Store(previous)
+	latest, err := db.Latest()
+	if err != nil {
+		slog.Warn("failed to get latest block from database")
+	}
+	if latest > finalized.Number-backSyncBlocks {
+		if latest >= finalized.Number {
+			// Database is ahead of finalized, no back sync needed
+			backSyncBlocks = 0
+		} else {
+			backSyncBlocks = finalized.Number - latest
+		}
+	}
+
 	history, err := NewHistoricSyncer(client, staker, blockChan, finalized, backSyncBlocks)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to initialise historic syncer: %w", err)

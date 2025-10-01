@@ -63,7 +63,7 @@ func main() {
 	}
 
 	ctx := exitContext()
-	publisher, blockChan, err := pubsub.NewPublisher(thorURL, uint32(*blocksFlag))
+	publisher, blockChan, err := pubsub.NewPublisher(thorURL, uint32(*blocksFlag), influx)
 	if err != nil {
 		slog.Error("failed to create publisher", "error", err)
 		os.Exit(1)

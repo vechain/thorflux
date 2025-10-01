@@ -204,9 +204,6 @@ func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
 	if ok {
 		return existing.(*StakerInformation), nil
 	}
-	if err := s.initABI(); err != nil {
-		return nil, fmt.Errorf(config.ErrFailedToInitializeABI, err)
-	}
 	rawResult, err := s.fetchStakerInfo(id)
 	if err != nil {
 		return nil, fmt.Errorf(config.ErrFailedToFetchStakerInfo, err)
@@ -464,9 +461,8 @@ var stakerStorageABI abi.Method
 
 var once sync.Once
 
-func (s *Staker) initABI() error {
+func init() {
 	var err error
-	var ok bool
 	once.Do(func() {
 		var helperABI abi.ABI
 		helperABI, err = abi.JSON(bytes.NewReader([]byte(contractABI)))
@@ -474,6 +470,7 @@ func (s *Staker) initABI() error {
 			slog.Error("Failed to parse staker contract ABI", "error", err)
 			return
 		}
+		var ok bool
 		stakerBalanceABI, ok = helperABI.Methods["stakerBalance"]
 		if !ok {
 			err = fmt.Errorf("stakerBalance method not found in staker contract ABI")
@@ -517,7 +514,9 @@ func (s *Staker) initABI() error {
 			return
 		}
 	})
-	return err
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *Staker) setPrevTotals(id thor.Bytes32) error {
