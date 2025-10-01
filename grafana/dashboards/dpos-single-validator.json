@@ -1920,14 +1920,22 @@
           "text": "0x098c4257b6543edf067d221e909e9dd0ba8be964",
           "value": "0x098c4257b6543edf067d221e909e9dd0ba8be964"
         },
-        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"${bucket}\", tag: \"validator\")",
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"individual_validators\")\n  |> keep(columns: [\"_time\", \"validator\"])\n  |> distinct(column: \"validator\")\n  |> rename(columns: {_value: \"address\"})\n  |> sort(columns: [\"address\"])",
+        "hide": 0,
+        "includeAll": false,
+        "label": "staker",
+        "multi": false,
         "name": "staker",
         "options": [],
-        "query": {
-          "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(bucket: \"${bucket}\", tag: \"validator\")"
-        },
+        "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"individual_validators\")\n  |> keep(columns: [\"_time\", \"validator\"])\n  |> distinct(column: \"validator\")\n  |> rename(columns: {_value: \"address\"})\n  |> sort(columns: [\"address\"])",
         "refresh": 1,
         "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
         "type": "query"
       },
       {
