@@ -8,15 +8,17 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/influxdata/influxdb-client-go/v2/api/http"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thorflux/config"
 )
 
 type DB struct {
-	client influxdb2.Client
-	bucket string
-	org    string
+	client   influxdb2.Client
+	bucket   string
+	org      string
+	writeAPI api.WriteAPI
 }
 
 func New(url, token string, org string, bucket string) (*DB, error) {
@@ -29,10 +31,23 @@ func New(url, token string, org string, bucket string) (*DB, error) {
 		return nil, err
 	}
 
+	writeAPI := influx.WriteAPI(org, bucket)
+	writeAPI.SetWriteFailedCallback(func(batch string, error http.Error, retryAttempts uint) bool {
+		slog.Warn("failed to write points to influxdb", "error", error, "batch", batch, "retryAttempts", retryAttempts)
+		return retryAttempts < 5
+	})
+	errChan := writeAPI.Errors()
+	go func() {
+		for err := range errChan {
+			slog.Error("write error", "error", err)
+		}
+	}()
+
 	return &DB{
-		client: influx,
-		bucket: bucket,
-		org:    org,
+		client:   influx,
+		bucket:   bucket,
+		org:      org,
+		writeAPI: influx.WriteAPI(org, bucket),
 	}, nil
 }
 
@@ -102,21 +117,7 @@ func (i *DB) ResolveFork(start time.Time) {
 }
 
 func (i *DB) WritePoints(points []*write.Point) {
-	writeAPI := i.client.WriteAPI(i.org, i.bucket)
-	writeAPI.SetWriteFailedCallback(func(batch string, error http.Error, retryAttempts uint) bool {
-		slog.Warn("failed to write points to influxdb", "error", error, "batch", batch, "retryAttempts", retryAttempts)
-		return retryAttempts < 5
-	})
-	errChan := writeAPI.Errors()
-	go func() {
-		for err := range errChan {
-			slog.Error("write error", "error", err)
-		}
-	}()
-
 	for _, p := range points {
-		writeAPI.WritePoint(p)
+		i.writeAPI.WritePoint(p)
 	}
-
-	writeAPI.Flush()
 }
