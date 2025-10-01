@@ -25,14 +25,13 @@ import (
 type Handler func(event *types.Event) []*write.Point
 
 type Subscriber struct {
-	blockChan   chan *Block
-	resultsChan chan []*write.Point
-	db          *influxdb.DB
-	genesis     *api.JSONCollapsedBlock
-	chainTag    string
-	handlers    map[string]Handler
-	client      *thorclient.Client
-	workerPool  *WorkerPool
+	blockChan  chan *Block
+	db         *influxdb.DB
+	genesis    *api.JSONCollapsedBlock
+	chainTag   string
+	handlers   map[string]Handler
+	client     *thorclient.Client
+	workerPool *WorkerPool
 }
 
 func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Subscriber, error) {
