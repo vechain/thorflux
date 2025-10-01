@@ -146,19 +146,17 @@ func (s *HistoricSyncer) fetchBlocksAsync(amount uint32, head *api.JSONExpandedB
 			slog.Warn("missing block during async fetch", "current", current)
 			return nil, fmt.Errorf("missing block during async fetch")
 		}
-		var parent *api.JSONExpandedBlock
 		parentEntry, ok := blks[entry.Block.ParentID]
 		if !ok {
 			slog.Warn("missing parent block during async fetch", "parent", entry.Block.ParentID)
 			var err error
-			parent, err = s.client.ExpandedBlock(entry.Block.ParentID.String())
+			entry.Prev, err = s.client.ExpandedBlock(entry.Block.ParentID.String())
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch parent block %s: %w", entry.Block.ParentID, err)
 			}
 		} else {
-			parent = parentEntry.Block
+			entry.Prev = parentEntry.Block
 		}
-		entry.Prev = parent
 		entry.HayabusaStatus = types.HayabusaStatus{
 			Active: entry.Block.Number >= s.hayabusaActiveBlock,
 			Forked: entry.Block.Number >= s.hayabusaForkedBlock,

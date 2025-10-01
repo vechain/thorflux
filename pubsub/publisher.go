@@ -34,13 +34,11 @@ type Block struct {
 }
 
 type Publisher struct {
-	history   *HistoricSyncer
-	first     *api.JSONExpandedBlock
-	prev      *atomic.Pointer[api.JSONExpandedBlock]
-	client    *thorclient.Client
-	blockChan chan *Block
-	staker    *builtin.Staker
-
+	history        *HistoricSyncer
+	prev           *atomic.Pointer[api.JSONExpandedBlock]
+	client         *thorclient.Client
+	blockChan      chan *Block
+	staker         *builtin.Staker
 	hayabusaStatus types.HayabusaStatus
 }
 
@@ -67,7 +65,6 @@ func NewPublisher(thorURL string, backSyncBlocks uint32) (*Publisher, chan *Bloc
 	}
 	return &Publisher{
 		history:   history,
-		first:     previous,
 		prev:      prev,
 		client:    client,
 		blockChan: blockChan,
@@ -169,6 +166,15 @@ func (p *Publisher) checkHayabusaStatus(blockID thor.Bytes32) {
 	}
 }
 
+func (p *Publisher) databaseAhead(blockErr error) bool {
+	best, err := p.client.Block("best")
+	if err != nil {
+		slog.Error("failed to get best block when checking for database ahead", "error", err)
+		return false
+	}
+	return blockErr.Error() == config.ErrBlockNotFound && p.previous().Number > best.Number
+}
+
 func isDposActive(staker *builtin.Staker, revision string) (bool, error) {
 	_, id, err := staker.Revision(revision).FirstActive()
 	if err != nil {
@@ -185,15 +191,6 @@ func isHayabusaForked(client *thorclient.Client, revision string) (bool, error) 
 		return false, err
 	}
 	return len(code.Code) > 100, nil
-}
-
-func (p *Publisher) databaseAhead(blockErr error) bool {
-	best, err := p.client.Block("best")
-	if err != nil {
-		slog.Error("failed to get best block when checking for database ahead", "error", err)
-		return false
-	}
-	return blockErr.Error() == config.ErrBlockNotFound && p.previous().Number > best.Number
 }
 
 func fetchSeed(parentID thor.Bytes32, client *thorclient.Client) ([]byte, error) {
