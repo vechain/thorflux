@@ -1,11 +1,11 @@
 package liveness
 
 import (
-	"context"
 	"log/slog"
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/config"
@@ -22,7 +22,7 @@ func New(client *thorclient.Client) *Liveness {
 	}
 }
 
-func (l *Liveness) Write(ev *types.Event) error {
+func (l *Liveness) Write(ev *types.Event) []*write.Point {
 	epoch := ev.Block.Number / thor.EpochLength()
 
 	flags := make(map[string]any)
@@ -54,9 +54,6 @@ func (l *Liveness) Write(ev *types.Event) error {
 		flags["liveness"] = (currentEpoch - esitmatedFinalized) / thor.EpochLength()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultTimeout)
-	defer cancel()
 	p := influxdb2.NewPoint(config.LivenessMeasurement, ev.DefaultTags, flags, ev.Timestamp)
-
-	return ev.WriteAPI.WritePoint(ctx, p)
+	return []*write.Point{p}
 }

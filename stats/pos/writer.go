@@ -1,7 +1,6 @@
 package pos
 
 import (
-	"context"
 	_ "embed"
 
 	"log/slog"
@@ -19,7 +18,7 @@ import (
 	"github.com/vechain/thorflux/vetutil"
 )
 
-func (s *Staker) Write(event *types.Event) error {
+func (s *Staker) Write(event *types.Event) []*write.Point {
 	if !event.HayabusaStatus.Forked {
 		return nil
 	}
@@ -27,11 +26,9 @@ func (s *Staker) Write(event *types.Event) error {
 	stakerInfo, err := s.FetchAll(event.Block.ID)
 	if err != nil {
 		slog.Error("Failed to fetch all stakers", "error", err)
-		return err
 	}
 
 	points := make([]*write.Point, 0)
-
 	singleValidatorPoints := s.createSingleValidatorStats(event, stakerInfo)
 	points = append(points, singleValidatorPoints...)
 
@@ -69,12 +66,7 @@ func (s *Staker) Write(event *types.Event) error {
 		validPoints = append(validPoints, point)
 	}
 
-	if err := event.WriteAPI.WritePoint(context.Background(), validPoints...); err != nil {
-		slog.Error("Failed to write points to InfluxDB", "error", err)
-		return err
-	}
-
-	return nil
+	return validPoints
 }
 
 func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]*write.Point, error) {

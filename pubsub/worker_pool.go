@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/vechain/thorflux/config"
+	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/types"
 )
 
@@ -27,12 +28,13 @@ type WorkerPool struct {
 	wg         sync.WaitGroup
 	ctx        context.Context
 	cancel     context.CancelFunc
+	db         *influxdb.DB
 	mu         sync.RWMutex
 	isShutdown bool
 }
 
 // NewWorkerPool creates a new worker pool with the specified number of workers
-func NewWorkerPool(workers int, queueSize int) *WorkerPool {
+func NewWorkerPool(workers int, queueSize int, db *influxdb.DB) *WorkerPool {
 	if workers <= 0 {
 		workers = config.DefaultWorkerPoolSize
 	}
@@ -47,6 +49,7 @@ func NewWorkerPool(workers int, queueSize int) *WorkerPool {
 		taskQueue: make(chan Task, queueSize),
 		ctx:       ctx,
 		cancel:    cancel,
+		db:        db,
 	}
 
 	// Start workers
@@ -75,7 +78,6 @@ func (wp *WorkerPool) worker(id int) {
 				slog.Debug("Task queue closed, worker shutting down", "worker_id", id)
 				return
 			}
-
 			wp.processTask(task, id)
 		}
 	}
@@ -113,19 +115,15 @@ func (wp *WorkerPool) processTask(task Task, workerID int) {
 		"event_type", task.EventType,
 		"block_number", task.Event.Block.Number)
 
-	if err := task.Handler(task.Event); err != nil {
-		slog.Error("Failed to handle event",
-			"worker_id", workerID,
-			"event_type", task.EventType,
-			"error", err,
-			"block_number", task.Event.Block.Number)
-	} else {
-		slog.Debug("Task completed successfully",
-			"worker_id", workerID,
-			"event_type", task.EventType,
-			"duration", time.Since(start),
-			"block_number", task.Event.Block.Number)
-	}
+	points := task.Handler(task.Event)
+
+	slog.Debug("Task completed successfully",
+		"worker_id", workerID,
+		"event_type", task.EventType,
+		"duration", time.Since(start),
+		"block_number", task.Event.Block.Number)
+	
+	wp.db.WritePoints(points)
 }
 
 // SubmitBatch submits multiple tasks to the worker pool

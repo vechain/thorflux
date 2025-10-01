@@ -8,7 +8,8 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/influxdata/influxdb-client-go/v2/api/http"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thorflux/config"
 )
 
@@ -38,7 +39,7 @@ func New(url, token string, org string, bucket string) (*DB, error) {
 // Latest returns the latest block number stored in the database
 func (i *DB) Latest() (uint32, error) {
 	queryAPI := i.client.QueryAPI(i.org)
-	
+
 	var query strings.Builder
 	query.WriteString(`from(bucket: "`)
 	query.WriteString(i.bucket)
@@ -100,6 +101,22 @@ func (i *DB) ResolveFork(start time.Time) {
 	}
 }
 
-func (i *DB) WriteAPI() api.WriteAPIBlocking {
-	return i.client.WriteAPIBlocking(i.org, i.bucket)
+func (i *DB) WritePoints(points []*write.Point) {
+	writeAPI := i.client.WriteAPI(i.org, i.bucket)
+	writeAPI.SetWriteFailedCallback(func(batch string, error http.Error, retryAttempts uint) bool {
+		slog.Warn("failed to write points to influxdb", "error", error, "batch", batch, "retryAttempts", retryAttempts)
+		return retryAttempts < 5
+	})
+	errChan := writeAPI.Errors()
+	go func() {
+		for err := range errChan {
+			slog.Error("write error", "error", err)
+		}
+	}()
+
+	for _, p := range points {
+		writeAPI.WritePoint(p)
+	}
+
+	writeAPI.Flush()
 }
