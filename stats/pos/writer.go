@@ -20,7 +20,7 @@ import (
 )
 
 func (s *Staker) Write(event *types.Event) error {
-	if !event.HayabusaForked {
+	if !event.HayabusaStatus.Forked {
 		return nil
 	}
 
@@ -57,14 +57,19 @@ func (s *Staker) Write(event *types.Event) error {
 		slog.Error("Failed to create missed slots points", "error", err)
 	}
 	points = append(points, missedSlotsPoints...)
-
+	validPoints := make([]*write.Point, 0, len(points))
 	for _, point := range points {
-		if len(point.FieldList()) == 0 {
-			slog.Warn("Skipping point with no fields", "point", point.Name())
+		if point == nil {
+			continue
 		}
+		fields := point.FieldList()
+		if fields == nil || len(fields) == 0 {
+			continue
+		}
+		validPoints = append(validPoints, point)
 	}
 
-	if err := event.WriteAPI.WritePoint(context.Background(), points...); err != nil {
+	if err := event.WriteAPI.WritePoint(context.Background(), validPoints...); err != nil {
 		slog.Error("Failed to write points to InfluxDB", "error", err)
 		return err
 	}
@@ -205,7 +210,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"block_number":              block.Number,
 	}
 
-	if event.DPOSActive {
+	if event.HayabusaStatus.Active {
 		signer, ok := leaderGroup[event.Block.Signer]
 		if ok {
 			signerProbability := float64(signer.Weight) * 100
@@ -230,7 +235,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 }
 
 func (s *Staker) createEnergyStats(event *types.Event, info *StakerInformation) ([]*write.Point, error) {
-	if !event.DPOSActive {
+	if !event.HayabusaStatus.Active {
 		return nil, nil
 	}
 
@@ -243,7 +248,6 @@ func (s *Staker) createEnergyStats(event *types.Event, info *StakerInformation) 
 	epoch := block.Number / s.epochLength
 
 	if (s.prevVTHOSupply.Load() == nil || s.prevVTHOBurned.Load() == nil) || event.Block.ParentID != event.Prev.ID {
-		slog.Info("Fetching previous totals for VTHO supply and burned")
 		if err := s.setPrevTotals(event.Block.ParentID); err != nil {
 			slog.Error("Failed to set previous totals", "error", err)
 			return nil, err
@@ -451,7 +455,7 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 }
 
 func (s *Staker) createSlotPoints(event *types.Event, info *StakerInformation) ([]*write.Point, error) {
-	if !event.DPOSActive {
+	if !event.HayabusaStatus.Active {
 		return nil, nil
 	}
 

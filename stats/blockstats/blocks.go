@@ -13,7 +13,7 @@ import (
 func Write(ev *types.Event) error {
 	flags := make(map[string]any)
 
-	flags["pos_active"] = ev.DPOSActive
+	flags["pos_active"] = ev.HayabusaStatus.Active
 	flags["best_block_number"] = ev.Block.Number
 	flags["block_gas_used"] = ev.Block.GasUsed
 	flags["block_gas_limit"] = ev.Block.GasLimit

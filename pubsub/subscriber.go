@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
-	"sync/atomic"
 	"time"
 
 	"github.com/vechain/thor/v2/api"
@@ -27,7 +26,6 @@ type Handler func(event *types.Event) error
 type Subscriber struct {
 	blockChan  chan *Block
 	db         *influxdb.DB
-	prevBlock  *atomic.Pointer[api.JSONExpandedBlock]
 	genesis    *api.JSONCollapsedBlock
 	chainTag   string
 	handlers   map[string]Handler
@@ -67,7 +65,6 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 	return &Subscriber{
 		blockChan:  blockChan,
 		db:         db,
-		prevBlock:  &atomic.Pointer[api.JSONExpandedBlock]{},
 		genesis:    genesis,
 		chainTag:   chainTag,
 		handlers:   handlers,
@@ -90,7 +87,6 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 			if b.ForkDetected {
 				slog.Warn("fork detected", "block", b.Block.Number)
 				s.db.ResolveFork(t)
-				s.prevBlock.Store(b.Block)
 				continue
 			}
 
@@ -104,26 +100,26 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				"block_number": fmt.Sprintf("%d", b.Block.Number),
 			}
 
-			if s.prevBlock.Load() == nil && b.Block.Number > 0 {
+			if b.Prev == nil {
+				slog.Warn("previous block is nil", "block_number", b.Block.Number)
 				prev, err := s.client.ExpandedBlock(strconv.FormatUint(uint64(b.Block.Number-1), 10))
 				if err != nil {
 					slog.Error("failed to fetch previous block", "block_number", b.Block.Number-1, "error", err)
 					continue
 				}
-				s.prevBlock.Store(prev)
+				b.Prev = prev
 			}
 
 			event := &types.Event{
 				Block:          b.Block,
 				Seed:           b.Seed,
-				HayabusaForked: b.HayabusaForked,
-				DPOSActive:     b.DPOSActive,
 				WriteAPI:       s.db.WriteAPI(),
-				Prev:           s.prevBlock.Load(),
+				Prev:           b.Prev,
 				ChainTag:       s.chainTag,
 				Genesis:        s.genesis,
 				DefaultTags:    defaultTags,
 				Timestamp:      t,
+				HayabusaStatus: b.HayabusaStatus,
 			}
 
 			// Create tasks for all handlers
@@ -146,7 +142,6 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 					}
 				}
 			}
-			s.prevBlock.Store(b.Block)
 		}
 	}
 }

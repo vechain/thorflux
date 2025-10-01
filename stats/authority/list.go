@@ -118,7 +118,7 @@ func (l *List) Shuffled(prev *api.JSONExpandedBlock, seed []byte) ([]thor.Addres
 }
 
 func (l *List) Write(event *types.Event) error {
-	if event.DPOSActive {
+	if event.HayabusaStatus.Active {
 		return nil
 	}
 
