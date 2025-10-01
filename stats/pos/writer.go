@@ -63,7 +63,7 @@ func (s *Staker) Write(event *types.Event) error {
 			continue
 		}
 		fields := point.FieldList()
-		if fields == nil || len(fields) == 0 {
+		if len(fields) == 0 {
 			continue
 		}
 		validPoints = append(validPoints, point)
