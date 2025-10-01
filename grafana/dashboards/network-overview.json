@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 357,
+  "id": 13,
   "links": [],
   "panels": [
     {
@@ -39,7 +39,7 @@
         "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 40px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\n  Network Overview\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "transparent": true,
       "type": "text"
     },
@@ -60,7 +60,7 @@
         "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 22px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\n  Missed Slots\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "transparent": true,
       "type": "text"
     },
@@ -81,7 +81,7 @@
         "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 40px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\n  Liveness\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "transparent": true,
       "type": "text"
     },
@@ -102,7 +102,7 @@
         "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 20px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\nNo. of Validators\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "transparent": true,
       "type": "text"
     },
@@ -164,10 +164,10 @@
           "values": false
         },
         "showPercentChange": false,
-        "textMode": "auto",
+        "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -317,7 +317,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -348,7 +348,7 @@
         "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 25px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\n  Best Block\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "transparent": true,
       "type": "text"
     },
@@ -369,7 +369,7 @@
         "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 20px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\n  Current Epoch\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "transparent": true,
       "type": "text"
     },
@@ -419,7 +419,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -478,7 +478,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -509,7 +509,7 @@
         "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 20px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\n  Justified Block\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "transparent": true,
       "type": "text"
     },
@@ -530,7 +530,7 @@
         "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 40px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\n  Finalisation\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "transparent": true,
       "type": "text"
     },
@@ -551,7 +551,7 @@
         "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 20px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\n  Justified Epoch\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "transparent": true,
       "type": "text"
     },
@@ -600,7 +600,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -760,7 +760,7 @@
         "textMode": "value",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.1",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -1632,6 +1632,129 @@
       ],
       "transparent": true,
       "type": "timeseries"
+    },
+    {
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 58
+      },
+      "id": 35,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<div\n  style=\"\n    display: flex;\n    align-items: center;\n    justify-content: center;\n\n    width: 100%;\n    height: 48px;\n    padding: 0 16px;\n    border-radius: 10px;\n\n    background: linear-gradient(90deg, #02254A 0%, #03422C 100%);\n    color: #e9fff9;\n\n    font: 600 40px/1.1 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;\n    letter-spacing: .08em;\n    text-transform: uppercase;\n    text-align: center;\n\n    box-shadow:\n      inset 0 0 0 1px rgba(255, 255, 255, .06),\n      0 6px 20px rgba(0, 0, 0, .35);\n  \"\n>\nBlocks Produced By Signer\n</div>",
+        "mode": "html"
+      },
+      "pluginVersion": "10.4.1",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "B87265B08D314AF"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
+      "id": 34,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "B87265B08D314AF"
+          },
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\")\n  // Using best_block_number to identify each block record\n  |> filter(fn: (r) => r[\"_field\"] == \"best_block_number\")\n  |> group(columns: [\"signer\"])\n  |> sort(columns: [\"_time\"])\n  |> map(fn: (r) => ({ r with _value: 1 }))\n  |> cumulativeSum(columns: [\"_value\"])\n  |> yield(name: \"cumulative_blocks_produced\")",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "_value {_start=\"[\\d\\-:. +UTC]*\", _stop=\"[\\d\\-:. +UTC]*\", signer=\"([\\dxabcdef]*)\"}",
+            "renamePattern": "$1"
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "timeseries"
     }
   ],
   "schemaVersion": 39,
@@ -1639,6 +1762,11 @@
   "templating": {
     "list": [
       {
+        "current": {
+          "selected": false,
+          "text": "_monitoring",
+          "value": "_monitoring"
+        },
         "datasource": {
           "type": "influxdb",
           "uid": "B87265B08D314AF"
@@ -1669,6 +1797,6 @@
   "timezone": "browser",
   "title": "Network Overview",
   "uid": "befstdrjprz7kk",
-  "version": 7,
+  "version": 1,
   "weekStart": ""
 }
