@@ -188,14 +188,12 @@ func (s *HistoricSyncer) fillParent(current, parent *Block) {
 
 // fetchHayabusaBlocks finds the Hayabusa fork block and the DPoS active block using a modified binary search
 func fetchHayabusaBlocks(client *thorclient.Client, staker *builtin.Staker, max uint32, min uint32) (uint32, uint32, error) {
-	forkBlockCond := func(rev string) (bool, error) {
-		forked, err := isHayabusaForked(client, rev)
-		return forked, err
+	forkBlockCond := func(rev string) bool {
+		return isHayabusaForked(client, rev)
 	}
 
-	activeBlockCond := func(rev string) (bool, error) {
-		active, err := isDposActive(staker, rev)
-		return active, err
+	activeBlockCond := func(rev string) bool {
+		return isDposActive(staker, rev)
 	}
 
 	forkBlock, err := binarySearchChainCondition(max, min, forkBlockCond)
@@ -211,14 +209,14 @@ func fetchHayabusaBlocks(client *thorclient.Client, staker *builtin.Staker, max 
 	return forkBlock, activeBlock, nil
 }
 
-func binarySearchChainCondition(max, min uint32, condition func(string) (bool, error)) (uint32, error) {
+func binarySearchChainCondition(max, min uint32, condition func(string) bool) (uint32, error) {
 	low := min
 	high := max
 	var mid uint32
 
 	// First, check if the condition is already true at the minimum block
 	// If so, we can quickly return min block
-	condAtMin, _ := condition(fmt.Sprintf("%d", min))
+	condAtMin := condition(fmt.Sprintf("%d", min))
 	if condAtMin {
 		// Condition is true at min, so the transition happened before min
 		// We can't find it in this range, return min as the best guess
@@ -226,8 +224,8 @@ func binarySearchChainCondition(max, min uint32, condition func(string) (bool, e
 	}
 
 	// Check if condition is false at max - if so, the transition hasn't happened yet
-	condAtMax, err := condition(fmt.Sprintf("%d", max))
-	if !condAtMax || err != nil {
+	condAtMax := condition(fmt.Sprintf("%d", max))
+	if !condAtMax {
 		// Condition is false at max, so the transition hasn't happened yet
 		return math.MaxUint32, nil
 	}
@@ -236,7 +234,7 @@ func binarySearchChainCondition(max, min uint32, condition func(string) (bool, e
 	// Find the first block where condition becomes true
 	for low < high {
 		mid = (low + high) / 2
-		cond, _ := condition(fmt.Sprintf("%d", mid))
+		cond := condition(fmt.Sprintf("%d", mid))
 
 		if cond {
 			// Condition is true at mid, check if this is the transition point
@@ -248,7 +246,7 @@ func binarySearchChainCondition(max, min uint32, condition func(string) (bool, e
 			// Check the previous block to see if this is the transition
 			prev := mid - 1
 			if prev >= min {
-				prevCond, _ := condition(fmt.Sprintf("%d", prev))
+				prevCond := condition(fmt.Sprintf("%d", prev))
 				if !prevCond {
 					// Found the transition: false at prev, true at mid
 					return mid, nil

@@ -190,10 +190,10 @@ func (p *Publisher) checkHayabusaStatus(blockID thor.Bytes32) {
 		return
 	}
 	if !p.hayabusaStatus.Forked {
-		p.hayabusaStatus.Forked, _ = isHayabusaForked(p.client, blockID.String())
+		p.hayabusaStatus.Forked = isHayabusaForked(p.client, blockID.String())
 	}
 	if !p.hayabusaStatus.Active {
-		p.hayabusaStatus.Active, _ = isDposActive(p.staker, blockID.String())
+		p.hayabusaStatus.Active = isDposActive(p.staker, blockID.String())
 	}
 }
 
@@ -206,22 +206,22 @@ func (p *Publisher) databaseAhead(blockErr error) bool {
 	return blockErr.Error() == config.ErrBlockNotFound && p.previous().Number > best.Number
 }
 
-func isDposActive(staker *builtin.Staker, revision string) (bool, error) {
+func isDposActive(staker *builtin.Staker, revision string) bool {
 	_, id, err := staker.Revision(revision).FirstActive()
 	if err != nil {
-		slog.Error("failed to fetch first active staker to check dpos status", "error", err)
-		return false, err
+		slog.Warn("failed to fetch first active staker to check dpos status", "error", err)
+		return false
 	}
-	return !id.IsZero(), nil
+	return !id.IsZero()
 }
 
-func isHayabusaForked(client *thorclient.Client, revision string) (bool, error) {
+func isHayabusaForked(client *thorclient.Client, revision string) bool {
 	code, err := client.AccountCode(&builtin2.Staker.Address, thorclient.Revision(revision))
 	if err != nil {
-		slog.Error("failed to fetch staker code to check hayabusa fork status", "error", err)
-		return false, err
+		slog.Warn("failed to fetch staker code to check hayabusa fork status", "error", err)
+		return false
 	}
-	return len(code.Code) > 100, nil
+	return len(code.Code) > 100
 }
 
 func fetchSeed(parentID thor.Bytes32, client *thorclient.Client) ([]byte, error) {
