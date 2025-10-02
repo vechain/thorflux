@@ -7,6 +7,7 @@ import (
 	"flag"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,7 +16,6 @@ import (
 	"github.com/kouhin/envflag"
 	"github.com/vechain/thor/v2/genesis"
 	"github.com/vechain/thor/v2/thor"
-	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/pubsub"
@@ -57,20 +57,13 @@ func main() {
 		slog.Error("failed to create influxdb", "error", err)
 		os.Exit(1)
 	}
-
-	// if set syncFromBlock will override the thorBlocks number
-	if syncFromBlock != 0 {
-		block, err := thorclient.New(thorURL).Block("best")
-		if err != nil {
-			slog.Error("failed to retrieve best block", "error", err)
-			os.Exit(1)
-		}
-		blocks = block.Number - uint32(syncFromBlock)
-		slog.Info("syncing from specified block", "syncFromBlock", syncFromBlock, "blocks", blocks)
+	if *blocksFlag > math.MaxUint32 {
+		slog.Error("thor-blocks cannot be greater than max uint32")
+		os.Exit(1)
 	}
 
 	ctx := exitContext()
-	publisher, blockChan, err := pubsub.New(thorURL, influx, blocks)
+	publisher, blockChan, err := pubsub.NewPublisher(thorURL, uint32(*blocksFlag), influx)
 	if err != nil {
 		slog.Error("failed to create publisher", "error", err)
 		os.Exit(1)
@@ -81,7 +74,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	go publisher.Publish(ctx)
+	go publisher.Start(ctx)
 	go subscriber.Subscribe(ctx)
 
 	slog.Info("thorflux started")

@@ -1,19 +1,19 @@
 package blockstats
 
 import (
-	"context"
 	"math"
 	"math/big"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/types"
 )
 
-func Write(ev *types.Event) error {
+func Write(ev *types.Event) []*write.Point {
 	flags := make(map[string]any)
 
-	flags["pos_active"] = ev.DPOSActive
+	flags["pos_active"] = ev.HayabusaStatus.Active
 	flags["best_block_number"] = ev.Block.Number
 	flags["block_gas_used"] = ev.Block.GasUsed
 	flags["block_gas_limit"] = ev.Block.GasLimit
@@ -58,8 +58,5 @@ func Write(ev *types.Event) error {
 	}
 
 	p := influxdb2.NewPoint(config.BlockStatsMeasurement, ev.DefaultTags, flags, ev.Timestamp)
-	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultTimeout)
-	defer cancel()
-
-	return ev.WriteAPI.WritePoint(ctx, p)
+	return []*write.Point{p}
 }
