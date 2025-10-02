@@ -324,7 +324,7 @@
             "type": "influxdb",
             "uid": "B87265B08D314AF"
           },
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" )\n  |> keep(columns: [\"signer\"]) \n  |> group()\n  |> distinct(column: \"signer\")\n  |> count()",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"block_signer\" )\n  |> filter(fn: (r) => r[\"_measurement\"] == \"block_stats\" )\n  |> keep(columns: [\"signer\"]) \n  |> group()\n  |> distinct(column: \"signer\")\n  |> count()",
           "refId": "A"
         }
       ],
