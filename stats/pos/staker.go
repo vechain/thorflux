@@ -4,10 +4,8 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"math"
-	"sync/atomic"
-
 	"log/slog"
+	"math"
 	"math/big"
 	"sync"
 
@@ -29,10 +27,6 @@ type Staker struct {
 	staker      *builtin.Staker
 	client      *thorclient.Client
 	epochLength uint32
-	mu          sync.Mutex // Protects the cache
-
-	prevVTHOSupply atomic.Pointer[big.Int]
-	prevVTHOBurned atomic.Pointer[big.Int] // Previous VTHO burned for calculating changes
 }
 
 func NewStaker(client *thorclient.Client) (*Staker, error) {
