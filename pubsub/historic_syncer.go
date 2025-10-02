@@ -20,7 +20,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const querySize = 200
+const querySize = config.DefaultQuerySize
 
 // HistoricSyncer fetches blocks in parallel from the current head to a specified minimum block number
 // It will exit when it syncs down to the minimum block number
