@@ -27,14 +27,14 @@ func (s *Staker) Write(event *types.Event) []*write.Point {
 
 	var err error
 	if event.ParentStaker == nil {
-		slog.Warn("No parent staker information available, skipping stats generation", "block", event.Block.Number)
+		slog.Warn("No parent staker information available", "block", event.Block.Number)
 		event.ParentStaker, err = FetchValidations(event.Block.ParentID, s.client)
 		if err != nil {
 			slog.Error("Failed to fetch parent staker information", "error", err)
 		}
 	}
 	if event.Staker == nil {
-		slog.Warn("No staker information available, skipping stats generation", "block", event.Block.Number)
+		slog.Warn("No staker information available", "block", event.Block.Number)
 		event.Staker, err = FetchValidations(event.Block.ID, s.client)
 		if err != nil {
 			slog.Error("Failed to fetch staker information", "error", err)
