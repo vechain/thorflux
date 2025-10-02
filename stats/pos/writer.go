@@ -42,7 +42,6 @@ func (s *Staker) Write(event *types.Event) []*write.Point {
 		}
 	}
 
-	// Measure individual function execution times
 	singleValidatorPoints := s.createSingleValidatorStats(event, event.Staker)
 	points = append(points, singleValidatorPoints...)
 
