@@ -4,10 +4,10 @@ go 1.24.2
 
 require (
 	github.com/ethereum/go-ethereum v1.14.7
-	github.com/hashicorp/golang-lru v0.0.0-20160813221303-0a025b7e63ad
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649
 	github.com/vechain/thor/v2 v2.3.2-0.20250918155057-180c5ba3553f
+	golang.org/x/sync v0.12.0
 )
 
 require (
@@ -24,6 +24,7 @@ require (
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/hashicorp/golang-lru v0.0.0-20160813221303-0a025b7e63ad // indirect
 	github.com/holiman/uint256 v1.3.0 // indirect
 	github.com/huin/goupnp v0.0.0-20171109214107-dceda08e705b // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thor/v2/api"
 
 	"github.com/vechain/thor/v2/thorclient"
@@ -21,7 +22,7 @@ import (
 	"github.com/vechain/thorflux/types"
 )
 
-type Handler func(event *types.Event) error
+type Handler func(event *types.Event) []*write.Point
 
 type Subscriber struct {
 	blockChan  chan *Block
@@ -60,7 +61,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 	handlers["utilisation"] = utilisation.Write
 
 	// Create worker pool for concurrent handler execution
-	workerPool := NewWorkerPool(config.DefaultWorkerPoolSize, config.DefaultTaskQueueSize)
+	workerPool := NewWorkerPool(config.DefaultWorkerPoolSize, config.DefaultTaskQueueSize, db)
 
 	return &Subscriber{
 		blockChan:  blockChan,
@@ -113,13 +114,14 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 			event := &types.Event{
 				Block:          b.Block,
 				Seed:           b.Seed,
-				WriteAPI:       s.db.WriteAPI(),
 				Prev:           b.Prev,
 				ChainTag:       s.chainTag,
 				Genesis:        s.genesis,
 				DefaultTags:    defaultTags,
 				Timestamp:      t,
 				HayabusaStatus: b.HayabusaStatus,
+				Staker:         b.Staker,
+				ParentStaker:   b.ParentStaker,
 			}
 
 			// Create tasks for all handlers
@@ -135,12 +137,6 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 			// Submit all tasks to worker pool
 			if err := s.workerPool.SubmitBatch(tasks); err != nil {
 				slog.Error("Failed to submit tasks to worker pool", "error", err, "block_number", b.Block.Number)
-				// Fallback to synchronous execution if worker pool is full
-				for _, task := range tasks {
-					if err := task.Handler(task.Event); err != nil {
-						slog.Error("Failed to handle event (fallback)", "event_type", task.EventType, "error", err)
-					}
-				}
 			}
 		}
 	}

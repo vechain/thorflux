@@ -23,6 +23,7 @@ import (
 	"github.com/vechain/thor/v2/thorclient/httpclient"
 	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/influxdb"
+	"github.com/vechain/thorflux/stats/pos"
 	"github.com/vechain/thorflux/types"
 )
 
@@ -31,12 +32,15 @@ type Block struct {
 	Block          *api.JSONExpandedBlock
 	Prev           *api.JSONExpandedBlock
 	HayabusaStatus types.HayabusaStatus
+	Staker         *types.StakerInformation
+	ParentStaker   *types.StakerInformation
 	Seed           []byte
 }
 
 type Publisher struct {
 	history        *HistoricSyncer
 	prev           *atomic.Pointer[api.JSONExpandedBlock]
+	parentStaker   *atomic.Pointer[types.StakerInformation]
 	client         *thorclient.Client
 	blockChan      chan *Block
 	staker         *builtin.Staker
@@ -77,12 +81,14 @@ func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publ
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to initialise historic syncer: %w", err)
 	}
+	parentStaker := &atomic.Pointer[types.StakerInformation]{}
 	return &Publisher{
-		history:   history,
-		prev:      prev,
-		client:    client,
-		blockChan: blockChan,
-		staker:    staker,
+		history:      history,
+		prev:         prev,
+		client:       client,
+		blockChan:    blockChan,
+		staker:       staker,
+		parentStaker: parentStaker,
 	}, blockChan, nil
 }
 
@@ -156,14 +162,25 @@ func (p *Publisher) sync(ctx context.Context) {
 			if next.Number%config.LogIntervalBlocks == 0 || time.Now().UTC().Sub(t) < config.RecentBlockThresholdMinutes {
 				slog.Info("✅ fetched block", "number", next.Number)
 			}
+			var stakerInfo *types.StakerInformation
+			if p.hayabusaStatus.Forked {
+				stakerInfo, err = pos.FetchValidations(next.ID, p.client)
+				if err != nil {
+					slog.Error("failed to fetch staker info", "block", next.Number, "error", err)
+				}
+			}
+
 			p.blockChan <- &Block{
 				Block:          next,
 				Prev:           prev,
 				ForkDetected:   false,
 				Seed:           seed,
 				HayabusaStatus: p.hayabusaStatus,
+				Staker:         stakerInfo,
+				ParentStaker:   p.parentStaker.Load(),
 			}
 			p.prev.Store(next)
+			p.parentStaker.Store(stakerInfo)
 		}
 	}
 }
@@ -173,10 +190,10 @@ func (p *Publisher) checkHayabusaStatus(blockID thor.Bytes32) {
 		return
 	}
 	if !p.hayabusaStatus.Forked {
-		p.hayabusaStatus.Forked, _ = isHayabusaForked(p.client, blockID.String())
+		p.hayabusaStatus.Forked = isHayabusaForked(p.client, blockID.String())
 	}
 	if !p.hayabusaStatus.Active {
-		p.hayabusaStatus.Active, _ = isDposActive(p.staker, blockID.String())
+		p.hayabusaStatus.Active = isDposActive(p.staker, blockID.String())
 	}
 }
 
@@ -189,22 +206,22 @@ func (p *Publisher) databaseAhead(blockErr error) bool {
 	return blockErr.Error() == config.ErrBlockNotFound && p.previous().Number > best.Number
 }
 
-func isDposActive(staker *builtin.Staker, revision string) (bool, error) {
+func isDposActive(staker *builtin.Staker, revision string) bool {
 	_, id, err := staker.Revision(revision).FirstActive()
 	if err != nil {
-		slog.Error("failed to fetch first active staker to check dpos status", "error", err)
-		return false, err
+		slog.Warn("failed to fetch first active staker to check dpos status", "error", err)
+		return false
 	}
-	return !id.IsZero(), nil
+	return !id.IsZero()
 }
 
-func isHayabusaForked(client *thorclient.Client, revision string) (bool, error) {
+func isHayabusaForked(client *thorclient.Client, revision string) bool {
 	code, err := client.AccountCode(&builtin2.Staker.Address, thorclient.Revision(revision))
 	if err != nil {
-		slog.Error("failed to fetch staker code to check hayabusa fork status", "error", err)
-		return false, err
+		slog.Warn("failed to fetch staker code to check hayabusa fork status", "error", err)
+		return false
 	}
-	return len(code.Code) > 100, nil
+	return len(code.Code) > 100
 }
 
 func fetchSeed(parentID thor.Bytes32, client *thorclient.Client) ([]byte, error) {

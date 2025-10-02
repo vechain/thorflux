@@ -1,16 +1,16 @@
 package transactions
 
 import (
-	"context"
 	"math"
 	"math/big"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/types"
 )
 
-func Write(event *types.Event) error {
+func Write(event *types.Event) []*write.Point {
 	txs := event.Block.Transactions
 
 	priorityFeeStat := priorityFeeStats{}
@@ -58,10 +58,6 @@ func Write(event *types.Event) error {
 	flags["legacy_txs"] = txStat.legacyCount
 	flags["dyn_fee_txs"] = txStat.dynamicFeeCount
 
-	ctx, cancel := context.WithTimeout(context.Background(), config.DefaultTimeout)
-	defer cancel()
-
 	p := influxdb2.NewPoint(config.TransactionsMeasurement, event.DefaultTags, flags, event.Timestamp)
-
-	return event.WriteAPI.WritePoint(ctx, p)
+	return []*write.Point{p}
 }
