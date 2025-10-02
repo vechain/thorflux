@@ -9,12 +9,15 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thorflux/config"
+	"github.com/vechain/thorflux/stats/pos"
 	"github.com/vechain/thorflux/types"
+	"golang.org/x/sync/errgroup"
 )
 
 const querySize = 200
@@ -97,44 +100,48 @@ func (s *HistoricSyncer) backSyncComplete() bool {
 }
 
 func (s *HistoricSyncer) fetchBlocksAsync(amount uint32, head *api.JSONExpandedBlock) ([]*Block, error) {
-	var wg sync.WaitGroup
 	var mu sync.Mutex
-	var err error
 	blks := make(map[thor.Bytes32]*Block)
 
+	group := errgroup.Group{}
 	// +1 so we can populate parent
 	for i := range amount + 1 {
-		wg.Add(1)
-		go func(i uint32) {
-			defer wg.Done()
-			block, fetchErr := s.client.ExpandedBlock(fmt.Sprintf("%d", i))
-			if fetchErr != nil {
-				mu.Lock()
-				err = fetchErr
-				mu.Unlock()
-				return
+		blockNum := head.Number - i - 1
+		group.Go(func() error {
+			block, err := s.client.ExpandedBlock(fmt.Sprintf("%d", blockNum))
+			if err != nil {
+				return err
 			}
 
-			seed, seedErr := fetchSeed(block.ParentID, s.client)
-			if seedErr != nil {
-				mu.Lock()
-				err = fmt.Errorf("failed to fetch seed for block %d: %w", block.Number, seedErr)
-				mu.Unlock()
-				return
+			seed, err := fetchSeed(block.ParentID, s.client)
+			if err != nil {
+				return err
+			}
+
+			var stakerInfo *types.StakerInformation
+			if blockNum >= s.hayabusaForkedBlock {
+				stakerInfo, err = pos.FetchValidations(block.ID, s.client)
+				if err != nil {
+					slog.Warn("failed to fetch staker info for block", "block", block.Number, "error", err)
+					return errors.Wrap(err, "failed to fetch staker info")
+				}
 			}
 
 			mu.Lock()
 			blks[block.ID] = &Block{
-				Block: block,
-				Seed:  seed,
+				Block:  block,
+				Seed:   seed,
+				Staker: stakerInfo,
 			}
 			mu.Unlock()
-		}(head.Number - i - 1)
+
+			return nil
+		})
 	}
 
-	wg.Wait()
+	err := group.Wait()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch blocks async: %w", err)
 	}
 
 	// Block entry should include parent, so here we are just linking them together
@@ -146,17 +153,7 @@ func (s *HistoricSyncer) fetchBlocksAsync(amount uint32, head *api.JSONExpandedB
 			slog.Warn("missing block during async fetch", "current", current)
 			return nil, fmt.Errorf("missing block during async fetch")
 		}
-		parentEntry, ok := blks[entry.Block.ParentID]
-		if !ok {
-			slog.Warn("missing parent block during async fetch", "parent", entry.Block.ParentID)
-			var err error
-			entry.Prev, err = s.client.ExpandedBlock(entry.Block.ParentID.String())
-			if err != nil {
-				return nil, fmt.Errorf("failed to fetch parent block %s: %w", entry.Block.ParentID, err)
-			}
-		} else {
-			entry.Prev = parentEntry.Block
-		}
+		s.fillParent(entry, blks[entry.Block.ParentID])
 		entry.HayabusaStatus = types.HayabusaStatus{
 			Active: entry.Block.Number >= s.hayabusaActiveBlock,
 			Forked: entry.Block.Number >= s.hayabusaForkedBlock,
@@ -166,6 +163,27 @@ func (s *HistoricSyncer) fetchBlocksAsync(amount uint32, head *api.JSONExpandedB
 	}
 
 	return results, nil
+}
+
+func (s *HistoricSyncer) fillParent(current, parent *Block) {
+	if parent != nil {
+		current.Prev = parent.Block
+		current.ParentStaker = parent.Staker
+		return
+	}
+	slog.Warn("missing parent block during async fetch", "parent", current.Block.ParentID)
+	var err error
+	current.Prev, err = s.client.ExpandedBlock(current.Block.ParentID.String())
+	if err != nil {
+		slog.Error("failed to fetch parent block", "parent", current.Block.ParentID, "error", err)
+		return
+	}
+	if current.Prev.Number >= s.hayabusaForkedBlock {
+		current.ParentStaker, err = pos.FetchValidations(current.Block.ParentID, s.client)
+		if err != nil {
+			slog.Warn("failed to fetch parent staker info", "parent", current.Block.ParentID, "error", err)
+		}
+	}
 }
 
 // fetchHayabusaBlocks finds the Hayabusa fork block and the DPoS active block using a modified binary search

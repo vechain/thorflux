@@ -120,6 +120,8 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				DefaultTags:    defaultTags,
 				Timestamp:      t,
 				HayabusaStatus: b.HayabusaStatus,
+				Staker:         b.Staker,
+				ParentStaker:   b.ParentStaker,
 			}
 
 			// Create tasks for all handlers

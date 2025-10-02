@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/builtin/staker/validation"
 	"github.com/vechain/thor/v2/pos"
@@ -22,38 +21,14 @@ import (
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thorflux/config"
+	"github.com/vechain/thorflux/types"
 	"github.com/vechain/thorflux/vetutil"
 )
-
-type Validation struct {
-	*validation.Validation
-	*builtin.ValidationTotals
-	Address               thor.Address // Address of the validator stake contract
-	Online                bool         // Whether the validator is online
-	DelegatorStake        *big.Int     // Total stake of delegators for this validator
-	DelegatorWeight       *big.Int     // Total weight of delegators for this validator
-	DelegatorQueuedStake  *big.Int     // Total queued stake of delegators for this validator
-	DelegatorQueuedWeight *big.Int     // Total queued weight of delegators for this validator
-}
-
-type StakerInformation struct {
-	Validations     []*Validation
-	ContractBalance *big.Int // Balance of the staker contract
-	QueuedVET       *big.Int // Total VET queued for staking
-	TotalVET        *big.Int // Total VET staked in the network
-	TotalWeight     *big.Int // Total weight of all validators
-	TotalSupplyVTHO *big.Int // Total supply of VTHO in the network
-	TotalBurnedVTHO *big.Int // Total VTHO burned in the network
-	IssuanceVTHO    *big.Int // Total VTHO issued in the network
-	CooldownVET     uint64   // Total VET in cooldown
-	WithdrawableVET uint64   // Total VET withdrawable
-}
 
 type Staker struct {
 	staker      *builtin.Staker
 	client      *thorclient.Client
 	epochLength uint32
-	cache       *lru.Cache
 	mu          sync.Mutex // Protects the cache
 
 	prevVTHOSupply atomic.Pointer[big.Int]
@@ -65,17 +40,15 @@ func NewStaker(client *thorclient.Client) (*Staker, error) {
 	if err != nil {
 		return nil, err
 	}
-	epochLength := thor.EpochLength()
 
-	cache, err := lru.New(config.DefaultCacheSize)
-	if err != nil {
-		return nil, fmt.Errorf(config.ErrFailedToCreateCache, err)
-	}
-
-	return &Staker{staker: staker, client: client, epochLength: epochLength, cache: cache}, nil
+	return &Staker{
+		staker:      staker,
+		client:      client,
+		epochLength: thor.EpochLength(),
+	}, nil
 }
 
-func createProposers(validators []*Validation) []pos.Proposer {
+func createProposers(validators []*types.Validation) []pos.Proposer {
 	proposers := make([]pos.Proposer, 0)
 	for _, v := range validators {
 		if v.Status == validation.StatusActive {
@@ -94,16 +67,12 @@ type MissedSlot struct {
 }
 
 func (s *Staker) MissedSlots(
-	validators []*Validation,
+	parent *api.JSONExpandedBlock,
+	validators []*types.Validation,
 	block *api.JSONExpandedBlock,
 	seed []byte,
 ) ([]MissedSlot, []MissedSlot, error) {
 	proposers := createProposers(validators)
-	parent, err := s.client.Block(block.ParentID.String())
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to fetch parent block %s: %w", block.ParentID, err)
-	}
-
 	sched, err := pos.NewScheduler(block.Signer, proposers, parent.Number, parent.Timestamp, seed)
 	if err != nil {
 		return nil, nil, err
@@ -154,7 +123,7 @@ type FutureSlot struct {
 	Signer thor.Address
 }
 
-func (s *Staker) FutureSlots(validators []*Validation, block *api.JSONExpandedBlock, seed []byte) ([]FutureSlot, error) {
+func (s *Staker) FutureSlots(validators []*types.Validation, block *api.JSONExpandedBlock, seed []byte) ([]FutureSlot, error) {
 	// max amount of blocks that we can predict
 	// eg epoch length = 180, block number = 177, then we can predict, 178, 179. 180 is a new epoch
 	blockInEpoch := block.Number % s.epochLength
@@ -191,45 +160,24 @@ var contractABI string
 //go:embed compiled/GetValidators.bin
 var bytecode string
 
-// FetchAll retrieves all queued and active validators from the staker contract.
+// FetchValidations retrieves all queued and active validators from the staker contract.
 // Using a hacky getAll in a simulation. It means the method takes 35ms
 // It takes 500ms if we iterate each validator on the client side
 // The validators are ordered by their position in the active and queued groups. Ie FIFO.
 // See `GetValidators.sol` for more details.
-func (s *Staker) FetchAll(id thor.Bytes32) (*StakerInformation, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	existing, ok := s.cache.Get(id)
-	if ok {
-		return existing.(*StakerInformation), nil
-	}
-	rawResult, err := s.fetchStakerInfo(id)
+func FetchValidations(id thor.Bytes32, client *thorclient.Client) (*types.StakerInformation, error) {
+	rawResult, err := fetchStakerInfo(id, client)
 	if err != nil {
 		return nil, fmt.Errorf(config.ErrFailedToFetchStakerInfo, err)
 	}
-	result, err := s.unpackInfo(rawResult)
+	result, err := unpackInfo(rawResult)
 	if err != nil {
 		return nil, fmt.Errorf(config.ErrFailedToUnpackStakerInfo, err)
 	}
-	s.cache.Add(id, result)
 	return result, nil
 }
 
-func (s *Staker) ValidatorMap(id thor.Bytes32) (map[thor.Address]*Validation, error) {
-	info, err := s.FetchAll(id)
-	if err != nil {
-		return nil, fmt.Errorf(config.ErrFailedToFetchStakerInfoFromDB, err)
-	}
-
-	validators := make(map[thor.Address]*Validation, len(info.Validations))
-	for _, v := range info.Validations {
-		validators[(v.Address)] = v
-	}
-	return validators, nil
-}
-
-func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
+func fetchStakerInfo(id thor.Bytes32, client *thorclient.Client) ([]*api.CallResult, error) {
 	to := thor.MustParseAddress(config.GetValidatorsContractAddress)
 
 	withdrawCounterPosition := thor.BytesToBytes32([]byte("withdrawable-stake"))
@@ -284,7 +232,7 @@ func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
 		},
 	}
 
-	res, err := s.staker.Raw().Client().InspectClauses(&api.BatchCallData{
+	res, err := client.InspectClauses(&api.BatchCallData{
 		Clauses: clauses,
 	}, thorclient.Revision(id.String()))
 	if err != nil {
@@ -303,13 +251,13 @@ func (s *Staker) fetchStakerInfo(id thor.Bytes32) ([]*api.CallResult, error) {
 	return res, nil
 }
 
-func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error) {
+func unpackInfo(result []*api.CallResult) (*types.StakerInformation, error) {
 	validatorsCall := result[1]
 	stakerBalanceCall := result[2]
 	totalStakeCall := result[3]
 	queuedStakeCall := result[4]
 
-	validators, err := s.unpackValidators(validatorsCall)
+	validators, err := unpackValidators(validatorsCall)
 	if err != nil {
 		return nil, fmt.Errorf(config.ErrFailedToUnpackValidators, err)
 	}
@@ -355,20 +303,22 @@ func (s *Staker) unpackInfo(result []*api.CallResult) (*StakerInformation, error
 		return nil, fmt.Errorf(config.ErrFailedToDecodeCooldownStake, err)
 	}
 
-	return &StakerInformation{
+	return &types.StakerInformation{
 		Validations:     validators,
 		ContractBalance: new(big.Int).SetBytes(stakerBalanceBytes),
 		QueuedVET:       queuedStakeVET,
 		TotalVET:        totalStakeVET,
 		TotalWeight:     totalStakeWeight,
-		TotalSupplyVTHO: new(big.Int).SetBytes(totalSupplyBytes),
-		TotalBurnedVTHO: new(big.Int).SetBytes(totalBurnedBytes),
+		VTHO: types.VTHO{
+			TotalSupply: new(big.Int).SetBytes(totalSupplyBytes),
+			TotalBurned: new(big.Int).SetBytes(totalBurnedBytes),
+		},
 		CooldownVET:     new(big.Int).SetBytes(cooldownBytes).Uint64(),
 		WithdrawableVET: new(big.Int).SetBytes(withdrawableBytes).Uint64(),
 	}, nil
 }
 
-func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error) {
+func unpackValidators(result *api.CallResult) ([]*types.Validation, error) {
 	bytes, err := hexutil.Decode(result.Data)
 	if err != nil {
 		return nil, fmt.Errorf(config.ErrFailedToDecodeResultData, err)
@@ -385,7 +335,7 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 		return res
 	}
 
-	validators := make([]*Validation, 0)
+	validators := make([]*types.Validation, 0)
 	masters := next().([]common.Address)
 	endorsors := next().([]common.Address)
 	statuses := next().([]uint8)
@@ -412,7 +362,7 @@ func (s *Staker) unpackValidators(result *api.CallResult) ([]*Validation, error)
 			TotalExitingStake: exitingStakes[i],
 		}
 
-		v := &Validation{
+		v := &types.Validation{
 			Validation: &validation.Validation{
 				Endorser:         (thor.Address)(endorsors[i]),
 				Beneficiary:      nil, // Beneficiary is not used in this context
@@ -517,51 +467,4 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (s *Staker) setPrevTotals(id thor.Bytes32) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	to := thor.MustParseAddress(config.GetValidatorsContractAddress)
-	res, err := s.staker.Raw().Client().InspectClauses(&api.BatchCallData{
-		Clauses: api.Clauses{
-			{
-				Data: "0x" + bytecode,
-			},
-			{
-				To:   &to,
-				Data: hexutil.Encode(totalSupplyABI.Id()),
-			},
-			{
-				To:   &to,
-				Data: hexutil.Encode(totalBurnedABI.Id()),
-			},
-		},
-	}, thorclient.Revision(id.String()))
-
-	if err != nil {
-		slog.Error("Failed to fetch previous totals", "error", err)
-		return fmt.Errorf(config.ErrFailedToFetchPreviousTotals, err)
-	}
-
-	if len(res) != 3 {
-		slog.Error("Unexpected number of results", "count", len(res))
-		return fmt.Errorf(config.ErrUnexpectedResults, len(res), 3)
-	}
-
-	totalSupplyBytes, err := hexutil.Decode(res[1].Data)
-	if err != nil {
-		slog.Error("Failed to decode total supply data", "error", err)
-		return fmt.Errorf(config.ErrFailedToDecodePreviousTotalSupply, err)
-	}
-	totalBurnedBytes, err := hexutil.Decode(res[2].Data)
-	if err != nil {
-		slog.Error("Failed to decode total burned data", "error", err)
-		return fmt.Errorf(config.ErrFailedToDecodePreviousTotalBurned, err)
-	}
-
-	s.prevVTHOSupply.Store(new(big.Int).SetBytes(totalSupplyBytes))
-	s.prevVTHOBurned.Store(new(big.Int).SetBytes(totalBurnedBytes))
-	return nil
 }
