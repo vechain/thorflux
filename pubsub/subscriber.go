@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
-	"sync/atomic"
 	"time"
 
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thor/v2/api"
 
 	"github.com/vechain/thor/v2/thorclient"
@@ -22,12 +22,11 @@ import (
 	"github.com/vechain/thorflux/types"
 )
 
-type Handler func(event *types.Event) error
+type Handler func(event *types.Event) []*write.Point
 
 type Subscriber struct {
 	blockChan  chan *Block
 	db         *influxdb.DB
-	prevBlock  *atomic.Pointer[api.JSONExpandedBlock]
 	genesis    *api.JSONCollapsedBlock
 	chainTag   string
 	handlers   map[string]Handler
@@ -62,12 +61,11 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 	handlers["utilisation"] = utilisation.Write
 
 	// Create worker pool for concurrent handler execution
-	workerPool := NewWorkerPool(config.DefaultWorkerPoolSize, config.DefaultTaskQueueSize)
+	workerPool := NewWorkerPool(config.DefaultWorkerPoolSize, config.DefaultTaskQueueSize, db)
 
 	return &Subscriber{
 		blockChan:  blockChan,
 		db:         db,
-		prevBlock:  &atomic.Pointer[api.JSONExpandedBlock]{},
 		genesis:    genesis,
 		chainTag:   chainTag,
 		handlers:   handlers,
@@ -90,7 +88,6 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 			if b.ForkDetected {
 				slog.Warn("fork detected", "block", b.Block.Number)
 				s.db.ResolveFork(t)
-				s.prevBlock.Store(b.Block)
 				continue
 			}
 
@@ -104,26 +101,27 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				"block_number": fmt.Sprintf("%d", b.Block.Number),
 			}
 
-			if s.prevBlock.Load() == nil && b.Block.Number > 0 {
+			if b.Prev == nil {
+				slog.Warn("previous block is nil", "block_number", b.Block.Number)
 				prev, err := s.client.ExpandedBlock(strconv.FormatUint(uint64(b.Block.Number-1), 10))
 				if err != nil {
 					slog.Error("failed to fetch previous block", "block_number", b.Block.Number-1, "error", err)
 					continue
 				}
-				s.prevBlock.Store(prev)
+				b.Prev = prev
 			}
 
 			event := &types.Event{
 				Block:          b.Block,
 				Seed:           b.Seed,
-				HayabusaForked: b.HayabusaForked,
-				DPOSActive:     b.DPOSActive,
-				WriteAPI:       s.db.WriteAPI(),
-				Prev:           s.prevBlock.Load(),
+				Prev:           b.Prev,
 				ChainTag:       s.chainTag,
 				Genesis:        s.genesis,
 				DefaultTags:    defaultTags,
 				Timestamp:      t,
+				HayabusaStatus: b.HayabusaStatus,
+				Staker:         b.Staker,
+				ParentStaker:   b.ParentStaker,
 			}
 
 			// Create tasks for all handlers
@@ -139,14 +137,7 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 			// Submit all tasks to worker pool
 			if err := s.workerPool.SubmitBatch(tasks); err != nil {
 				slog.Error("Failed to submit tasks to worker pool", "error", err, "block_number", b.Block.Number)
-				// Fallback to synchronous execution if worker pool is full
-				for _, task := range tasks {
-					if err := task.Handler(task.Event); err != nil {
-						slog.Error("Failed to handle event (fallback)", "event_type", task.EventType, "error", err)
-					}
-				}
 			}
-			s.prevBlock.Store(b.Block)
 		}
 	}
 }

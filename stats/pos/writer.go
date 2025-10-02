@@ -1,7 +1,6 @@
 package pos
 
 import (
-	"context"
 	_ "embed"
 
 	"log/slog"
@@ -13,66 +12,77 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thor/v2/api"
+	builtin2 "github.com/vechain/thor/v2/builtin"
 	"github.com/vechain/thor/v2/builtin/staker/validation"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thorflux/types"
 	"github.com/vechain/thorflux/vetutil"
 )
 
-func (s *Staker) Write(event *types.Event) error {
-	if !event.HayabusaForked {
+func (s *Staker) Write(event *types.Event) []*write.Point {
+	if !event.HayabusaStatus.Forked {
 		return nil
 	}
-
-	stakerInfo, err := s.FetchAll(event.Block.ID)
-	if err != nil {
-		slog.Error("Failed to fetch all stakers", "error", err)
-		return err
-	}
-
 	points := make([]*write.Point, 0)
 
-	singleValidatorPoints := s.createSingleValidatorStats(event, stakerInfo)
+	var err error
+	if event.ParentStaker == nil {
+		slog.Warn("No parent staker information available", "block", event.Block.Number)
+		event.ParentStaker, err = FetchValidations(event.Block.ParentID, s.client)
+		if err != nil {
+			slog.Error("Failed to fetch parent staker information", "error", err)
+		}
+	}
+	if event.Staker == nil {
+		slog.Warn("No staker information available", "block", event.Block.Number)
+		event.Staker, err = FetchValidations(event.Block.ID, s.client)
+		if err != nil {
+			slog.Error("Failed to fetch staker information", "error", err)
+			return nil
+		}
+	}
+
+	singleValidatorPoints := s.createSingleValidatorStats(event, event.Staker)
 	points = append(points, singleValidatorPoints...)
 
-	overviewPoints := s.createValidatorOverview(event, stakerInfo)
+	overviewPoints := s.createValidatorOverview(event, event.Staker)
 	points = append(points, overviewPoints...)
 
-	energyPoints, err := s.createEnergyStats(event, stakerInfo)
+	energyPoints, err := s.createEnergyStats(event, event.Staker)
 	if err != nil {
 		slog.Error("Failed to write energy stats", "error", err)
 	} else {
 		points = append(points, energyPoints...)
 	}
 
-	blockPoints, err := s.createBlockPoints(event, stakerInfo)
+	blockPoints, err := s.createBlockPoints(event, event.Staker)
 	if err != nil {
 		slog.Error("Failed to create block points", "error", err)
 	} else {
 		points = append(points, blockPoints...)
 	}
 
-	missedSlotsPoints, err := s.createSlotPoints(event, stakerInfo)
+	missedSlotsPoints, err := s.createSlotPoints(event, event.Staker)
 	if err != nil {
 		slog.Error("Failed to create missed slots points", "error", err)
 	}
 	points = append(points, missedSlotsPoints...)
-
+	validPoints := make([]*write.Point, 0, len(points))
 	for _, point := range points {
-		if len(point.FieldList()) == 0 {
-			slog.Warn("Skipping point with no fields", "point", point.Name())
+		if point == nil {
+			continue
 		}
+		fields := point.FieldList()
+		if len(fields) == 0 {
+			continue
+		}
+		validPoints = append(validPoints, point)
 	}
 
-	if err := event.WriteAPI.WritePoint(context.Background(), points...); err != nil {
-		slog.Error("Failed to write points to InfluxDB", "error", err)
-		return err
-	}
-
-	return nil
+	return validPoints
 }
 
-func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]*write.Point, error) {
+func (s *Staker) createBlockPoints(event *types.Event, _ *types.StakerInformation) ([]*write.Point, error) {
 	abi := s.staker.Raw().ABI()
 
 	eventAbiByHash := make(map[thor.Bytes32]ethabi.Event)
@@ -84,7 +94,7 @@ func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]
 	for _, tx := range event.Block.Transactions {
 		for _, output := range tx.Outputs {
 			for _, log := range output.Events {
-				if log.Address != *s.staker.Raw().Address() {
+				if log.Address != builtin2.Staker.Address {
 					continue // Skip logs that are not from the staker contract
 				}
 				if eventsByTopic[log.Topics[0]] == nil {
@@ -125,11 +135,11 @@ func (s *Staker) createBlockPoints(event *types.Event, _ *StakerInformation) ([]
 	return points, nil
 }
 
-func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInformation) []*write.Point {
+func (s *Staker) createValidatorOverview(event *types.Event, info *types.StakerInformation) []*write.Point {
 	block := event.Block
 	epoch := block.Number / thor.EpochLength()
 
-	leaderGroup := make(map[thor.Address]*Validation)
+	leaderGroup := make(map[thor.Address]*types.Validation)
 
 	onlineValidators := 0
 	onlineStake := big.NewInt(0)
@@ -172,7 +182,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 	for _, tx := range event.Block.Transactions {
 		for _, output := range tx.Outputs {
 			for _, transfer := range output.Transfers {
-				if transfer.Sender != *s.staker.Raw().Address() {
+				if transfer.Sender != builtin2.Staker.Address {
 					continue // Skip transfers not from the staker contract
 				}
 				withdrawnFunds.Add(withdrawnFunds, (*big.Int)(transfer.Amount))
@@ -205,7 +215,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 		"block_number":              block.Number,
 	}
 
-	if event.DPOSActive {
+	if event.HayabusaStatus.Active {
 		signer, ok := leaderGroup[event.Block.Signer]
 		if ok {
 			signerProbability := float64(signer.Weight) * 100
@@ -229,32 +239,18 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *StakerInforma
 	return []*write.Point{heatmapPoint}
 }
 
-func (s *Staker) createEnergyStats(event *types.Event, info *StakerInformation) ([]*write.Point, error) {
-	if !event.DPOSActive {
+func (s *Staker) createEnergyStats(event *types.Event, info *types.StakerInformation) ([]*write.Point, error) {
+	if !event.HayabusaStatus.Active {
 		return nil, nil
 	}
-
-	defer func() {
-		s.prevVTHOSupply.Store(info.TotalSupplyVTHO)
-		s.prevVTHOBurned.Store(info.TotalBurnedVTHO)
-	}()
 
 	block := event.Block
 	epoch := block.Number / s.epochLength
 
-	if (s.prevVTHOSupply.Load() == nil || s.prevVTHOBurned.Load() == nil) || event.Block.ParentID != event.Prev.ID {
-		slog.Info("Fetching previous totals for VTHO supply and burned")
-		if err := s.setPrevTotals(event.Block.ParentID); err != nil {
-			slog.Error("Failed to set previous totals", "error", err)
-			return nil, err
-		}
-	}
-
-	// Extract values from results
-	totalSupply := info.TotalSupplyVTHO
-	totalBurned := info.TotalBurnedVTHO
-	parentTotalSupply := s.prevVTHOSupply.Load()
-	parentTotalBurned := s.prevVTHOBurned.Load()
+	totalSupply := info.VTHO.TotalSupply
+	totalBurned := info.VTHO.TotalBurned
+	parentTotalSupply := event.ParentStaker.VTHO.TotalSupply
+	parentTotalBurned := event.ParentStaker.VTHO.TotalBurned
 
 	// Validate data before processing
 	if parentTotalSupply == nil || parentTotalSupply.Cmp(big.NewInt(0)) <= 0 ||
@@ -315,7 +311,7 @@ func statusToString(status validation.Status) string {
 	}
 }
 
-func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInformation) []*write.Point {
+func (s *Staker) createSingleValidatorStats(ev *types.Event, info *types.StakerInformation) []*write.Point {
 	queueOrder := make(map[thor.Address]int)
 	queueCount := 0
 	for _, validator := range info.Validations {
@@ -324,14 +320,13 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 			queueCount++
 		}
 	}
-	prevValidators, err := s.ValidatorMap(ev.Block.ParentID)
-	if err != nil {
-		slog.Error("Failed to get previous validators", "error", err)
+	var prevValidators map[thor.Address]*types.Validation
+	if ev.ParentStaker == nil {
+		prevValidators = make(map[thor.Address]*types.Validation)
+	} else {
+		prevValidators = ev.ParentStaker.ValidationMap()
 	}
-	validators, err := s.ValidatorMap(ev.Block.ID)
-	if err != nil {
-		slog.Error("Failed to get current validators", "error", err)
-	}
+	validators := ev.Staker.ValidationMap()
 
 	points := make([]*write.Point, 0)
 
@@ -450,15 +445,15 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *StakerInforma
 	return points
 }
 
-func (s *Staker) createSlotPoints(event *types.Event, info *StakerInformation) ([]*write.Point, error) {
-	if !event.DPOSActive {
+func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformation) ([]*write.Point, error) {
+	if !event.HayabusaStatus.Active {
 		return nil, nil
 	}
 
 	points := make([]*write.Point, 0)
 
 	// record missed slots
-	missedOnline, missedOffline, err := s.MissedSlots(info.Validations, event.Block, event.Seed)
+	missedOnline, missedOffline, err := s.MissedSlots(event.Prev, info.Validations, event.Block, event.Seed)
 	if err != nil {
 		slog.Error("Failed to get missed slots", "error", err)
 		return nil, err

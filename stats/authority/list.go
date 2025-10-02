@@ -2,17 +2,18 @@ package authority
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/vechain/thor/v2/api"
 	"log/slog"
 	"math/big"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
+	"github.com/vechain/thor/v2/api"
 
 	"github.com/vechain/thorflux/types"
 
@@ -117,16 +118,17 @@ func (l *List) Shuffled(prev *api.JSONExpandedBlock, seed []byte) ([]thor.Addres
 	return shuffleCandidates(l.candidates, seed, prev.Number), nil
 }
 
-func (l *List) Write(event *types.Event) error {
-	if event.DPOSActive {
+func (l *List) Write(event *types.Event) []*write.Point {
+	if event.HayabusaStatus.Active {
 		return nil
 	}
 
 	block := event.Block
 	prev := event.Prev
 	chainTag := event.ChainTag
-	writeAPI := event.WriteAPI
 	epoch := block.Number / 180
+
+	points := make([]*write.Point, 0)
 
 	if prev != nil {
 		// Process recent slots
@@ -145,9 +147,7 @@ func (l *List) Write(event *types.Event) error {
 			map[string]interface{}{"epoch": epoch, "block_number": block.Number},
 			time.Unix(int64(block.Timestamp), 0),
 		)
-		if err := writeAPI.WritePoint(context.Background(), p); err != nil {
-			slog.Error("Failed to write recent slot point", "error", err)
-		}
+		points = append(points, p)
 
 		proposers := make(map[string]interface{})
 		for _, candidate := range l.candidates {
@@ -173,9 +173,7 @@ func (l *List) Write(event *types.Event) error {
 			proposers,
 			time.Unix(int64(block.Timestamp), 0),
 		)
-		if err := writeAPI.WritePoint(context.Background(), authNodes); err != nil {
-			slog.Error("Failed to write authority node point", "error", err)
-		}
+		points = append(points, authNodes)
 
 		if len(shuffledCandidates) > 0 && shuffledCandidates[0].String() != block.Signer.String() {
 			missedSlotData := make(map[string]interface{})
@@ -186,9 +184,7 @@ func (l *List) Write(event *types.Event) error {
 				missedSlotData,
 				time.Unix(int64(block.Timestamp), 0),
 			)
-			if err := writeAPI.WritePoint(context.Background(), missedSlot); err != nil {
-				slog.Error("Failed to write missed slot point", "error", err)
-			}
+			points = append(points, missedSlot)
 		}
 
 		for a := startSlot; a < slotsSinceLastBlock-1; a++ {
@@ -214,9 +210,7 @@ func (l *List) Write(event *types.Event) error {
 				map[string]interface{}{"epoch": epoch, "block_number": block.Number},
 				slotTime,
 			)
-			if err := writeAPI.WritePoint(context.Background(), p); err != nil {
-				slog.Error("Failed to write recent slot point", "error", err)
-			}
+			points = append(points, p)
 		}
 
 		// Aggregate older slot data
@@ -234,20 +228,19 @@ func (l *List) Write(event *types.Event) error {
 				},
 				aggregateTime,
 			)
-			if err := writeAPI.WritePoint(context.Background(), p); err != nil {
-				slog.Error("Failed to write aggregated slot point", "error", err)
-			}
+			points = append(points, p)
 		}
 	}
 
 	if l.ShouldReset(block) {
 		slog.Info("Authority list reset", "block", block.ID, "number", block.Number)
 		if err := l.Init(block.ID); err != nil {
-			return fmt.Errorf("failed to initialize authority list: %w", err)
+			slog.Error("failed to initialize authority list", "error", err)
+			return points
 		}
 	}
 
-	return nil
+	return points
 }
 
 func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]Candidate, error) {
