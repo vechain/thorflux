@@ -81,7 +81,7 @@ func (s *HistoricSyncer) syncBack(ctx context.Context) {
 				return
 			}
 			slog.Info("🛵 fetching blocks async", "prev", s.Head().Number)
-			blocks, err := s.fetchBlocksAsync(querySize, s.Head())
+			blocks, err := s.fetchBlocksAsync(ctx, querySize, s.Head())
 			if err != nil {
 				slog.Error("failed to fetch blocks", "error", err)
 				time.Sleep(config.LongRetryDelay)
@@ -99,11 +99,11 @@ func (s *HistoricSyncer) backSyncComplete() bool {
 	return s.Head().Number <= s.minBlock || s.Head().Number == 1
 }
 
-func (s *HistoricSyncer) fetchBlocksAsync(amount uint32, head *api.JSONExpandedBlock) ([]*Block, error) {
+func (s *HistoricSyncer) fetchBlocksAsync(ctx context.Context, amount uint32, head *api.JSONExpandedBlock) ([]*Block, error) {
 	var mu sync.Mutex
 	blks := make(map[thor.Bytes32]*Block)
 
-	group := errgroup.Group{}
+	group, _ := errgroup.WithContext(ctx)
 	// +1 so we can populate parent
 	for i := range amount + 1 {
 		blockNum := head.Number - i - 1
