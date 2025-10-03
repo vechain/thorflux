@@ -68,6 +68,9 @@ func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publ
 	if err != nil {
 		slog.Warn("failed to get latest block from database")
 	}
+	if backSyncBlocks > finalized.Number {
+		backSyncBlocks = finalized.Number - 1
+	}
 	if latest > finalized.Number-backSyncBlocks {
 		if latest >= finalized.Number {
 			// Database is ahead of finalized, no back sync needed
@@ -209,7 +212,6 @@ func (p *Publisher) databaseAhead(blockErr error) bool {
 func isDposActive(staker *builtin.Staker, revision string) bool {
 	_, id, err := staker.Revision(revision).FirstActive()
 	if err != nil {
-		slog.Warn("failed to fetch first active staker to check dpos status", "error", err)
 		return false
 	}
 	return !id.IsZero()
