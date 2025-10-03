@@ -81,7 +81,11 @@ func (s *HistoricSyncer) syncBack(ctx context.Context) {
 				return
 			}
 			slog.Info("🛵 fetching blocks async", "prev", s.Head().Number)
-			blocks, err := s.fetchBlocksAsync(ctx, querySize, s.Head())
+			amount := uint32(querySize)
+			if s.Head().Number-s.minBlock < querySize {
+				amount = s.Head().Number - s.minBlock
+			}
+			blocks, err := s.fetchBlocksAsync(ctx, amount, s.Head())
 			if err != nil {
 				slog.Error("failed to fetch blocks", "error", err)
 				time.Sleep(config.LongRetryDelay)
