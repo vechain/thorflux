@@ -25,7 +25,6 @@ var (
 	thorFlag        = flag.String("thor-url", "https://hayabusa.live.dev.node.vechain.org", "thor node URL, (env var: THOR_URL)")
 	genesisURLFlag  = flag.String("genesis-url", "", "thor genesis node URL, (env var: GENESIS_URL)")
 	blocksFlag      = flag.Uint64("thor-blocks", config.DefaultThorBlocks, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
-	syncBlockFlag   = flag.Uint64("sync-from-block", 0, "start sync from block height - takes precedence to thor-blocks is set (env var: SYNC_FROM_BLOCK)")
 	influxUrlFlag   = flag.String("influx-url", config.DefaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
 	influxTokenFlag = flag.String("influx-token", config.DefaultInfluxToken, "influxdb auth token, (env var: INFLUX_TOKEN)")
 	influxOrg       = flag.String("influx-org", config.DefaultInfluxOrg, "influxdb organization, (env var: INFLUX_ORG)")
@@ -33,7 +32,7 @@ var (
 )
 
 func main() {
-	thorURL, influxURL, influxToken, blocks, syncFromBlock, err := parseFlags()
+	thorURL, influxURL, influxToken, blocks, err := parseFlags()
 	if err != nil {
 		slog.Error("failed to parse flags", "error", err)
 		flag.PrintDefaults()
@@ -45,7 +44,6 @@ func main() {
 		"influx-org", *influxOrg,
 		"influx-bucket", *influxBucket,
 		"blocks", blocks,
-		"sync-from-block", syncFromBlock,
 	)
 	if err := setGenesisConfig(*genesisURLFlag); err != nil {
 		slog.Error("failed to set genesis config", "error", err)
@@ -82,14 +80,14 @@ func main() {
 	<-ctx.Done()
 }
 
-func parseFlags() (string, string, string, uint32, uint64, error) {
+func parseFlags() (string, string, string, uint32, error) {
 	if err := envflag.Parse(); err != nil {
-		return "", "", "", 0, 0, err
+		return "", "", "", 0, err
 	}
 
 	influxToken := *influxTokenFlag
 	if influxToken == "" {
-		return "", "", "", 0, 0, errors.New(config.ErrInfluxTokenRequired)
+		return "", "", "", 0, errors.New(config.ErrInfluxTokenRequired)
 	}
 
 	thorURL := *thorFlag
@@ -102,11 +100,9 @@ func parseFlags() (string, string, string, uint32, uint64, error) {
 		slog.Warn("influxdb URL not set via flag or env, using default", "url", config.DefaultInfluxDB)
 	}
 
-	syncFromBlock := *syncBlockFlag
-
 	blocks := *blocksFlag
 
-	return thorURL, influxURL, influxToken, uint32(blocks), syncFromBlock, nil
+	return thorURL, influxURL, influxToken, uint32(blocks), nil
 }
 
 func exitContext() context.Context {
