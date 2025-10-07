@@ -53,6 +53,13 @@ func NewHistoricSyncer(
 		return nil, fmt.Errorf("failed to fetch hayabusa blocks: %w", err)
 	}
 
+	slog.Info("historic syncer initialized",
+		"head", head.Number,
+		"minBlock", minBlock,
+		"hayabusaForkedBlock", forkBlock,
+		"hayabusaActiveBlock", activeBlock,
+	)
+
 	return &HistoricSyncer{
 		client:              client,
 		staker:              staker,
