@@ -82,7 +82,11 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 		case <-ctx.Done():
 			slog.Info("Subscriber context cancelled, shutting down worker pool")
 			return
-		case b := <-s.blockChan:
+		case b, ok := <-s.blockChan:
+			if !ok {
+				slog.Info("block channel closed, subscriber stopping")
+				return
+			}
 			t := time.Unix(int64(b.Block.Timestamp), 0)
 
 			if b.ForkDetected {

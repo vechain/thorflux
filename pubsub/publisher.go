@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -96,8 +97,21 @@ func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publ
 }
 
 func (p *Publisher) Start(ctx context.Context) {
-	go p.history.syncBack(ctx)
-	go p.sync(ctx)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		p.history.syncBack(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		p.sync(ctx)
+	}()
+	go func() {
+		wg.Wait()
+		close(p.blockChan)
+		slog.Info("block channel closed")
+	}()
 }
 
 func (p *Publisher) previous() *api.JSONExpandedBlock {
@@ -201,12 +215,15 @@ func (p *Publisher) checkHayabusaStatus(blockID thor.Bytes32) {
 }
 
 func (p *Publisher) databaseAhead(blockErr error) bool {
+	if !errors.Is(blockErr, httpclient.ErrNotFound) {
+		return false
+	}
 	best, err := p.client.Block("best")
 	if err != nil {
 		slog.Error("failed to get best block when checking for database ahead", "error", err)
 		return false
 	}
-	return blockErr.Error() == config.ErrBlockNotFound && p.previous().Number > best.Number
+	return p.previous().Number > best.Number
 }
 
 func isDposActive(staker *builtin.Staker, revision string) bool {
