@@ -55,13 +55,22 @@ func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publ
 		return nil, nil, fmt.Errorf("failed to create staker contract: %w", err)
 	}
 	blockChan := make(chan *Block, config.DefaultChannelBuffer)
-	finalized, err := client.ExpandedBlock("finalized")
+	first, err := client.ExpandedBlock("finalized")
 	if err != nil {
 		return nil, nil, err
 	}
-	previous, err := client.ExpandedBlock(strconv.FormatUint(uint64(finalized.Number-1), 10))
-	if err != nil {
-		return nil, nil, err
+	var previous *api.JSONExpandedBlock
+	if first.Number == 0 {
+		previous = first
+		first, err = client.ExpandedBlock("1")
+		if err != nil {
+			return nil, nil, err
+		}
+	} else {
+		previous, err = client.ExpandedBlock(strconv.FormatUint(uint64(first.Number-1), 10))
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 	prev := &atomic.Pointer[api.JSONExpandedBlock]{}
 	prev.Store(previous)
@@ -69,19 +78,19 @@ func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publ
 	if err != nil {
 		slog.Warn("failed to get latest block from database")
 	}
-	if backSyncBlocks > finalized.Number {
-		backSyncBlocks = finalized.Number - 1
+	if backSyncBlocks > first.Number {
+		backSyncBlocks = first.Number - 1
 	}
-	if latest > finalized.Number-backSyncBlocks {
-		if latest >= finalized.Number {
+	if latest > first.Number-backSyncBlocks {
+		if latest >= first.Number {
 			// Database is ahead of finalized, no back sync needed
 			backSyncBlocks = 0
 		} else {
-			backSyncBlocks = finalized.Number - latest
+			backSyncBlocks = first.Number - latest
 		}
 	}
 
-	history, err := NewHistoricSyncer(client, staker, blockChan, finalized, backSyncBlocks)
+	history, err := NewHistoricSyncer(client, staker, blockChan, first, backSyncBlocks)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to initialise historic syncer: %w", err)
 	}
