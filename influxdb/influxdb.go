@@ -2,9 +2,11 @@ package influxdb
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
@@ -19,6 +21,9 @@ type DB struct {
 	bucket   string
 	org      string
 	writeAPI api.WriteAPI
+	ctx      context.Context
+	cancel   context.CancelFunc
+	wg       sync.WaitGroup
 }
 
 func New(url, token string, org string, bucket string) (*DB, error) {
@@ -36,19 +41,39 @@ func New(url, token string, org string, bucket string) (*DB, error) {
 		slog.Warn("failed to write points to influxdb", "error", error, "batch", batch, "retryAttempts", retryAttempts)
 		return retryAttempts < 5
 	})
-	errChan := writeAPI.Errors()
-	go func() {
-		for err := range errChan {
-			slog.Error("write error", "error", err)
-		}
-	}()
 
-	return &DB{
+	ctx, cancel := context.WithCancel(context.Background())
+	db := &DB{
 		client:   influx,
 		bucket:   bucket,
 		org:      org,
-		writeAPI: influx.WriteAPI(org, bucket),
-	}, nil
+		writeAPI: writeAPI,
+		ctx:      ctx,
+		cancel:   cancel,
+	}
+
+	db.wg.Add(1)
+	errChan := writeAPI.Errors()
+	go func() {
+		defer db.wg.Done()
+
+		for {
+			select {
+			case <-db.ctx.Done():
+				slog.Info("influxdb error handler shutting down")
+				return
+
+			case err, ok := <-errChan:
+				if !ok {
+					slog.Info("influxdb error channel closed")
+					return
+				}
+				slog.Error("write error", "error", err)
+			}
+		}
+	}()
+
+	return db, nil
 }
 
 // Latest returns the latest block number stored in the database
@@ -119,5 +144,26 @@ func (i *DB) ResolveFork(start time.Time) {
 func (i *DB) WritePoints(points []*write.Point) {
 	for _, p := range points {
 		i.writeAPI.WritePoint(p)
+	}
+}
+
+func (i *DB) Close() error {
+	i.cancel()
+	i.writeAPI.Flush()
+	i.client.Close()
+
+	done := make(chan struct{})
+	go func() {
+		i.wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		slog.Info("influxdb connection closed cleanly")
+		return nil
+	case <-time.After(config.DefaultTimeout):
+		slog.Warn("timeout waiting for influxdb error handler to stop")
+		return fmt.Errorf("timeout waiting for goroutine cleanup")
 	}
 }

@@ -55,6 +55,12 @@ func main() {
 		slog.Error("failed to create influxdb", "error", err)
 		os.Exit(1)
 	}
+	defer func() {
+		if err := influx.Close(); err != nil {
+			slog.Error("error closing influxdb", "error", err)
+		}
+	}()
+
 	if *blocksFlag > math.MaxUint32 {
 		slog.Error("thor-blocks cannot be greater than max uint32")
 		os.Exit(1)
