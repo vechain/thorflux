@@ -89,7 +89,7 @@ func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publ
 			backSyncBlocks = first.Number - latest
 		}
 	}
-
+	slog.Info("creating historic syncer", "start", first.Number, "blocks", backSyncBlocks, "minimum", first.Number-backSyncBlocks)
 	history, err := NewHistoricSyncer(client, staker, blockChan, first, backSyncBlocks)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to initialise historic syncer: %w", err)
