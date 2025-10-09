@@ -12,7 +12,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/kouhin/envflag"
 	"github.com/vechain/thor/v2/genesis"
 	"github.com/vechain/thor/v2/thor"
@@ -45,10 +47,6 @@ func main() {
 		"influx-bucket", *influxBucket,
 		"blocks", blocks,
 	)
-	if err := setGenesisConfig(*genesisURLFlag); err != nil {
-		slog.Error("failed to set genesis config", "error", err)
-		os.Exit(1)
-	}
 
 	influx, err := influxdb.New(influxURL, influxToken, *influxOrg, *influxBucket)
 	if err != nil {
@@ -60,6 +58,11 @@ func main() {
 			slog.Error("error closing influxdb", "error", err)
 		}
 	}()
+
+	if err := setGenesisConfig(*genesisURLFlag, influx); err != nil {
+		slog.Error("failed to set genesis config", "error", err)
+		os.Exit(1)
+	}
 
 	if *blocksFlag > math.MaxUint32 {
 		slog.Error("thor-blocks cannot be greater than max uint32")
@@ -124,7 +127,7 @@ func exitContext() context.Context {
 	return ctx
 }
 
-func setGenesisConfig(genesisURL string) error {
+func setGenesisConfig(genesisURL string, influx *influxdb.DB) error {
 	if genesisURL == "" {
 		return nil
 	}
@@ -149,5 +152,24 @@ func setGenesisConfig(genesisURL string) error {
 		slog.Info("setting custom genesis config", "config", genesis.Config)
 		thor.SetConfig(*genesis.Config)
 	}
+
+	point := write.NewPoint("chain_config", map[string]string{
+		"genesis_url": genesisURL,
+	}, map[string]interface{}{
+		"block_interval":               thor.BlockInterval(),
+		"epoch_length":                 thor.EpochLength(),
+		"seeder_interval":              thor.SeederInterval(),
+		"validator_eviction_threshold": thor.ValidatorEvictionThreshold(),
+		"low_staking_period":           thor.LowStakingPeriod(),
+		"medium_staking_period":        thor.MediumStakingPeriod(),
+		"high_staking_period":          thor.HighStakingPeriod(),
+		"cooldown_period":              thor.CooldownPeriod(),
+		"hayabusa_tp":                  thor.HayabusaTP(),
+		"fc_hayabusa":                  genesis.ForkConfig.HAYABUSA,
+		"fc_galactica":                 genesis.ForkConfig.GALACTICA,
+	}, time.Now())
+
+	influx.WritePoints([]*write.Point{point})
+
 	return nil
 }

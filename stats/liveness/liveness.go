@@ -41,7 +41,7 @@ func (l *Liveness) Write(ev *types.Event) []*write.Point {
 			slog.Error("failed to get finalized block", "error", err)
 			flags["finalized"] = esitmatedFinalized
 			flags["justified_block"] = esitmatedJustified
-			flags["liveness"] = (currentEpoch - esitmatedFinalized) / 180
+			flags["liveness"] = (currentEpoch - esitmatedFinalized) / thor.EpochLength()
 		} else {
 			justified, _ := l.client.Block("justified")
 			flags["finalized"] = finalized.Number
