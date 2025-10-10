@@ -108,13 +108,11 @@ func (h *Handler) getSideChain(best, side, finalized *api.JSONExpandedBlock) ([]
 
 // writeForkedChain writes the forked block and returns its parent
 func (h *Handler) writeForkedBlock(blocks []*api.JSONExpandedBlock) {
-	firstBlock := blocks[len(blocks)-1]
-
 	for i, b := range blocks {
 		t := time.Unix(int64(b.Timestamp), 0)
 
 		p := write.NewPoint(ForkMeasurement, map[string]string{
-			"group":  firstBlock.ID.String(), // easily create distinct groups of side chains
+			"group":  blocks[0].ID.String(), // easily create distinct groups of side chains
 			"signer": b.Signer.String(),
 		}, map[string]any{
 			"number":    b.Number,
