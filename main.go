@@ -164,7 +164,7 @@ func setGenesisConfig(genesisURL, thorURL string, influx *influxdb.DB) (err erro
 		}
 		fc = thor.GetForkConfig(gene.ID)
 		if fc == nil {
-			return errors.New("failed to get fork config from genesis")
+			return errors.New("network is not mainnet/testnet, please provide a genesis URL")
 		}
 		return nil
 	}
