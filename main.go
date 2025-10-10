@@ -149,6 +149,8 @@ func setGenesisConfig(genesisURL, thorURL string, influx *influxdb.DB) (err erro
 			"high_staking_period":          strconv.FormatUint(uint64(thor.HighStakingPeriod()), 10),
 			"cooldown_period":              strconv.FormatUint(uint64(thor.CooldownPeriod()), 10),
 			"hayabusa_tp":                  strconv.FormatUint(uint64(thor.HayabusaTP()), 10),
+			"hayabusa_fork_block":          strconv.FormatUint(uint64(fc.HAYABUSA), 10),
+			"galactica_fork_block":         strconv.FormatUint(uint64(fc.GALACTICA), 10),
 		}, map[string]interface {
 		}{
 			"null": true,

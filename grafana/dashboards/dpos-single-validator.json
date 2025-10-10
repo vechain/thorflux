@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 10,
   "links": [],
   "panels": [
     {
@@ -37,7 +37,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           }
@@ -58,7 +58,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -66,7 +68,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -102,20 +104,12 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           }
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": ""
-            },
-            "properties": []
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
@@ -129,12 +123,14 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"start_block\")\n  |> first()\n  |> map(fn: (r) => ({ _time: r._time, _value: r.status }))",
@@ -167,7 +163,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           }
@@ -223,12 +219,14 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"online_changed\" or r[\"_field\"] == \"status_changed\" or r[\"_field\"] == \"weight_changed\" or r[\"_field\"] == \"stake_changed\" or r[\"_field\"] == \"exit_block_changed\")\n  |> map(fn: (r) => ({ r with _value: string(v: r._value) }))\n  |> group()\n  |> keep(columns: [\"_field\", \"_time\", \"status\"])\n  |> sort(columns: [\"_time\"], desc: true)",
@@ -264,7 +262,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           }
@@ -285,7 +283,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -293,7 +293,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -323,7 +323,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -345,7 +345,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -353,7 +355,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -383,7 +385,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -405,7 +407,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -413,7 +417,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -450,7 +454,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           }
@@ -530,12 +534,14 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\" and r[\"signer\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"signer_probability\" or r[\"_field\"] == \"block_number\" or  r[\"_field\"] == \"epoch\" or r[\"_field\"] == \"block_in_epoch\")\n  |> pivot(\n      rowKey:[\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> sort(columns: [\"block_number\"], desc: true)\n  |> drop(columns: [\"_start\", \"_stop\", \"chain_tag\", \"signer\"])",
@@ -578,7 +584,7 @@
             "steps": [
               {
                 "color": "text",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -600,7 +606,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -608,7 +616,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -638,7 +646,7 @@
             "steps": [
               {
                 "color": "text",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -660,7 +668,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -668,7 +678,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -700,7 +710,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -732,7 +741,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -790,7 +799,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -812,7 +821,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -820,7 +831,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -850,7 +861,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -872,7 +883,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -880,7 +893,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -911,7 +924,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -943,7 +955,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -1001,7 +1013,7 @@
             "steps": [
               {
                 "color": "blue",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -1023,7 +1035,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1031,7 +1045,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -1061,7 +1075,7 @@
             "steps": [
               {
                 "color": "blue",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -1083,7 +1097,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1091,7 +1107,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -1121,7 +1137,7 @@
             "steps": [
               {
                 "color": "text",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -1143,7 +1159,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1151,7 +1169,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -1181,7 +1199,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           }
@@ -1202,7 +1220,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1210,7 +1230,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "datasource": {
@@ -1242,7 +1262,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1274,7 +1293,7 @@
             "steps": [
               {
                 "color": "blue",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -1330,7 +1349,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -1362,7 +1380,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           },
@@ -1423,7 +1441,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -1446,12 +1464,14 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "query": "from(bucket: \"${bucket}\")\n  |> range(start: -20y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validation_queued\" or r[\"_measurement\"] == \"validation_withdrawn\" or r[\"_measurement\"] == \"validation_signaled_exit\" or r[\"_measurement\"] == \"stake_increased\" or r[\"_measurement\"] == \"stake_decreased\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> group()\n  |> drop(columns: [\"_stop\", \"_start\"])\n  |> sort(columns: [\"_time\"], desc: true)",
@@ -1484,7 +1504,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               }
             ]
           }
@@ -1507,7 +1527,7 @@
                   "steps": [
                     {
                       "color": "green",
-                      "value": 0
+                      "value": null
                     }
                   ]
                 }
@@ -1540,12 +1560,14 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": true
         },
         "showHeader": true
       },
-      "pluginVersion": "12.2.0-17027759091",
+      "pluginVersion": "10.4.19",
       "targets": [
         {
           "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\ncomplete_periods = from(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"completed_periods\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ncurrent = complete_periods._value + uint(v: 1)\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -5y)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"delegation_added\")\n  |> filter(fn: (r) => r[\"validator\"] == \"${staker}\")\n  |> filter(fn: (r) => r[\"_field\"] == \"stake\" or r[\"_field\"] == \"total_weight\" or r[\"_field\"] == \"multiplier\" or r[\"_field\"] == \"start_period\")\n  |> pivot(\n        rowKey:[\"_time\", \"delegation_id\"],\n        columnKey: [\"_field\"],\n        valueColumn: \"_value\"\n    )\n  |> filter(fn: (r) => r[\"start_period\"] <= current)\n   |> map(fn: (r) => ({ r with \n    \"Delegation ID\": r.delegation_id,\n    \"VET\": r.stake,\n    \"Multiplier\": r.multiplier,\n    \"total_weight\": r.total_weight,\n    \"Stake USD\": float(v: r.stake) * float(v: \"${vet_price}\")\n    }))\n  |> keep(columns: [\"VET\", \"Delegation ID\", \"Multiplier\", \"total_weight\", \"_time\", \"Stake USD\"])\n  |> sort(columns: [\"Stake USD\"], desc: true)",
@@ -1652,7 +1674,9 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": true
         },
         "showHeader": true
@@ -1727,7 +1751,9 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": true
         },
         "showHeader": true
@@ -1804,7 +1830,9 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1887,7 +1915,9 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1990,6 +2020,206 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "18",
+          "value": "18"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"epoch_length\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Epoch Length",
+        "multi": false,
+        "name": "epoch_length",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"epoch_length\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "10",
+          "value": "10"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"block_interval\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Block Interval",
+        "multi": false,
+        "name": "block_interval",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"block_interval\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "720",
+          "value": "720"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"seeder_interval\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Seeder Interval",
+        "multi": false,
+        "name": "seeder_interval",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"seeder_interval\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "8640",
+          "value": "8640"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"validator_eviction_threshold\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Eviction Threshold",
+        "multi": false,
+        "name": "validator_eviction_threshold",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"validator_eviction_threshold\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "18",
+          "value": "18"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"low_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Low Staking Period",
+        "multi": false,
+        "name": "low_staking_period",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"low_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "180",
+          "value": "180"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"medium_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Mid Staking Period",
+        "multi": false,
+        "name": "medium_staking_period",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"medium_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "8640",
+          "value": "8640"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"high_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "High Staking Period",
+        "multi": false,
+        "name": "high_staking_period",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"high_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "720",
+          "value": "720"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"cooldown_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Cooldown Period",
+        "multi": false,
+        "name": "cooldown_period",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"cooldown_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "18",
+          "value": "18"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"hayabusa_tp\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Hayabusa TP",
+        "multi": false,
+        "name": "hayabusa_tp",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"hayabusa_tp\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "0",
+          "value": "0"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"hayabusa_fork_block\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Hayabusa Fork Block",
+        "multi": false,
+        "name": "hayabusa_fork_block",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"vechain\",\n    tag: \"hayabusa_fork_block\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
       }
     ]
   },
@@ -2001,5 +2231,6 @@
   "timezone": "browser",
   "title": "DPOS - Individual Stakers",
   "uid": "fetli0i64zny8c",
-  "version": 2
+  "version": 12,
+  "weekStart": ""
 }
