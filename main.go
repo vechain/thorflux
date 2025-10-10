@@ -11,11 +11,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
 
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/kouhin/envflag"
 	"github.com/vechain/thor/v2/genesis"
 	"github.com/vechain/thor/v2/thor"
+	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/pubsub"
@@ -45,10 +49,6 @@ func main() {
 		"influx-bucket", *influxBucket,
 		"blocks", blocks,
 	)
-	if err := setGenesisConfig(*genesisURLFlag); err != nil {
-		slog.Error("failed to set genesis config", "error", err)
-		os.Exit(1)
-	}
 
 	influx, err := influxdb.New(influxURL, influxToken, *influxOrg, *influxBucket)
 	if err != nil {
@@ -60,6 +60,11 @@ func main() {
 			slog.Error("error closing influxdb", "error", err)
 		}
 	}()
+
+	if err := setGenesisConfig(*genesisURLFlag, thorURL, influx); err != nil {
+		slog.Error("failed to set genesis config", "error", err)
+		os.Exit(1)
+	}
 
 	if *blocksFlag > math.MaxUint32 {
 		slog.Error("thor-blocks cannot be greater than max uint32")
@@ -124,10 +129,47 @@ func exitContext() context.Context {
 	return ctx
 }
 
-func setGenesisConfig(genesisURL string) error {
+func setGenesisConfig(genesisURL, thorURL string, influx *influxdb.DB) (err error) {
+	var fc *thor.ForkConfig
+	defer func() {
+		if err != nil {
+			return
+		}
+		if fc == nil {
+			err = errors.New("fork config is nil")
+			return
+		}
+		point := write.NewPoint("chain_config", map[string]string{
+			"block_interval":               strconv.FormatUint(thor.BlockInterval(), 10),
+			"epoch_length":                 strconv.FormatUint(uint64(thor.EpochLength()), 10),
+			"seeder_interval":              strconv.FormatUint(uint64(thor.SeederInterval()), 10),
+			"validator_eviction_threshold": strconv.FormatUint(uint64(thor.ValidatorEvictionThreshold()), 10),
+			"low_staking_period":           strconv.FormatUint(uint64(thor.LowStakingPeriod()), 10),
+			"medium_staking_period":        strconv.FormatUint(uint64(thor.MediumStakingPeriod()), 10),
+			"high_staking_period":          strconv.FormatUint(uint64(thor.HighStakingPeriod()), 10),
+			"cooldown_period":              strconv.FormatUint(uint64(thor.CooldownPeriod()), 10),
+			"hayabusa_tp":                  strconv.FormatUint(uint64(thor.HayabusaTP()), 10),
+		}, map[string]interface {
+		}{
+			"null": true,
+		}, time.Now())
+		influx.WritePoints([]*write.Point{point})
+	}()
+
+	// for default networks, fetch genesis from thor node
 	if genesisURL == "" {
+		gene, err := thorclient.New(thorURL).Block("0")
+		if err != nil {
+			return err
+		}
+		fc = thor.GetForkConfig(gene.ID)
+		if fc == nil {
+			return errors.New("network is not mainnet/testnet, please provide a genesis URL")
+		}
 		return nil
 	}
+
+	// for custom networks, parse the genesis file
 	res, err := http.Get(genesisURL)
 	if err != nil || res.StatusCode != http.StatusOK {
 		return errors.New("failed to fetch genesis config")
@@ -149,5 +191,7 @@ func setGenesisConfig(genesisURL string) error {
 		slog.Info("setting custom genesis config", "config", genesis.Config)
 		thor.SetConfig(*genesis.Config)
 	}
+	fc = genesis.ForkConfig
+
 	return nil
 }

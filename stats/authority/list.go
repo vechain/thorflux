@@ -126,13 +126,13 @@ func (l *List) Write(event *types.Event) []*write.Point {
 	block := event.Block
 	prev := event.Prev
 	chainTag := event.ChainTag
-	epoch := block.Number / 180
+	epoch := block.Number / thor.EpochLength()
 
 	points := make([]*write.Point, 0)
 
 	if prev != nil {
 		// Process recent slots
-		slotsSinceLastBlock := (block.Timestamp - prev.Timestamp + 9) / 10
+		slotsSinceLastBlock := (block.Timestamp - prev.Timestamp + thor.BlockInterval() - 1) / thor.BlockInterval()
 
 		// Write detailed slot data for the last hour (360 slots)
 		const detailedSlotWindow = 360
@@ -188,7 +188,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 		}
 
 		for a := startSlot; a < slotsSinceLastBlock-1; a++ {
-			rawTime := prev.Timestamp + a*10
+			rawTime := prev.Timestamp + a*thor.BlockInterval()
 			slotTime := time.Unix(int64(rawTime), 0)
 			isFilled := a == slotsSinceLastBlock-1
 			value := 0
