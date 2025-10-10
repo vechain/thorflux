@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/kouhin/envflag"
 	"github.com/vechain/thor/v2/genesis"
 	"github.com/vechain/thor/v2/thor"
+	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/pubsub"
@@ -25,7 +27,7 @@ import (
 
 var (
 	thorFlag        = flag.String("thor-url", "https://hayabusa.live.dev.node.vechain.org", "thor node URL, (env var: THOR_URL)")
-	genesisURLFlag  = flag.String("genesis-url", "", "thor genesis node URL, (env var: GENESIS_URL)")
+	genesisURLFlag  = flag.String("genesis-url", "https://vechain.github.io/thor-hayabusa/genesis.json", "thor genesis node URL, (env var: GENESIS_URL)")
 	blocksFlag      = flag.Uint64("thor-blocks", config.DefaultThorBlocks, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
 	influxUrlFlag   = flag.String("influx-url", config.DefaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
 	influxTokenFlag = flag.String("influx-token", config.DefaultInfluxToken, "influxdb auth token, (env var: INFLUX_TOKEN)")
@@ -59,7 +61,7 @@ func main() {
 		}
 	}()
 
-	if err := setGenesisConfig(*genesisURLFlag, influx); err != nil {
+	if err := setGenesisConfig(*genesisURLFlag, thorURL, influx); err != nil {
 		slog.Error("failed to set genesis config", "error", err)
 		os.Exit(1)
 	}
@@ -127,10 +129,47 @@ func exitContext() context.Context {
 	return ctx
 }
 
-func setGenesisConfig(genesisURL string, influx *influxdb.DB) error {
+func setGenesisConfig(genesisURL, thorURL string, influx *influxdb.DB) (err error) {
+	var fc *thor.ForkConfig
+	defer func() {
+		if err != nil {
+			return
+		}
+		if fc == nil {
+			err = errors.New("fork config is nil")
+			return
+		}
+		point := write.NewPoint("chain_config", map[string]string{
+			"block_interval":               strconv.FormatUint(thor.BlockInterval(), 10),
+			"epoch_length":                 strconv.FormatUint(uint64(thor.EpochLength()), 10),
+			"seeder_interval":              strconv.FormatUint(uint64(thor.SeederInterval()), 10),
+			"validator_eviction_threshold": strconv.FormatUint(uint64(thor.ValidatorEvictionThreshold()), 10),
+			"low_staking_period":           strconv.FormatUint(uint64(thor.LowStakingPeriod()), 10),
+			"medium_staking_period":        strconv.FormatUint(uint64(thor.MediumStakingPeriod()), 10),
+			"high_staking_period":          strconv.FormatUint(uint64(thor.HighStakingPeriod()), 10),
+			"cooldown_period":              strconv.FormatUint(uint64(thor.CooldownPeriod()), 10),
+			"hayabusa_tp":                  strconv.FormatUint(uint64(thor.HayabusaTP()), 10),
+		}, map[string]interface {
+		}{
+			"null": true,
+		}, time.Now())
+		influx.WritePoints([]*write.Point{point})
+	}()
+
+	// for default networks, fetch genesis from thor node
 	if genesisURL == "" {
+		gene, err := thorclient.New(thorURL).Block("0")
+		if err != nil {
+			return err
+		}
+		fc = thor.GetForkConfig(gene.ID)
+		if fc == nil {
+			return errors.New("failed to get fork config from genesis")
+		}
 		return nil
 	}
+
+	// for custom networks, parse the genesis file
 	res, err := http.Get(genesisURL)
 	if err != nil || res.StatusCode != http.StatusOK {
 		return errors.New("failed to fetch genesis config")
@@ -152,24 +191,7 @@ func setGenesisConfig(genesisURL string, influx *influxdb.DB) error {
 		slog.Info("setting custom genesis config", "config", genesis.Config)
 		thor.SetConfig(*genesis.Config)
 	}
-
-	point := write.NewPoint("chain_config", map[string]string{
-		"genesis_url": genesisURL,
-	}, map[string]interface{}{
-		"block_interval":               thor.BlockInterval(),
-		"epoch_length":                 thor.EpochLength(),
-		"seeder_interval":              thor.SeederInterval(),
-		"validator_eviction_threshold": thor.ValidatorEvictionThreshold(),
-		"low_staking_period":           thor.LowStakingPeriod(),
-		"medium_staking_period":        thor.MediumStakingPeriod(),
-		"high_staking_period":          thor.HighStakingPeriod(),
-		"cooldown_period":              thor.CooldownPeriod(),
-		"hayabusa_tp":                  thor.HayabusaTP(),
-		"fc_hayabusa":                  genesis.ForkConfig.HAYABUSA,
-		"fc_galactica":                 genesis.ForkConfig.GALACTICA,
-	}, time.Now())
-
-	influx.WritePoints([]*write.Point{point})
+	fc = genesis.ForkConfig
 
 	return nil
 }
