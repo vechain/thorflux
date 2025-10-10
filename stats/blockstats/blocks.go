@@ -13,6 +13,8 @@ import (
 func Write(ev *types.Event) []*write.Point {
 	flags := make(map[string]any)
 
+	flags["block_id"] = ev.Block.ID.String()
+	flags["total_score"] = ev.Block.TotalScore
 	flags["pos_active"] = ev.HayabusaStatus.Active
 	flags["best_block_number"] = ev.Block.Number
 	flags["block_gas_used"] = ev.Block.GasUsed
@@ -57,6 +59,9 @@ func Write(ev *types.Event) []*write.Point {
 		flags["block_base_fee"] = "0"
 	}
 
-	p := influxdb2.NewPoint(config.BlockStatsMeasurement, ev.DefaultTags, flags, ev.Timestamp)
+	tags := make(map[string]string)
+	tags["signer"] = ev.Block.Signer.String()
+
+	p := influxdb2.NewPoint(config.BlockStatsMeasurement, tags, flags, ev.Timestamp)
 	return []*write.Point{p}
 }

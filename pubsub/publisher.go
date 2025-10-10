@@ -28,8 +28,15 @@ import (
 	"github.com/vechain/thorflux/types"
 )
 
+type ForkEvent struct {
+	Occurred  bool
+	Best      *api.JSONExpandedBlock // the best block at which we detected the fork
+	Finalized *api.JSONExpandedBlock // the block that is now finalized
+	SideChain *api.JSONExpandedBlock // the block that was on the main chain but is now on a side chain
+}
+
 type Block struct {
-	ForkDetected   bool
+	Fork           ForkEvent
 	Block          *api.JSONExpandedBlock
 	Prev           *api.JSONExpandedBlock
 	HayabusaStatus types.HayabusaStatus
@@ -176,8 +183,13 @@ func (p *Publisher) sync(ctx context.Context) {
 				}
 
 				p.blockChan <- &Block{
-					Block:        finalized,
-					ForkDetected: true,
+					Block: finalized,
+					Fork: ForkEvent{
+						Occurred:  true,
+						Best:      next,
+						Finalized: finalized,
+						SideChain: prev,
+					},
 				}
 				p.prev.Store(finalized)
 				continue
@@ -199,7 +211,6 @@ func (p *Publisher) sync(ctx context.Context) {
 			p.blockChan <- &Block{
 				Block:          next,
 				Prev:           prev,
-				ForkDetected:   false,
 				Seed:           seed,
 				HayabusaStatus: p.hayabusaStatus,
 				Staker:         stakerInfo,
