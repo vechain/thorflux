@@ -89,9 +89,11 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 			}
 			t := time.Unix(int64(b.Block.Timestamp), 0)
 
-			if b.ForkDetected {
+			if b.Fork.Occurred {
 				slog.Warn("fork detected", "block", b.Block.Number)
-				s.db.ResolveFork(t)
+				if err := influxdb.NewForkHandler(s.db, s.client).Resolve(b.Fork.Best, b.Fork.SideChain, b.Fork.Finalized); err != nil {
+					slog.Error("failed to resolve fork", "error", err)
+				}
 				continue
 			}
 
