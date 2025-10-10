@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	thorFlag        = flag.String("thor-url", "http://localhost:8669", "thor node URL, (env var: THOR_URL)")
-	genesisURLFlag  = flag.String("genesis-url", "https://gist.githubusercontent.com/kgapos/8651c71b70ad1e0e5ce483d7ceb435d5/raw/3ea1d7a49af1525fdf8851b1b6f2939b2e58e3f8/genesis.json", "thor genesis node URL, (env var: GENESIS_URL)")
+	thorFlag        = flag.String("thor-url", "https://hayabusa.live.dev.node.vechain.org", "thor node URL, (env var: THOR_URL)")
+	genesisURLFlag  = flag.String("genesis-url", "", "thor genesis node URL, (env var: GENESIS_URL)")
 	blocksFlag      = flag.Uint64("thor-blocks", config.DefaultThorBlocks, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
 	influxUrlFlag   = flag.String("influx-url", config.DefaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
 	influxTokenFlag = flag.String("influx-token", config.DefaultInfluxToken, "influxdb auth token, (env var: INFLUX_TOKEN)")
