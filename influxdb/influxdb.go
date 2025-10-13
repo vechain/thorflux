@@ -130,6 +130,11 @@ func (i *DB) Latest() (uint32, error) {
 	return 0, nil
 }
 
+func (i *DB) Delete(start, stop time.Time, predicate string) error {
+	slog.Info("deleting points from influxdb", "start", start, "stop", stop, "predicate", predicate)
+	return i.client.DeleteAPI().DeleteWithName(context.Background(), i.org, i.bucket, start, stop, predicate)
+}
+
 func (i *DB) WritePoints(points []*write.Point) {
 	for _, p := range points {
 		i.writeAPI.WritePoint(p)

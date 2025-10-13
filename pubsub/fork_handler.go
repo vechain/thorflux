@@ -1,7 +1,6 @@
-package influxdb
+package pubsub
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -11,17 +10,18 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/thorclient"
+	"github.com/vechain/thorflux/influxdb"
 )
 
-type Handler struct {
-	db     *DB
+type ForkHandler struct {
+	db     *influxdb.DB
 	client *thorclient.Client
 }
 
 const ForkMeasurement = "forks"
 
-func NewForkHandler(db *DB, client *thorclient.Client) *Handler {
-	return &Handler{
+func NewForkHandler(db *influxdb.DB, client *thorclient.Client) *ForkHandler {
+	return &ForkHandler{
 		db:     db,
 		client: client,
 	}
@@ -29,19 +29,12 @@ func NewForkHandler(db *DB, client *thorclient.Client) *Handler {
 
 // Resolve finds the common ancestor of the best chain and side chain, writes the forked blocks to InfluxDB.
 // Then it wipes all entries the DB after the finalized block
-func (h *Handler) Resolve(best, sideChain, finalized *api.JSONExpandedBlock) error {
+func (h *ForkHandler) Resolve(best, sideChain, finalized *api.JSONExpandedBlock) error {
 	stop := time.Now().Add(time.Hour)
 	start := time.Unix(int64(finalized.Timestamp), 0).Add(time.Second)
 
 	// delete all entries after finalized block
-	if err := h.db.client.DeleteAPI().DeleteWithName(
-		context.Background(),
-		h.db.org,
-		h.db.bucket,
-		start,
-		stop,
-		fmt.Sprintf("_measurement!=\"%s\"", ForkMeasurement),
-	); err != nil {
+	if err := h.db.Delete(start, stop, fmt.Sprintf("_measurement=\"%s\"", ForkMeasurement)); err != nil {
 		return errors.Wrap(err, "failed to delete points after finalized block")
 	}
 
@@ -55,7 +48,7 @@ func (h *Handler) Resolve(best, sideChain, finalized *api.JSONExpandedBlock) err
 	return nil
 }
 
-func (h *Handler) getSideChain(best, side, finalized *api.JSONExpandedBlock) ([]*api.JSONExpandedBlock, error) {
+func (h *ForkHandler) getSideChain(best, side, finalized *api.JSONExpandedBlock) ([]*api.JSONExpandedBlock, error) {
 	if side.Number > best.Number {
 		return nil, fmt.Errorf("side chain block number %d is greater than best chain block number %d", side.Number, best.Number)
 	}
@@ -107,7 +100,7 @@ func (h *Handler) getSideChain(best, side, finalized *api.JSONExpandedBlock) ([]
 }
 
 // writeForkedChain writes the forked block and returns its parent
-func (h *Handler) writeForkedBlock(blocks []*api.JSONExpandedBlock) {
+func (h *ForkHandler) writeForkedBlock(blocks []*api.JSONExpandedBlock) {
 	for i, b := range blocks {
 		t := time.Unix(int64(b.Timestamp), 0)
 
