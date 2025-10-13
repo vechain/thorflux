@@ -130,15 +130,9 @@ func (i *DB) Latest() (uint32, error) {
 	return 0, nil
 }
 
-// ResolveFork deletes all the entries in the bucket that has a block time GREATER than the forked block
-func (i *DB) ResolveFork(start time.Time) {
-	start = start.Add(time.Second)
-	stop := time.Now().Add(time.Hour * 24)
-	err := i.client.DeleteAPI().DeleteWithName(context.Background(), i.org, i.bucket, start, stop, "")
-	if err != nil {
-		slog.Error("failed to delete blocks", "error", err)
-		panic(err)
-	}
+func (i *DB) Delete(start, stop time.Time, predicate string) error {
+	slog.Info("deleting points from influxdb", "start", start, "stop", stop, "predicate", predicate)
+	return i.client.DeleteAPI().DeleteWithName(context.Background(), i.org, i.bucket, start, stop, predicate)
 }
 
 func (i *DB) WritePoints(points []*write.Point) {
