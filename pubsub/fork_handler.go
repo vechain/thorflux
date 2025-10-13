@@ -68,6 +68,11 @@ func (h *ForkHandler) getSideChain(best, side, finalized *api.JSONExpandedBlock)
 		return nil, err
 	}
 
+	if bestChainBlock.ID == side.ID {
+		slog.Warn("can't resolve side chain, both blocks are the same", "block-num", bestNum)
+		return nil, nil
+	}
+
 	sideChain = append(sideChain, side)
 	var ancestor *api.JSONExpandedBlock
 
