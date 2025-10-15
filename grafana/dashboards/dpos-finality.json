@@ -36,7 +36,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -96,7 +97,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -156,7 +158,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -216,7 +219,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -276,7 +280,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -336,7 +341,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               }
             ]
           },
@@ -396,7 +402,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue"
+                "color": "blue",
+                "value": null
               }
             ]
           },
@@ -457,7 +464,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue"
+                "color": "blue",
+                "value": null
               }
             ]
           }
@@ -548,7 +556,8 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": null
               },
               {
                 "color": "red",
@@ -653,7 +662,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red"
+                "color": "red",
+                "value": null
               },
               {
                 "color": "orange",
@@ -974,9 +984,9 @@
       },
       {
         "current": {
-          "selected": true,
-          "text": "100",
-          "value": "100"
+          "selected": false,
+          "text": "10",
+          "value": "10"
         },
         "hide": 0,
         "label": "# Of Epochs to Show",
@@ -984,11 +994,11 @@
         "options": [
           {
             "selected": true,
-            "text": "100",
-            "value": "100"
+            "text": "10",
+            "value": "10"
           }
         ],
-        "query": "100",
+        "query": "10",
         "skipUrlSync": false,
         "type": "textbox"
       }
@@ -1002,6 +1012,6 @@
   "timezone": "browser",
   "title": "DPoS - Finality",
   "uid": "ef14dpms4xfcwd",
-  "version": 5,
+  "version": 7,
   "weekStart": ""
 }
