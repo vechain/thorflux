@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 12,
+  "id": 10,
   "links": [],
   "panels": [
     {
@@ -36,8 +36,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -97,8 +96,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -158,8 +156,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -219,8 +216,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -280,8 +276,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -341,8 +336,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           },
@@ -402,8 +396,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           },
@@ -464,8 +457,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
-                "value": null
+                "color": "blue"
               }
             ]
           }
@@ -556,8 +548,7 @@
             "mode": "percentage",
             "steps": [
               {
-                "color": "red",
-                "value": null
+                "color": "red"
               },
               {
                 "color": "red",
@@ -586,9 +577,11 @@
       "id": 46,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -660,8 +653,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
+                "color": "red"
               },
               {
                 "color": "orange",
@@ -686,9 +678,11 @@
       "id": 47,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -980,9 +974,9 @@
       },
       {
         "current": {
-          "selected": false,
-          "text": "5",
-          "value": "5"
+          "selected": true,
+          "text": "100",
+          "value": "100"
         },
         "hide": 0,
         "label": "# Of Epochs to Show",
@@ -990,11 +984,11 @@
         "options": [
           {
             "selected": true,
-            "text": "5",
-            "value": "5"
+            "text": "100",
+            "value": "100"
           }
         ],
-        "query": "5",
+        "query": "100",
         "skipUrlSync": false,
         "type": "textbox"
       }
@@ -1008,6 +1002,6 @@
   "timezone": "browser",
   "title": "DPoS - Finality",
   "uid": "ef14dpms4xfcwd",
-  "version": 15,
+  "version": 5,
   "weekStart": ""
 }
