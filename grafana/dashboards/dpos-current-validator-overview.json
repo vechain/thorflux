@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 10,
+  "id": 11,
   "links": [],
   "panels": [
     {
@@ -2941,9 +2941,8 @@
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "0.02",
-          "value": "0.02"
+          "text": "0.02337",
+          "value": "0.02337"
         },
         "description": "",
         "hide": 0,
@@ -2952,11 +2951,11 @@
         "options": [
           {
             "selected": true,
-            "text": "0.02",
-            "value": "0.02"
+            "text": "0.02337",
+            "value": "0.02337"
           }
         ],
-        "query": "0.02",
+        "query": "0.02337",
         "skipUrlSync": false,
         "type": "textbox"
       },
