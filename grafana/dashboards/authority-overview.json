@@ -317,7 +317,7 @@
             {
               "targetBlank": true,
               "title": "",
-              "url": "/d/aefsqnjntevi8c/single-authority-view?orgId=1&var-proposer=${__data.fields.proposer}&from=${__from}&to=${__to}"
+              "url": "/d/fe8vud5hhircwd/single-authority-view?orgId=1&var-proposer=${__data.fields.proposer}&from=${__from}&to=${__to}"
             }
           ],
           "mappings": [],
