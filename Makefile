@@ -3,6 +3,11 @@ start:
 	@docker compose up --build -d --wait
 	@open http://localhost:3000/d/bdw67xl69siyo1/influxdb-stats?orgId=1
 
+dashgen-dev:
+	@echo "Starting dashgen development mode..."
+	@docker compose build dashgen && docker compose up
+	@echo "Dashboard development server running with file watching enabled"
+
 debug-with-local-thor-port:
 	@echo "Debugging docker compose with Thor port: $(PORT)"
 	@docker compose up --build -d plugin-builder influxdb grafana --wait

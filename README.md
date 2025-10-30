@@ -19,7 +19,7 @@ make start
 
 ```bash
 docker compose up
-go run . --thor-url=https://mainnet.vechain.org --influx-token=admin-token --thor-block=1024
+go run . --thor-url=https://mainnet.vechain.org --influx-token=admin-token
 ```
 
 3. Debug mode along with a dynamic local Thor port (like hayabusa-e2e tests)
@@ -30,7 +30,23 @@ go run . --thor-url=https://mainnet.vechain.org --influx-token=admin-token --tho
 make debug-with-local-thor-port PORT=65253
 ```
 
-4. Cleanup
+4. Dashboard Generator Development
+
+- When developing dashboard generation features, rebuild the dashgen service and start the stack:
+
+```bash
+docker compose build dashgen && docker compose up
+```
+
+This will:
+- Rebuild the dashgen container with your latest code changes
+- Generate all dashboards automatically before Grafana starts
+- Enable file watching for automatic dashboard regeneration during development
+- Make generated dashboards available at http://localhost:3000
+
+For more details on dashboard development, see [DASHGEN_DOCKER.md](./DASHGEN_DOCKER.md) and [dashgen/README.md](./dashgen/README.md).
+
+5. Cleanup
 
 - This will bring down the Docker containers, delete the volumes folder, kill `go run` processes following the format of this project and delete the thorflux log file
 
@@ -44,4 +60,4 @@ In an aim to align dashboards across public and private repositories in the foun
 'Dashboard Template' as the starting point for any new dashboards. This introduces a standardised way
 to configure the InfluxDB data source.
 
-*For foundation members please see [this](https://vechain.atlassian.net/wiki/x/G4A-W) (**Note:** this will be unavailable to external collaborators)*
+*Please see [this](https://vechain.atlassian.net/wiki/x/G4A-W) (**Note:** this will be unavailable to external collaborators)*
