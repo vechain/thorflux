@@ -2,12 +2,15 @@ package excel
 
 import (
 	"fmt"
-	"log/slog"
-
 	"github.com/vechain/thor/v2/thor"
-
 	"github.com/xuri/excelize/v2"
+	"log/slog"
+	"os"
+	"os/exec"
+	"strings"
 )
+
+var validatorFileName = "Validators.xlsx"
 
 type Owner struct {
 	MasterAddress  thor.Address
@@ -16,8 +19,13 @@ type Owner struct {
 	Network        string
 }
 
-func ParseOwnersFromXLSX(filePath string) (*[]Owner, error) {
-	f, err := excelize.OpenFile(filePath)
+func ParseOwnersFromXLSX(ownersRepo string) (*[]Owner, error) {
+	excelFile, err := DownloadRegistry(ownersRepo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp dir: %w", err)
+	}
+
+	f, err := excelize.OpenFile(excelFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
@@ -65,4 +73,29 @@ func ParseOwnersFromXLSX(filePath string) (*[]Owner, error) {
 		})
 	}
 	return &owners, nil
+}
+
+func DownloadRegistry(ownersRepo string) (string, error) {
+	tempDir, err := os.MkdirTemp("", "owners-registry-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp directory: %w", err)
+	}
+
+	if err := os.MkdirAll(tempDir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create download directory: %w", err)
+	}
+
+	args := make([]string, 0)
+	args = append(args, "clone")
+
+	args = append(args, "--depth", "1", ownersRepo, tempDir)
+
+	cmd := exec.Command("git", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed to clone repository: %w", err)
+	}
+	return strings.Join([]string{tempDir, validatorFileName}, "/"), nil
 }

@@ -29,18 +29,18 @@ import (
 var topFiveProposers = 5
 
 type List struct {
-	candidates     []Candidate
-	thor           *thorclient.Client
-	owners         map[thor.Address]*excel.Owner
-	ownersFilePath string
+	candidates []Candidate
+	thor       *thorclient.Client
+	owners     map[thor.Address]*excel.Owner
+	ownersRepo string
 }
 
-func NewList(thorClient *thorclient.Client, ownersFilePath string) *List {
+func NewList(thorClient *thorclient.Client, ownersRepo string) *List {
 	return &List{
-		thor:           thorClient,
-		candidates:     make([]Candidate, 0),
-		owners:         make(map[thor.Address]*excel.Owner),
-		ownersFilePath: ownersFilePath,
+		thor:       thorClient,
+		candidates: make([]Candidate, 0),
+		owners:     make(map[thor.Address]*excel.Owner),
+		ownersRepo: ownersRepo,
 	}
 }
 
@@ -113,7 +113,12 @@ func (l *List) Init(revision thor.Bytes32) error {
 	}
 	l.candidates = candidates
 
-	owners, err := excel.ParseOwnersFromXLSX(l.ownersFilePath)
+	l.RefreshOwnersList()
+	return nil
+}
+
+func (l *List) RefreshOwnersList() {
+	owners, err := excel.ParseOwnersFromXLSX(l.ownersRepo)
 	if err != nil {
 		slog.Warn("Cannot parse owners file", err)
 	} else {
@@ -121,7 +126,6 @@ func (l *List) Init(revision thor.Bytes32) error {
 			l.owners[owner.MasterAddress] = &owner
 		}
 	}
-	return nil
 }
 
 func (l *List) Shuffled(prev *api.JSONExpandedBlock, seed []byte) ([]thor.Address, error) {
@@ -256,6 +260,9 @@ func (l *List) Write(event *types.Event) []*write.Point {
 			slog.Error("failed to initialize authority list", "error", err)
 			return points
 		}
+	} else if block.Number%(thor.EpochLength()*2) == 0 {
+		slog.Info("Refreshing owners list", "block", block.ID, "number", block.Number)
+		l.RefreshOwnersList()
 	}
 
 	return points

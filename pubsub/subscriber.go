@@ -34,7 +34,7 @@ type Subscriber struct {
 	workerPool *WorkerPool
 }
 
-func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block, ownersFilePath string) (*Subscriber, error) {
+func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block, ownersRepo string) (*Subscriber, error) {
 	tclient := thorclient.New(thorURL)
 
 	genesis, err := tclient.Block("0")
@@ -45,7 +45,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block, owner
 	chainTag := fmt.Sprintf("%d", genesis.ID[31])
 
 	liveness := liveness2.New(thorclient.New(thorURL))
-	poa := authority.NewList(thorclient.New(thorURL), ownersFilePath)
+	poa := authority.NewList(thorclient.New(thorURL), ownersRepo)
 	hayabusa, err := pos.NewStaker(thorclient.New(thorURL))
 	if err != nil {
 		slog.Error("failed to create staker instance", "error", err)
