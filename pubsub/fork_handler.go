@@ -34,7 +34,7 @@ func (h *ForkHandler) Resolve(best, sideChain, finalized *api.JSONExpandedBlock)
 	start := time.Unix(int64(finalized.Timestamp), 0).Add(time.Second)
 
 	// delete all entries after finalized block
-	if err := h.db.Delete(start, stop, fmt.Sprintf("_measurement=\"%s\"", ForkMeasurement)); err != nil {
+	if err := h.db.Delete(start, stop, fmt.Sprintf("_measurement!=\"%s\"", ForkMeasurement)); err != nil {
 		return errors.Wrap(err, "failed to delete points after finalized block")
 	}
 
