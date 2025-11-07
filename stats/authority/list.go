@@ -48,45 +48,22 @@ func (l *List) ShouldReset(block *api.JSONExpandedBlock) bool {
 		candidateMap[candidate.Master] = true
 	}
 
-	hasAuthorityEvent := func() bool {
-		for _, r := range block.Transactions {
-			for _, o := range r.Outputs {
-				for _, ev := range o.Events {
-					if ev.Address == builtin.Authority.Address {
-						return true
-					}
+	for _, r := range block.Transactions {
+		for _, o := range r.Outputs {
+			for _, ev := range o.Events {
+				if ev.Address == builtin.Authority.Address {
+					return true
+				}
+			}
+			for _, t := range o.Transfers {
+				if _, exists := candidateMap[t.Sender]; exists {
+					return true
+				}
+				if _, exists := candidateMap[t.Recipient]; exists {
+					return true
 				}
 			}
 		}
-		return false
-	}()
-
-	// if no event emitted from Authority contract, it's believed that the candidates list not changed
-	if !hasAuthorityEvent {
-		// if no endorsor related transfer, or no event emitted from Params contract, the proposers list
-		// can be reused
-		hasEndorsorEvent := func() bool {
-			for _, r := range block.Transactions {
-				for _, o := range r.Outputs {
-					for _, ev := range o.Events {
-						if ev.Address == builtin.Params.Address {
-							return true
-						}
-					}
-					for _, t := range o.Transfers {
-						if _, ok := candidateMap[t.Sender]; ok {
-							return true
-						}
-						if _, ok := candidateMap[t.Recipient]; ok {
-							return true
-						}
-					}
-				}
-			}
-			return false
-		}()
-
-		return hasEndorsorEvent
 	}
 
 	return false
