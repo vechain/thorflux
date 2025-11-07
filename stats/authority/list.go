@@ -51,7 +51,7 @@ func (l *List) ShouldReset(block *api.JSONExpandedBlock) bool {
 	for _, r := range block.Transactions {
 		for _, o := range r.Outputs {
 			for _, ev := range o.Events {
-				if ev.Address == builtin.Authority.Address {
+				if ev.Address == builtin.Authority.Address || ev.Address == builtin.Params.Address {
 					return true
 				}
 			}
