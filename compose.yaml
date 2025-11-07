@@ -3,6 +3,23 @@ networks:
     driver: bridge
 
 services:
+  dashgen:
+    build:
+      context: .
+      dockerfile: dashgen.Dockerfile
+    container_name: dashgen
+    networks:
+      - monitoring
+    environment:
+      - DEV_MODE=true  # Set to false for production
+      - INFLUX_UID=B87265B08D314AF
+    volumes:
+      # Mount source code for development (file watching)
+      - ${PWD}/dashgen:/app/dashgen:ro
+      # Mount output directory
+      - ${PWD}/grafana/gen-dashboards:/output
+    restart: unless-stopped
+
   influxdb:
     image: influxdb:2
     container_name: influxdb
@@ -37,6 +54,8 @@ services:
       - monitoring
     ports:
       - 3000:3000
+    depends_on:
+      - dashgen
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_DEFAULT_APP_MODE=development
@@ -46,6 +65,7 @@ services:
       - ${PWD}/grafana/data-sources.yaml:/etc/grafana/provisioning/datasources/grafana-data-sources.yaml:ro
       - ${PWD}/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml:ro
       - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ${PWD}/grafana/gen-dashboards:/var/lib/grafana/gen-dashboards:ro
       - ${PWD}/volumes/grafana:/var/lib/grafana
 
   thorflux:

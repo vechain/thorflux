@@ -1,7 +1,7 @@
 apiVersion: 1
 
 providers:
-  - name: "Dashboard provider"
+  - name: "Manual Dashboards"
     orgId: 1
     type: file
     disableDeletion: false
@@ -9,4 +9,14 @@ providers:
     allowUiUpdates: true
     options:
       path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true
+
+  - name: "Generated Dashboards"
+    orgId: 1
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 5  # More frequent updates for generated dashboards
+    allowUiUpdates: false     # Generated dashboards shouldn't be edited in UI
+    options:
+      path: /var/lib/grafana/gen-dashboards
       foldersFromFilesStructure: true

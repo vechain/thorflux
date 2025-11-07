@@ -1,0 +1,12 @@
+# For dashgen builds - ignore everything except what we need
+*
+!go.mod
+!go.sum
+!dashgen/
+dashgen/README.md
+volumes/
+grafana/
+.git/
+*.md
+Dockerfile
+*.Dockerfile
