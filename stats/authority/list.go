@@ -27,20 +27,26 @@ import (
 var topFiveProposers = 5
 
 type List struct {
-	candidates []Candidate
-	thor       *thorclient.Client
+	candidates  []Candidate
+	thor        *thorclient.Client
+	updateBlock uint32
 }
 
 func NewList(thor *thorclient.Client) *List {
 	return &List{
-		thor:       thor,
-		candidates: make([]Candidate, 0),
+		thor:        thor,
+		candidates:  make([]Candidate, 0),
+		updateBlock: 0,
 	}
 }
 
 func (l *List) ShouldReset(block *api.JSONExpandedBlock) bool {
 	if len(l.candidates) == 0 {
 		return true
+	}
+
+	if l.updateBlock > block.Number {
+		return false
 	}
 	candidateMap := make(map[thor.Address]bool)
 	for _, candidate := range l.candidates {
@@ -98,20 +104,22 @@ func (l *List) Len() int {
 
 func (l *List) Invalidate() {
 	l.candidates = make([]Candidate, 0)
+	l.updateBlock = 0
 }
 
-func (l *List) Init(revision thor.Bytes32) error {
+func (l *List) Init(revision thor.Bytes32, blockNum uint32) error {
 	candidates, err := listAllCandidates(l.thor, revision)
 	if err != nil {
 		return err
 	}
 	l.candidates = candidates
+	l.updateBlock = blockNum
 	return nil
 }
 
 func (l *List) Shuffled(prev *api.JSONExpandedBlock, seed []byte) ([]thor.Address, error) {
 	if len(l.candidates) == 0 {
-		if err := l.Init(prev.ID); err != nil {
+		if err := l.Init(prev.ID, prev.Number); err != nil {
 			return nil, fmt.Errorf("failed to initialize authority list: %w", err)
 		}
 	}
@@ -234,7 +242,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 
 	if l.ShouldReset(block) {
 		slog.Info("Authority list reset", "block", block.ID, "number", block.Number)
-		if err := l.Init(block.ID); err != nil {
+		if err := l.Init(block.ID, block.Number); err != nil {
 			slog.Error("failed to initialize authority list", "error", err)
 			return points
 		}
