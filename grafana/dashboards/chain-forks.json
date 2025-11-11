@@ -23,6 +23,158 @@
   "panels": [
     {
       "datasource": {
+        "type": "cloudwatch",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "left",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "height"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "hidden"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "${datasource}"
+          },
+          "dimensions": {},
+          "expression": "filter @message like /imported blocks/ |\nparse @message /^(?<beforeDot>.*).\\w{8}]\"/ |\nparse beforeDot '[#' as height |\nfields @timestamp, @message, @height |\nstats count() as block_count by height |\nsort height asc",
+          "id": "",
+          "label": "",
+          "logGroups": [
+            {
+              "arn": "$group",
+              "name": "$group"
+            }
+          ],
+          "matchExact": true,
+          "metricEditorMode": 0,
+          "metricName": "",
+          "metricQueryType": 0,
+          "namespace": "",
+          "period": "",
+          "queryMode": "Logs",
+          "refId": "A",
+          "region": "$region",
+          "sqlExpression": "",
+          "statistic": "Average",
+          "statsGroups": [
+            "height"
+          ]
+        }
+      ],
+      "title": "Duplicate blocks at height",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "id": 5,
+              "length": 3,
+              "number": 0,
+              "parent_id": 4,
+              "score": 1,
+              "signer": 2
+            },
+            "renameByName": {
+              "id": "Block ID",
+              "length": "Side Chain Length",
+              "number": "Block Num",
+              "parent_id": "Parent ID",
+              "score": "Total Score",
+              "signer": "Signer"
+            }
+          }
+        }
+      ],
+      "type": "trend"
+    },
+    {
+      "datasource": {
         "type": "influxdb",
         "uid": "B87265B08D314AF"
       },
@@ -96,7 +248,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 11
       },
       "id": 3,
       "options": {
@@ -238,7 +390,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 11
       },
       "id": 4,
       "options": {
@@ -391,7 +543,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 23
       },
       "id": 2,
       "options": {
@@ -492,7 +644,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 35
       },
       "id": 1,
       "options": {
@@ -528,22 +680,146 @@
     "list": [
       {
         "current": {
-          "text": "vechain",
-          "value": "vechain"
+          "selected": false,
+          "text": "mainnet",
+          "value": "mainnet"
         },
         "datasource": {
           "type": "influxdb",
           "uid": "B87265B08D314AF"
         },
         "definition": "buckets()",
+        "hide": 0,
         "includeAll": false,
         "label": "Bucket",
+        "multi": false,
         "name": "bucket",
         "options": [],
         "query": "buckets()",
         "refresh": 2,
         "regex": "^[^_].*",
+        "skipUrlSync": false,
         "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "node-authority-testnet-prd",
+          "value": "eeswka8ok6tq8d"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Source",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "cloudwatch",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "eu-west-1"
+          ],
+          "value": [
+            "eu-west-1"
+          ]
+        },
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "${datasource}"
+        },
+        "definition": "",
+        "description": "Get all regions available",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Region",
+        "multi": false,
+        "name": "region",
+        "options": [],
+        "query": {
+          "queryType": "regions",
+          "refId": "CloudWatchVariableQueryEditor-VariableQuery",
+          "region": "default"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "be05e9nontwcgb"
+        },
+        "definition": "label_values(color)",
+        "description": "Color of the logs you're looking for.",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Color",
+        "multi": true,
+        "name": "color",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(color)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "2-authority-testnet-blue-prd-eu-west-1-an-log-group"
+          ],
+          "value": [
+            "arn:aws:logs:eu-west-1:851725293970:log-group:2-authority-testnet-blue-prd-eu-west-1-an-log-group:*"
+          ]
+        },
+        "datasource": {
+          "type": "cloudwatch",
+          "uid": "${datasource}"
+        },
+        "definition": "",
+        "description": "Select the log group",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Group",
+        "multi": true,
+        "name": "group",
+        "options": [],
+        "query": {
+          "logGroupPrefix": "",
+          "queryType": "logGroups",
+          "refId": "CloudWatchVariableQueryEditor-VariableQuery",
+          "region": "$region"
+        },
+        "refresh": 1,
+        "regex": "/.*$color.*/",
+        "skipUrlSync": false,
+        "sort": 0,
         "type": "query"
       }
     ]
