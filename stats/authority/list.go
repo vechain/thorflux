@@ -27,8 +27,9 @@ import (
 var topFiveProposers = 5
 
 type List struct {
-	candidates []Candidate
-	thor       *thorclient.Client
+	candidates       []Candidate
+	thor             *thorclient.Client
+	lastInvalidation time.Time
 }
 
 func NewList(thor *thorclient.Client) *List {
@@ -97,15 +98,33 @@ func (l *List) Len() int {
 }
 
 func (l *List) Invalidate() {
+	if len(l.candidates) > 0 {
+		slog.Debug("Invalidating authority list", "current_candidate_count", len(l.candidates))
+	}
 	l.candidates = make([]Candidate, 0)
 }
 
 func (l *List) Init(revision thor.Bytes32) error {
+	slog.Info("Refreshing authority list", "revision", revision.String())
 	candidates, err := listAllCandidates(l.thor, revision)
 	if err != nil {
+		slog.Error("Failed to fetch authority candidates", "error", err, "revision", revision.String())
 		return err
 	}
+
+	// Count active candidates for logging
+	activeCandidates := 0
+	for _, candidate := range candidates {
+		if candidate.Active {
+			activeCandidates++
+		}
+	}
+
 	l.candidates = candidates
+	slog.Info("Authority list refreshed",
+		"revision", revision.String(),
+		"total_candidates", len(candidates),
+		"active_candidates", activeCandidates)
 	return nil
 }
 
@@ -175,12 +194,27 @@ func (l *List) Write(event *types.Event) []*write.Point {
 		)
 		points = append(points, authNodes)
 
+
 		if len(shuffledCandidates) > 0 && shuffledCandidates[0].String() != block.Signer.String() {
+			expectedProposer := shuffledCandidates[0].String()
+			actualProposer := block.Signer.String()
+
+			slog.Warn("Missed slot detected - invalidating authority list",
+				"block", block.Number,
+				"expected_proposer", expectedProposer,
+				"actual_proposer", actualProposer,
+				"epoch", epoch)
+
+			// Invalidate authority list to force refresh with current validator status
+			l.Invalidate()
+			slog.Info("Authority list invalidated due to missed slot", "block", block.Number)
+
+			// Record the missed slot event
 			missedSlotData := make(map[string]interface{})
-			missedSlotData["expected_proposer"] = shuffledCandidates[0].String()
+			missedSlotData["expected_proposer"] = expectedProposer
 			missedSlot := influxdb2.NewPoint(
 				"missed_slots",
-				map[string]string{"chain_tag": chainTag, "block_number": strconv.Itoa(int(block.Number)), "actual_proposer": block.Signer.String()},
+				map[string]string{"chain_tag": chainTag, "block_number": strconv.Itoa(int(block.Number)), "actual_proposer": actualProposer},
 				missedSlotData,
 				time.Unix(int64(block.Timestamp), 0),
 			)
@@ -275,6 +309,7 @@ func listAllCandidates(thorClient *thorclient.Client, blockID thor.Bytes32) ([]C
 	}
 
 	data := response[1].Data[2:]
+
 
 	valueType, _ := big.NewInt(0).SetString(data[:64], 16)
 	if valueType.Cmp(big.NewInt(32)) != 0 {

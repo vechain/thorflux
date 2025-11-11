@@ -57,7 +57,7 @@ const (
 	DefaultInfluxToken  = "admin-token"
 	DefaultInfluxOrg    = "vechain"
 	DefaultInfluxBucket = "vechain"
-	DefaultThorBlocks   = 360 * 24 * 7 // 1 week of blocks
+	DefaultThorBlocks   = 5 * 360 * 24 * 7 // 1 week of blocks
 )
 
 // Error messages

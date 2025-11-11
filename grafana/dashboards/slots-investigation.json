@@ -1,0 +1,304 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "B87265B08D314AF"
+      },
+      "description": "Shows the first 10 future proposers for the selected block. These are the authority nodes (with their endorsors) that would propose blocks following the selected block.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Order"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Proposer Address"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 460
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "B87265B08D314AF"
+          },
+          "query": "block_to_query = if \"${manual_block}\" != \"\" then \"${manual_block}\" else \"${selected_block}\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"slots\")\n  |> filter(fn: (r) => r[\"block_number\"] == block_to_query)\n  |> pivot(\n      rowKey:[\"_time\", \"position\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with position_num: int(v: r.position) }))\n  |> sort(columns: [\"position_num\"])\n  |> keep(columns: [\"position\", \"authority_node\", \"endorsor_node\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "🔍 Future Proposers",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "position": 0,
+              "authority_node": 1,
+              "endorsor_node": 2
+            },
+            "renameByName": {
+              "position": "Position to Propose",
+              "authority_node": "Authority Node",
+              "endorsor_node": "Endorsor Node"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "B87265B08D314AF"
+      },
+      "description": "Shows details about the selected block including the current signer.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "12.1.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "B87265B08D314AF"
+          },
+          "query": "block_to_query = if \"${manual_block}\" != \"\" then \"${manual_block}\" else \"${selected_block}\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"slots\")\n  |> filter(fn: (r) => r[\"block_number\"] == block_to_query)\n  |> pivot(\n      rowKey: [\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> limit(n: 1)\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block_number: block_to_query,\n      current_signer: r.current_signer,\n      active_nodes: string(v: r.total_active_nodes)\n  }))",
+          "refId": "A"
+        }
+      ],
+      "title": "📋 Block Information",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "_time": 0,
+              "block_number": 1,
+              "current_signer": 2,
+              "active_nodes": 3
+            },
+            "renameByName": {
+              "_time": "Block Time",
+              "current_signer": "Current Block Signer",
+              "block_number": "Block Number",
+              "active_nodes": "Active Authority Nodes"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 41,
+  "tags": ["authority", "slots", "investigation"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "vechain",
+          "value": "vechain"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "buckets()",
+        "includeAll": false,
+        "label": "Bucket",
+        "name": "bucket",
+        "options": [],
+        "query": "buckets()",
+        "refresh": 2,
+        "regex": "^[^_].*",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"block_number\",\n    predicate: (r) => r._measurement == \"slots\"\n)\n|> sort(desc: true)\n|> limit(n: 200)",
+        "includeAll": false,
+        "label": "Block Number",
+        "multi": false,
+        "name": "selected_block",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"block_number\",\n    predicate: (r) => r._measurement == \"slots\"\n)\n|> sort(desc: true)\n|> limit(n: 200)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Manual Block Number",
+        "multi": false,
+        "name": "manual_block",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "skipUrlSync": false,
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Slots Investigation",
+  "uid": "slots_investigation_001",
+  "version": 1
+}

@@ -17,6 +17,7 @@ import (
 	"github.com/vechain/thorflux/stats/blockstats"
 	liveness2 "github.com/vechain/thorflux/stats/liveness"
 	"github.com/vechain/thorflux/stats/pos"
+	"github.com/vechain/thorflux/stats/slots"
 	"github.com/vechain/thorflux/stats/transactions"
 	"github.com/vechain/thorflux/stats/utilisation"
 	"github.com/vechain/thorflux/types"
@@ -51,10 +52,19 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 		slog.Error("failed to create staker instance", "error", err)
 		return nil, err
 	}
+	slotsWriter := slots.NewWriter(thorclient.New(thorURL))
 
 	handlers := make(map[string]Handler)
 	handlers["authority"] = poa.Write
 	handlers["pos"] = hayabusa.Write
+	handlers["slots"] = func(event *types.Event) []*write.Point {
+		points, err := slotsWriter.Write(event)
+		if err != nil {
+			slog.Error("slots writer error", "error", err, "block", event.Block.Number)
+			return nil
+		}
+		return points
+	}
 	handlers["transactions"] = transactions.Write
 	handlers["liveness"] = liveness.Write
 	handlers["blocks"] = blockstats.Write

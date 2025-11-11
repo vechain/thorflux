@@ -60,13 +60,20 @@ services:
     networks:
       - monitoring
     environment:
+      # VeChain node URL to sync from
       - THOR_URL=https://mainnet.vechain.org
+      
+      # InfluxDB connection settings
       - INFLUX_URL=http://influxdb:8086
-      - THOR_BLOCKS=200
       - INFLUX_USERNAME=admin
       - INFLUX_PASSWORD=password
       - INFLUX_ORG=vechain
       - INFLUX_BUCKET=vechain
+      
+      # Block sync range: How many blocks to sync from current best block backwards
+      # 302400 blocks ≈ 5 weeks of data (VeChain: ~10 sec block time, 360 blocks/hour)
+      # Examples: 200=~33 mins, 7200=~20 hours, 25200=~1 week, 302400=~5 weeks
+      - THOR_BLOCKS=302400
 
 volumes:
   grafana-plugin-dist:

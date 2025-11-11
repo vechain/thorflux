@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"log/slog"
 	"math"
@@ -48,6 +49,11 @@ func main() {
 		"influx-org", *influxOrg,
 		"influx-bucket", *influxBucket,
 		"blocks", blocks,
+	)
+	slog.Info("block sync configuration",
+		"sync-range", fmt.Sprintf("%d blocks", blocks),
+		"estimated-time-range", fmt.Sprintf("~%.1f hours", float64(blocks)*10.0/3600.0),
+		"note", "syncing from (best_block - blocks) to best_block",
 	)
 
 	influx, err := influxdb.New(influxURL, influxToken, *influxOrg, *influxBucket)
