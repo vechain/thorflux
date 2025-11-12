@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/vechain/thor/v2/genesis"
 	"log/slog"
 	"os"
 	"strconv"
@@ -55,7 +56,7 @@ type Publisher struct {
 	hayabusaStatus types.HayabusaStatus
 }
 
-func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publisher, chan *BlockEvent, error) {
+func NewPublisher(thorURL string, cfg *genesis.CustomGenesis, backSyncBlocks uint32, db *influxdb.DB) (*Publisher, chan *BlockEvent, error) {
 	client := thorclient.New(thorURL)
 	staker, err := builtin.NewStaker(client)
 	if err != nil {
