@@ -27,7 +27,7 @@ const querySize = config.DefaultQuerySize
 type HistoricSyncer struct {
 	client              *thorclient.Client
 	staker              *builtin.Staker
-	blockChan           chan *Block
+	blockChan           chan *BlockEvent
 	head                *atomic.Pointer[api.JSONExpandedBlock]
 	minBlock            uint32
 	hayabusaForkedBlock uint32
@@ -37,7 +37,7 @@ type HistoricSyncer struct {
 func NewHistoricSyncer(
 	client *thorclient.Client,
 	staker *builtin.Staker,
-	blockChan chan *Block,
+	blockChan chan *BlockEvent,
 	head *api.JSONExpandedBlock,
 	backSyncBlocks uint32,
 ) (*HistoricSyncer, error) {
@@ -110,9 +110,9 @@ func (s *HistoricSyncer) backSyncComplete() bool {
 	return s.Head().Number <= s.minBlock || s.Head().Number == 1
 }
 
-func (s *HistoricSyncer) fetchBlocksAsync(ctx context.Context, amount uint32, head *api.JSONExpandedBlock) ([]*Block, error) {
+func (s *HistoricSyncer) fetchBlocksAsync(ctx context.Context, amount uint32, head *api.JSONExpandedBlock) ([]*BlockEvent, error) {
 	var mu sync.Mutex
-	blks := make(map[thor.Bytes32]*Block)
+	blks := make(map[thor.Bytes32]*BlockEvent)
 
 	group, _ := errgroup.WithContext(ctx)
 	// +1 so we can populate parent
@@ -139,7 +139,7 @@ func (s *HistoricSyncer) fetchBlocksAsync(ctx context.Context, amount uint32, he
 			}
 
 			mu.Lock()
-			blks[block.ID] = &Block{
+			blks[block.ID] = &BlockEvent{
 				Block:  block,
 				Seed:   seed,
 				Staker: stakerInfo,
@@ -155,8 +155,8 @@ func (s *HistoricSyncer) fetchBlocksAsync(ctx context.Context, amount uint32, he
 		return nil, fmt.Errorf("failed to fetch blocks async: %w", err)
 	}
 
-	// Block entry should include parent, so here we are just linking them together
-	results := make([]*Block, 0, len(blks))
+	// BlockEvent entry should include parent, so here we are just linking them together
+	results := make([]*BlockEvent, 0, len(blks))
 	current := head.ParentID
 	for uint32(len(results)) < amount {
 		entry, ok := blks[current]
@@ -176,7 +176,7 @@ func (s *HistoricSyncer) fetchBlocksAsync(ctx context.Context, amount uint32, he
 	return results, nil
 }
 
-func (s *HistoricSyncer) fillParent(current, parent *Block) {
+func (s *HistoricSyncer) fillParent(current, parent *BlockEvent) {
 	if parent != nil {
 		current.Prev = parent.Block
 		current.ParentStaker = parent.Staker

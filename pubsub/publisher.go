@@ -35,7 +35,7 @@ type ForkEvent struct {
 	SideChain *api.JSONExpandedBlock // the block that was on the main chain but is now on a side chain
 }
 
-type Block struct {
+type BlockEvent struct {
 	Fork           ForkEvent
 	Block          *api.JSONExpandedBlock
 	Prev           *api.JSONExpandedBlock
@@ -50,18 +50,18 @@ type Publisher struct {
 	prev           *atomic.Pointer[api.JSONExpandedBlock]
 	parentStaker   *atomic.Pointer[types.StakerInformation]
 	client         *thorclient.Client
-	blockChan      chan *Block
+	blockChan      chan *BlockEvent
 	staker         *builtin.Staker
 	hayabusaStatus types.HayabusaStatus
 }
 
-func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publisher, chan *Block, error) {
+func NewPublisher(thorURL string, backSyncBlocks uint32, db *influxdb.DB) (*Publisher, chan *BlockEvent, error) {
 	client := thorclient.New(thorURL)
 	staker, err := builtin.NewStaker(client)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create staker contract: %w", err)
 	}
-	blockChan := make(chan *Block, config.DefaultChannelBuffer)
+	blockChan := make(chan *BlockEvent, config.DefaultChannelBuffer)
 	first, err := client.ExpandedBlock("finalized")
 	if err != nil {
 		return nil, nil, err
@@ -182,7 +182,7 @@ func (p *Publisher) sync(ctx context.Context) {
 					break
 				}
 
-				p.blockChan <- &Block{
+				p.blockChan <- &BlockEvent{
 					Block: finalized,
 					Fork: ForkEvent{
 						Occurred:  true,
@@ -208,7 +208,7 @@ func (p *Publisher) sync(ctx context.Context) {
 				}
 			}
 
-			p.blockChan <- &Block{
+			p.blockChan <- &BlockEvent{
 				Block:          next,
 				Prev:           prev,
 				Seed:           seed,
