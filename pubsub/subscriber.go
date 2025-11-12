@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
-	"github.com/vechain/thor/v2/api"
-
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/influxdb"
@@ -27,7 +25,6 @@ type Handler func(event *types.Event) []*write.Point
 type Subscriber struct {
 	blockChan  chan *Block
 	db         *influxdb.DB
-	genesis    *api.JSONCollapsedBlock
 	chainTag   string
 	handlers   map[string]Handler
 	client     *thorclient.Client
@@ -37,12 +34,10 @@ type Subscriber struct {
 func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Subscriber, error) {
 	tclient := thorclient.New(thorURL)
 
-	genesis, err := tclient.Block("0")
+	chainTag, err := tclient.ChainTag()
 	if err != nil {
-		slog.Error("failed to get genesis block", "error", err)
 		return nil, err
 	}
-	chainTag := fmt.Sprintf("%d", genesis.ID[31])
 
 	liveness := liveness2.New(thorclient.New(thorURL))
 	poa := authority.NewList(thorclient.New(thorURL))
@@ -66,8 +61,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 	return &Subscriber{
 		blockChan:  blockChan,
 		db:         db,
-		genesis:    genesis,
-		chainTag:   chainTag,
+		chainTag:   strconv.Itoa(int(chainTag)),
 		handlers:   handlers,
 		client:     tclient,
 		workerPool: workerPool,
@@ -122,7 +116,6 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				Seed:           b.Seed,
 				Prev:           b.Prev,
 				ChainTag:       s.chainTag,
-				Genesis:        s.genesis,
 				DefaultTags:    defaultTags,
 				Timestamp:      t,
 				HayabusaStatus: b.HayabusaStatus,

@@ -16,7 +16,6 @@ type Event struct {
 	HayabusaStatus HayabusaStatus
 	Prev           *tapi.JSONExpandedBlock
 	ChainTag       string
-	Genesis        *tapi.JSONCollapsedBlock
 	DefaultTags    map[string]string
 	Timestamp      time.Time
 	Staker         *StakerInformation

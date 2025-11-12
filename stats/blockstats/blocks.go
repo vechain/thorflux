@@ -32,11 +32,6 @@ func Write(ev *types.Event) []*write.Point {
 
 	flags["block_mine_gap"] = (gap - float64(config.BlockIntervalSeconds)) / float64(config.BlockIntervalSeconds)
 
-	genesisBlockTimestamp := ev.Genesis.Timestamp
-	slots := ((ev.Block.Timestamp - genesisBlockTimestamp) / uint64(config.BlockIntervalSeconds)) + 1
-	flags["slots_per_block"] = slots
-	flags["blocks_slots_percentage"] = (float64(ev.Block.Number) / float64(slots)) * config.GasDivisor
-
 	// NewExtension code to capture block base fee in wei.
 	// Since block.Block.BaseFee is a *big.Int, we'll store its string representation.
 	if ev.Block.BaseFeePerGas != nil {
