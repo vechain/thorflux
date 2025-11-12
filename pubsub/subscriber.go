@@ -13,7 +13,7 @@ import (
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/stats/authority"
 	"github.com/vechain/thorflux/stats/blockstats"
-	liveness2 "github.com/vechain/thorflux/stats/liveness"
+	"github.com/vechain/thorflux/stats/liveness"
 	"github.com/vechain/thorflux/stats/pos"
 	"github.com/vechain/thorflux/stats/transactions"
 	"github.com/vechain/thorflux/stats/utilisation"
@@ -23,7 +23,7 @@ import (
 type Handler func(event *types.Event) []*write.Point
 
 type Subscriber struct {
-	blockChan  chan *Block
+	blockChan  chan *BlockEvent
 	db         *influxdb.DB
 	chainTag   string
 	handlers   map[string]Handler
@@ -31,7 +31,7 @@ type Subscriber struct {
 	workerPool *WorkerPool
 }
 
-func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Subscriber, error) {
+func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent) (*Subscriber, error) {
 	tclient := thorclient.New(thorURL)
 
 	chainTag, err := tclient.ChainTag()
@@ -39,21 +39,15 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *Block) (*Sub
 		return nil, err
 	}
 
-	liveness := liveness2.New(thorclient.New(thorURL))
-	poa := authority.NewList(thorclient.New(thorURL))
-	hayabusa, err := pos.NewStaker(thorclient.New(thorURL))
-	if err != nil {
-		slog.Error("failed to create staker instance", "error", err)
-		return nil, err
+	// register handler, execution order not guaranteed
+	handlers := map[string]Handler{
+		"authority":    authority.NewList(thorclient.New(thorURL)).Write,
+		"pos":          pos.NewStaker(thorclient.New(thorURL)).Write,
+		"transactions": transactions.Write,
+		"liveness":     liveness.New(thorclient.New(thorURL)).Write,
+		"blocks":       blockstats.Write,
+		"utilisation":  utilisation.Write,
 	}
-
-	handlers := make(map[string]Handler)
-	handlers["authority"] = poa.Write
-	handlers["pos"] = hayabusa.Write
-	handlers["transactions"] = transactions.Write
-	handlers["liveness"] = liveness.Write
-	handlers["blocks"] = blockstats.Write
-	handlers["utilisation"] = utilisation.Write
 
 	// Create worker pool for concurrent handler execution
 	workerPool := NewWorkerPool(config.DefaultWorkerPoolSize, config.DefaultTaskQueueSize, db)
@@ -83,6 +77,7 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 			}
 			t := time.Unix(int64(b.Block.Timestamp), 0)
 
+			// todo properly handle this
 			if b.Fork.Occurred {
 				slog.Warn("fork detected", "block", b.Block.Number)
 				if err := NewForkHandler(s.db, s.client).Resolve(b.Fork.Best, b.Fork.SideChain, b.Fork.Finalized); err != nil {
@@ -101,22 +96,11 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				"block_number": fmt.Sprintf("%d", b.Block.Number),
 			}
 
-			if b.Prev == nil {
-				slog.Warn("previous block is nil", "block_number", b.Block.Number)
-				prev, err := s.client.ExpandedBlock(strconv.FormatUint(uint64(b.Block.Number-1), 10))
-				if err != nil {
-					slog.Error("failed to fetch previous block", "block_number", b.Block.Number-1, "error", err)
-					continue
-				}
-				b.Prev = prev
-			}
-
 			event := &types.Event{
+				DefaultTags:    defaultTags,
 				Block:          b.Block,
 				Seed:           b.Seed,
 				Prev:           b.Prev,
-				ChainTag:       s.chainTag,
-				DefaultTags:    defaultTags,
 				Timestamp:      t,
 				HayabusaStatus: b.HayabusaStatus,
 				Staker:         b.Staker,
