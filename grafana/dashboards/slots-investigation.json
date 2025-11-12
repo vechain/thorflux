@@ -26,7 +26,7 @@
         "type": "influxdb",
         "uid": "B87265B08D314AF"
       },
-      "description": "Shows the first 10 future proposers for the selected block. These are the authority nodes (with their endorsors) that would propose blocks following the selected block.",
+      "description": "Shows the first 10 future proposers for the selected block. These are the authority nodes (with their endorsors) that would propose blocks following the selected block. Weight shows 25.0M VET for PoA blocks and actual staked weight for PoS blocks.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -55,24 +55,56 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Order"
+              "options": "Position to Propose"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 80
+                "value": 140
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "Proposer Address"
+              "options": "Authority Node"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 460
+                "value": 420
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Endorsor Node"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 420
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Weight (M VET)"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              },
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 1
               }
             ]
           }
@@ -105,7 +137,7 @@
             "type": "influxdb",
             "uid": "B87265B08D314AF"
           },
-          "query": "block_to_query = if \"${manual_block}\" != \"\" then \"${manual_block}\" else \"${selected_block}\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"slots\")\n  |> filter(fn: (r) => r[\"block_number\"] == block_to_query)\n  |> pivot(\n      rowKey:[\"_time\", \"position\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with position_num: int(v: r.position) }))\n  |> sort(columns: [\"position_num\"])\n  |> keep(columns: [\"position\", \"authority_node\", \"endorsor_node\"])",
+          "query": "block_to_query = if \"${manual_block}\" != \"\" then \"${manual_block}\" else \"${selected_block}\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"slots\")\n  |> filter(fn: (r) => r[\"block_number\"] == block_to_query)\n  |> pivot(\n      rowKey:[\"_time\", \"position\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with position_num: int(v: r.position) }))\n  |> sort(columns: [\"position_num\"])\n  |> keep(columns: [\"position\", \"authority_node\", \"endorsor_node\", \"weight\"])",
           "refId": "A"
         }
       ],
@@ -119,12 +151,14 @@
             "indexByName": {
               "position": 0,
               "authority_node": 1,
-              "endorsor_node": 2
+              "endorsor_node": 2,
+              "weight": 3
             },
             "renameByName": {
               "position": "Position to Propose",
               "authority_node": "Authority Node",
-              "endorsor_node": "Endorsor Node"
+              "endorsor_node": "Endorsor Node",
+              "weight": "Weight (M VET)"
             }
           }
         }
@@ -136,7 +170,7 @@
         "type": "influxdb",
         "uid": "B87265B08D314AF"
       },
-      "description": "Shows details about the selected block including the current signer.",
+      "description": "Shows details about the selected block including the current signer and consensus mode (PoA or PoS).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -161,7 +195,34 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Consensus Mode"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "PoS (Hayabusa)": {
+                        "text": "✅ PoS (Hayabusa)",
+                        "color": "green"
+                      },
+                      "PoA": {
+                        "text": "🏛️ PoA",
+                        "color": "blue"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 6,
@@ -190,7 +251,7 @@
             "type": "influxdb",
             "uid": "B87265B08D314AF"
           },
-          "query": "block_to_query = if \"${manual_block}\" != \"\" then \"${manual_block}\" else \"${selected_block}\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"slots\")\n  |> filter(fn: (r) => r[\"block_number\"] == block_to_query)\n  |> pivot(\n      rowKey: [\"_time\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> limit(n: 1)\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block_number: block_to_query,\n      current_signer: r.current_signer,\n      active_nodes: string(v: r.total_active_nodes)\n  }))",
+          "query": "block_to_query = if \"${manual_block}\" != \"\" then \"${manual_block}\" else \"${selected_block}\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"slots\")\n  |> filter(fn: (r) => r[\"block_number\"] == block_to_query)\n  |> pivot(\n      rowKey: [\"_time\", \"pos_active\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> limit(n: 1)\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block_number: block_to_query,\n      current_signer: r.current_signer,\n      active_nodes: string(v: r.total_active_nodes),\n      pos_active: r.pos_active,\n      consensus_mode: if r.pos_active == \"true\" then \"PoS (Hayabusa)\" else \"PoA\"\n  }))",
           "refId": "A"
         }
       ],
@@ -199,19 +260,23 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": {},
+            "excludeByName": {
+              "pos_active": true
+            },
             "includeByName": {},
             "indexByName": {
               "_time": 0,
               "block_number": 1,
               "current_signer": 2,
-              "active_nodes": 3
+              "active_nodes": 3,
+              "consensus_mode": 4
             },
             "renameByName": {
               "_time": "Block Time",
               "current_signer": "Current Block Signer",
               "block_number": "Block Number",
-              "active_nodes": "Active Authority Nodes"
+              "active_nodes": "Active Authority Nodes",
+              "consensus_mode": "Consensus Mode"
             }
           }
         }

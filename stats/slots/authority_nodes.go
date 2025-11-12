@@ -3,8 +3,6 @@ package slots
 import (
 	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/builtin"
-	"log/slog"
-
 	"github.com/vechain/thor/v2/thor"
 )
 
@@ -17,8 +15,7 @@ type AuthorityNode struct {
 
 // AuthorityNodeList manages a list of authority nodes for slot calculations
 type AuthorityNodeList struct {
-	nodes    []AuthorityNode
-	revision thor.Bytes32
+	nodes []AuthorityNode
 }
 
 // NewAuthorityNodeList creates a new authority node list
@@ -29,21 +26,8 @@ func NewAuthorityNodeList() *AuthorityNodeList {
 }
 
 // SetNodes updates the authority node list with a new set of nodes
-func (al *AuthorityNodeList) SetNodes(nodes []AuthorityNode, revision thor.Bytes32) {
+func (al *AuthorityNodeList) SetNodes(nodes []AuthorityNode) {
 	al.nodes = nodes
-	al.revision = revision
-
-	activeCount := 0
-	for _, node := range nodes {
-		if node.Active {
-			activeCount++
-		}
-	}
-
-	slog.Debug("Authority node list updated",
-		"revision", revision.String(),
-		"total_nodes", len(nodes),
-		"active_nodes", activeCount)
 }
 
 // GetActiveNodes returns only the active authority nodes

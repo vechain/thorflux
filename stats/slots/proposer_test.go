@@ -6,9 +6,7 @@ import (
 	"github.com/vechain/thor/v2/thor"
 )
 
-func TestProposerCalculator_CalculateFutureProposers(t *testing.T) {
-	pc := NewProposerCalculator()
-
+func TestNextBlockProposers(t *testing.T) {
 	// Create test authority nodes
 	nodes := []AuthorityNode{
 		{Master: thor.MustParseAddress("0x1234567890123456789012345678901234567890"), Endorsor: thor.MustParseAddress("0xA234567890123456789012345678901234567890"), Active: true},
@@ -21,7 +19,7 @@ func TestProposerCalculator_CalculateFutureProposers(t *testing.T) {
 	blockNumber := uint32(100)
 	count := 3
 
-	proposers, err := pc.NextBlockProposers(nodes, seed, blockNumber, count)
+	proposers, err := NextBlockProposers(nodes, seed, blockNumber, count)
 	if err != nil {
 		t.Fatalf("NextBlockProposers failed: %v", err)
 	}
@@ -48,8 +46,7 @@ func TestAuthorityNodeList_GetActiveCount(t *testing.T) {
 		{Master: thor.MustParseAddress("0x3234567890123456789012345678901234567890"), Endorsor: thor.MustParseAddress("0xC234567890123456789012345678901234567890"), Active: true},
 	}
 
-	revision := thor.Bytes32{}
-	anl.SetNodes(nodes, revision)
+	anl.SetNodes(nodes)
 
 	activeCount := anl.GetActiveCount()
 	if activeCount != 2 {
@@ -66,8 +63,7 @@ func TestAuthorityNodeList_GetActiveNodes(t *testing.T) {
 		{Master: thor.MustParseAddress("0x3234567890123456789012345678901234567890"), Endorsor: thor.MustParseAddress("0xC234567890123456789012345678901234567890"), Active: true},
 	}
 
-	revision := thor.Bytes32{}
-	anl.SetNodes(nodes, revision)
+	anl.SetNodes(nodes)
 
 	active := anl.GetActiveNodes()
 	if len(active) != 2 {
@@ -78,5 +74,76 @@ func TestAuthorityNodeList_GetActiveNodes(t *testing.T) {
 		if !node.Active {
 			t.Errorf("Found inactive authority node in active list: %s", node.Master.String())
 		}
+	}
+}
+
+func TestNextBlockProposersPoS(t *testing.T) {
+	// Create test PoS nodes with different weights
+	nodes := []PosNode{
+		{Master: thor.MustParseAddress("0x1234567890123456789012345678901234567890"), Endorsor: thor.MustParseAddress("0x1234567890123456789012345678901234567890"), Active: true, Weight: 1000},
+		{Master: thor.MustParseAddress("0x2234567890123456789012345678901234567890"), Endorsor: thor.MustParseAddress("0x2234567890123456789012345678901234567890"), Active: true, Weight: 2000},
+		{Master: thor.MustParseAddress("0x3234567890123456789012345678901234567890"), Endorsor: thor.MustParseAddress("0x3234567890123456789012345678901234567890"), Active: false, Weight: 1500}, // inactive
+		{Master: thor.MustParseAddress("0x4234567890123456789012345678901234567890"), Endorsor: thor.MustParseAddress("0x4234567890123456789012345678901234567890"), Active: true, Weight: 500},
+	}
+
+	seed := []byte("test-seed")
+	blockNumber := uint32(100)
+	count := 3
+
+	proposers, err := NextBlockProposersPoS(nodes, seed, blockNumber, count)
+	if err != nil {
+		t.Fatalf("NextBlockProposersPoS failed: %v", err)
+	}
+
+	// Should only include active nodes (3 active out of 4 total)
+	if len(proposers) != 3 {
+		t.Errorf("Expected 3 proposers, got %d", len(proposers))
+	}
+
+	// Check positions are sequential starting from 1
+	for i, proposer := range proposers {
+		if proposer.Position != i+1 {
+			t.Errorf("Expected position %d, got %d", i+1, proposer.Position)
+		}
+		if !proposer.Active {
+			t.Errorf("Found inactive proposer in result: %s", proposer.Master.String())
+		}
+	}
+
+	// Test determinism - same input should give same output
+	proposers2, err := NextBlockProposersPoS(nodes, seed, blockNumber, count)
+	if err != nil {
+		t.Fatalf("NextBlockProposersPoS failed on second call: %v", err)
+	}
+
+	if len(proposers) != len(proposers2) {
+		t.Errorf("Different lengths between calls: %d vs %d", len(proposers), len(proposers2))
+	}
+
+	for i, proposer := range proposers {
+		if proposer.Master != proposers2[i].Master {
+			t.Errorf("Different proposer at position %d: %s vs %s", i, proposer.Master.String(), proposers2[i].Master.String())
+		}
+	}
+}
+
+func TestPosNodeToAuthorityNode(t *testing.T) {
+	posNode := PosNode{
+		Master:   thor.MustParseAddress("0x1234567890123456789012345678901234567890"),
+		Endorsor: thor.MustParseAddress("0xA234567890123456789012345678901234567890"),
+		Active:   true,
+		Weight:   1000,
+	}
+
+	authNode := posNode.ToAuthorityNode()
+
+	if authNode.Master != posNode.Master {
+		t.Errorf("Master mismatch: %s vs %s", authNode.Master.String(), posNode.Master.String())
+	}
+	if authNode.Endorsor != posNode.Endorsor {
+		t.Errorf("Endorsor mismatch: %s vs %s", authNode.Endorsor.String(), posNode.Endorsor.String())
+	}
+	if authNode.Active != posNode.Active {
+		t.Errorf("Active mismatch: %t vs %t", authNode.Active, posNode.Active)
 	}
 }
