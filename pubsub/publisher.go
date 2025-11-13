@@ -22,13 +22,15 @@ type ForkEvent struct {
 }
 
 type BlockEvent struct {
-	Fork           ForkEvent
-	Block          *api.JSONExpandedBlock
-	Prev           *api.JSONExpandedBlock
-	HayabusaStatus types.HayabusaStatus
-	Staker         *types.StakerInformation
-	ParentStaker   *types.StakerInformation
-	Seed           []byte
+	Fork            ForkEvent
+	Block           *api.JSONExpandedBlock
+	Prev            *api.JSONExpandedBlock
+	HayabusaStatus  types.HayabusaStatus
+	Staker          *types.StakerInformation
+	ParentStaker    *types.StakerInformation
+	Seed            []byte
+	AuthNodes       types.AuthorityNodeList
+	ParentAuthNodes types.AuthorityNodeList
 }
 
 type Publisher struct {
@@ -86,8 +88,8 @@ func NewPublisher(thorURL string, genesisCfg *genesis.CustomGenesis, backSyncBlo
 	)
 
 	// Create block fetcher with LRU cache
-	blockFetcher := NewBlockFetcher(client, hayabusaForkBlock)
-	
+	blockFetcher := NewBlockFetcher(client, hayabusaForkBlock, hayabusaActiveBlock)
+
 	// Create event block service
 	eventBlockService := NewEventBlockService(blockFetcher, hayabusaActiveBlock)
 
