@@ -3,14 +3,13 @@ package slots
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/vechain/thor/v2/poa"
-	"github.com/vechain/thorflux/types"
 	"math"
 	"math/rand/v2"
 	"slices"
 	"sort"
 
 	"github.com/vechain/thor/v2/thor"
+	"github.com/vechain/thorflux/types"
 )
 
 // FutureProposer represents a future block proposer
@@ -38,14 +37,6 @@ func (p PosNode) ToAuthorityNode() types.AuthorityNode {
 
 // NextBlockProposersPoA calculates the next N proposers for PoA consensus
 func NextBlockProposersPoA(nodes types.AuthorityNodeList, seed []byte, blockNumber uint32, count int) []FutureProposer {
-	proposers := make([]poa.Proposer, 0, len(nodes))
-	for _, node := range nodes {
-		proposers = append(proposers, poa.Proposer{
-			Active:  node.Active,
-			Address: node.Master,
-		})
-	}
-
 	// Shuffle the active authority nodes using the same algorithm as authority package
 	shuffled := shuffleAuthorityNodes(nodes, seed, blockNumber)
 
