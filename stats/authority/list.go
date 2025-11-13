@@ -144,7 +144,6 @@ func (l *List) Write(event *types.Event) []*write.Point {
 
 	block := event.Block
 	prev := event.Prev
-	chainTag := event.ChainTag
 	epoch := block.Number / thor.EpochLength()
 
 	points := make([]*write.Point, 0)
@@ -164,9 +163,9 @@ func (l *List) Write(event *types.Event) []*write.Point {
 
 		p := influxdb2.NewPoint(
 			"recent_slots",
-			map[string]string{"chain_tag": chainTag, "filled": "1", "proposer": proposer.String(), "owner": ownerName, "contact": contact},
+			map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "filled": "1", "proposer": proposer.String(), "owner": ownerName, "contact": contact},
 			map[string]interface{}{"epoch": epoch, "block_number": block.Number},
-			time.Unix(int64(block.Timestamp), 0),
+			event.Timestamp,
 		)
 		points = append(points, p)
 
@@ -190,7 +189,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 		}
 		authNodes := influxdb2.NewPoint(
 			"authority_nodes",
-			map[string]string{"chain_tag": chainTag, "block_number": strconv.Itoa(int(block.Number))},
+			map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "block_number": strconv.Itoa(int(block.Number))},
 			proposers,
 			time.Unix(int64(block.Timestamp), 0),
 		)
@@ -201,7 +200,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 			missedSlotData["expected_proposer"] = shuffledCandidates[0].String()
 			missedSlot := influxdb2.NewPoint(
 				"missed_slots",
-				map[string]string{"chain_tag": chainTag, "block_number": strconv.Itoa(int(block.Number)), "actual_proposer": block.Signer.String()},
+				map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "block_number": strconv.Itoa(int(block.Number)), "actual_proposer": block.Signer.String()},
 				missedSlotData,
 				time.Unix(int64(block.Timestamp), 0),
 			)
@@ -228,7 +227,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 			ownerName, contact = l.getOwnerAndContactForProposer(proposer)
 			p := influxdb2.NewPoint(
 				"recent_slots",
-				map[string]string{"chain_tag": chainTag, "filled": fmt.Sprintf("%d", value), "proposer": proposer.String(), "owner": ownerName, "contact": contact},
+				map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "filled": fmt.Sprintf("%d", value), "proposer": proposer.String(), "owner": ownerName, "contact": contact},
 				map[string]interface{}{"epoch": epoch, "block_number": block.Number},
 				slotTime,
 			)
@@ -243,7 +242,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 
 			p := influxdb2.NewPoint(
 				"aggregated_slots",
-				map[string]string{"chain_tag": chainTag},
+				map[string]string{"chain_tag": event.DefaultTags["chain_tag"]},
 				map[string]interface{}{
 					"missed": olderMissedSlots,
 					"filled": olderFilledSlots,
