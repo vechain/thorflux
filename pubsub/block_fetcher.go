@@ -46,7 +46,7 @@ func NewBlockFetcher(client *thorclient.Client, hayabusaForkedBlock uint32) *Blo
 
 func (b *BlockFetcher) FetchBlock(blockNum uint32) (*FetchResult, error) {
 	key := fmt.Sprintf("block_%d", blockNum)
-	
+
 	result, err, _ := b.sf.Do(key, func() (interface{}, error) {
 		// Check cache first (inside singleflight to prevent race)
 		if cached, exists := b.cache.Get(blockNum); exists {

@@ -31,7 +31,7 @@ type Subscriber struct {
 	workerPool *WorkerPool
 }
 
-func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent) (*Subscriber, error) {
+func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent, ownersRepo string) (*Subscriber, error) {
 	tclient := thorclient.New(thorURL)
 
 	chainTag, err := tclient.ChainTag()
@@ -41,7 +41,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent) 
 
 	// register handler, execution order not guaranteed
 	handlers := map[string]Handler{
-		"authority":    authority.NewList(thorclient.New(thorURL)).Write,
+		"authority":    authority.NewList(thorclient.New(thorURL), ownersRepo).Write,
 		"pos":          pos.NewStaker(thorclient.New(thorURL)).Write,
 		"transactions": transactions.Write,
 		"liveness":     liveness.New(thorclient.New(thorURL)).Write,
