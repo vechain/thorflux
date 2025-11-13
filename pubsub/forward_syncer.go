@@ -57,7 +57,7 @@ func (f *ForwardSyncer) Start(ctx context.Context) {
 		default:
 			prev := f.previous()
 			prevTime := time.Unix(int64(prev.Timestamp), 0).UTC()
-			
+
 			// Wait for block interval
 			if time.Since(prevTime) < time.Duration(thor.BlockInterval()) {
 				time.Sleep(time.Until(prevTime.Add(time.Duration(thor.BlockInterval()))))
@@ -117,10 +117,7 @@ func (f *ForwardSyncer) Start(ctx context.Context) {
 			}
 
 			// Log progress
-			t := time.Unix(int64(next.Timestamp), 0).UTC()
-			if next.Number%config.LogIntervalBlocks == 0 || time.Now().UTC().Sub(t) < config.RecentBlockThresholdMinutes {
-				slog.Info("✅ fetched block", "number", next.Number)
-			}
+			slog.Info("✅ processed forward block", "number", next.Number)
 
 			// Send block event
 			select {
