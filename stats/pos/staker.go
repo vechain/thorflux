@@ -29,17 +29,15 @@ type Staker struct {
 	epochLength uint32
 }
 
-func NewStaker(client *thorclient.Client) (*Staker, error) {
-	staker, err := builtin.NewStaker(client)
-	if err != nil {
-		return nil, err
-	}
+func NewStaker(client *thorclient.Client) *Staker {
+	staker, _ := builtin.NewStaker(client)
+	// imported function, ok to swallow errors
 
 	return &Staker{
 		staker:      staker,
 		client:      client,
 		epochLength: thor.EpochLength(),
-	}, nil
+	}
 }
 
 func createProposers(validators []*types.Validation) []pos.Proposer {

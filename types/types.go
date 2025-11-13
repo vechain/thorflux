@@ -11,13 +11,11 @@ import (
 )
 
 type Event struct {
+	DefaultTags    map[string]string
 	Block          *tapi.JSONExpandedBlock
 	Seed           []byte
 	HayabusaStatus HayabusaStatus
 	Prev           *tapi.JSONExpandedBlock
-	ChainTag       string
-	Genesis        *tapi.JSONCollapsedBlock
-	DefaultTags    map[string]string
 	Timestamp      time.Time
 	Staker         *StakerInformation
 	ParentStaker   *StakerInformation
