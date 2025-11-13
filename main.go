@@ -33,6 +33,7 @@ var (
 	influxTokenFlag = flag.String("influx-token", config.DefaultInfluxToken, "influxdb auth token, (env var: INFLUX_TOKEN)")
 	influxOrg       = flag.String("influx-org", config.DefaultInfluxOrg, "influxdb organization, (env var: INFLUX_ORG)")
 	influxBucket    = flag.String("influx-bucket", config.DefaultInfluxBucket, "influxdb bucket, (env var: INFLUX_BUCKET)")
+	ownersRepo      = flag.String("owners-repo-path", "", "owners excel file path repo, (env var: OWNERS_REPO)")
 )
 
 func main() {
@@ -78,7 +79,7 @@ func main() {
 		slog.Error("failed to create publisher", "error", err)
 		os.Exit(1)
 	}
-	subscriber, err := pubsub.NewSubscriber(thorURL, influx, blockChan)
+	subscriber, err := pubsub.NewSubscriber(thorURL, influx, blockChan, *ownersRepo)
 	if err != nil {
 		slog.Error("failed to create subscriber", "error", err)
 		os.Exit(1)

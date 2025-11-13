@@ -34,8 +34,8 @@ RUN go build -o thorflux
 
 FROM alpine:3.20
 
-# Install jq for JSON processing
-RUN apk add --no-cache jq
+# Install runtime deps (jq for JSON processing, git for cloning owners repo)
+RUN apk add --no-cache jq git 
 
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/thorflux /app/thorflux

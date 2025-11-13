@@ -89,7 +89,6 @@ func NewPublisher(thorURL string, genesisCfg *genesis.CustomGenesis, backSyncBlo
 
 	// Create block fetcher with LRU cache
 	blockFetcher := NewBlockFetcher(client, hayabusaForkBlock, hayabusaActiveBlock)
-
 	// Create event block service
 	eventBlockService := NewEventBlockService(blockFetcher, hayabusaActiveBlock)
 
