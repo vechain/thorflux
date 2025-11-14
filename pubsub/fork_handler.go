@@ -11,6 +11,7 @@ import (
 	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/influxdb"
+	"github.com/vechain/thorflux/stats/priceapi"
 )
 
 type ForkHandler struct {
@@ -33,8 +34,10 @@ func (h *ForkHandler) Resolve(best, sideChain, finalized *api.JSONExpandedBlock)
 	stop := time.Now().Add(time.Hour)
 	start := time.Unix(int64(finalized.Timestamp), 0).Add(time.Second)
 
-	// delete all entries after finalized block
-	if err := h.db.Delete(start, stop, fmt.Sprintf("_measurement!=\"%s\"", ForkMeasurement)); err != nil {
+	// delete all entries after finalized block, except forks and price_api measurements
+	// price_api is preserved because it's not chain-dependent and manages its own data lifecycle
+	predicate := fmt.Sprintf("_measurement!=\"%s\" and _measurement!=\"%s\"", ForkMeasurement, priceapi.Measurement)
+	if err := h.db.Delete(start, stop, predicate); err != nil {
 		return errors.Wrap(err, "failed to delete points after finalized block")
 	}
 

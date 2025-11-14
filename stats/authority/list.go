@@ -118,6 +118,9 @@ func (l *List) Init(revision thor.Bytes32) error {
 }
 
 func (l *List) RefreshOwnersList() {
+	if l.ownersRepo == "" {
+		return
+	}
 	owners, err := excel.ParseOwnersFromXLSX(l.ownersRepo)
 	if err != nil {
 		slog.Warn("Cannot parse owners file", "error", err)
