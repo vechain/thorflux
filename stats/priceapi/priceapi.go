@@ -69,7 +69,6 @@ func (p *PriceAPI) Write(e *types.Event) []*write.Point {
 
 	stop := time.Now().Add(-time.Minute * 20) // now less 20 mins
 	start := time.Now().Add(-time.Hour * 24 * 365)
-	// Try a more explicit predicate
 	predicate := fmt.Sprintf(`_measurement="%s"`, Measurement)
 	err = p.db.Delete(start, stop, predicate)
 	if err != nil {
