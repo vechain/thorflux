@@ -1365,41 +1365,45 @@
     "list": [
       {
         "current": {
-          "text": "0.02303",
-          "value": "0.02303"
+          "selected": false,
+          "text": "0.0156",
+          "value": "0.0156"
         },
+        "definition": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"price_api\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vet_price\")\n  |> last()",
+        "description": "",
         "hide": 0,
+        "includeAll": false,
         "label": "VET / USD",
+        "multi": false,
         "name": "vet_price",
-        "options": [
-          {
-            "selected": true,
-            "text": "0.02303",
-            "value": "0.02303"
-          }
-        ],
-        "query": "0.02303",
+        "options": [],
+        "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"price_api\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vet_price\")\n  |> last()",
+        "refresh": 1,
+        "regex": "",
         "skipUrlSync": false,
-        "type": "textbox"
+        "sort": 0,
+        "type": "query"
       },
       {
         "current": {
-          "text": "0.001877",
-          "value": "0.001877"
+          "selected": false,
+          "text": "0.0010915",
+          "value": "0.0010915"
         },
+        "definition": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"price_api\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_price\")\n  |> last()",
+        "description": "",
         "hide": 0,
+        "includeAll": false,
         "label": "VTHO / USD",
+        "multi": false,
         "name": "vtho_price",
-        "options": [
-          {
-            "selected": true,
-            "text": "0.001877",
-            "value": "0.001877"
-          }
-        ],
-        "query": "0.001877",
+        "options": [],
+        "query": "from(bucket: \"vechain\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"price_api\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_price\")\n  |> last()",
+        "refresh": 1,
+        "regex": "",
         "skipUrlSync": false,
-        "type": "textbox"
+        "sort": 0,
+        "type": "query"
       },
       {
         "current": {

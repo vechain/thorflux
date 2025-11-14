@@ -15,6 +15,7 @@ import (
 	"github.com/vechain/thorflux/stats/blockstats"
 	"github.com/vechain/thorflux/stats/liveness"
 	"github.com/vechain/thorflux/stats/pos"
+	"github.com/vechain/thorflux/stats/priceapi"
 	"github.com/vechain/thorflux/stats/slots"
 	"github.com/vechain/thorflux/stats/transactions"
 	"github.com/vechain/thorflux/stats/utilisation"
@@ -49,6 +50,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent, 
 		"blocks":       blockstats.Write,
 		"utilisation":  utilisation.Write,
 		"slots":        slots.New().Write,
+		"price":        priceapi.New(db).Write,
 	}
 
 	// Create worker pool for concurrent handler execution
