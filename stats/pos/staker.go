@@ -124,22 +124,33 @@ func (s *Staker) FutureSlots(validators []*types.Validation, block *api.JSONExpa
 
 	proposers := createProposers(validators)
 
+	sched, err := pos.NewScheduler(block.Signer, proposers, block.Number, block.Timestamp, seed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create scheduler for block %d: %w", block.Number, err)
+	}
+
+	// Check each future timestamp to find who is scheduled
 	for i := range predictableSlots {
-		parent := block.Number + i
-		parentTimestamp := block.Timestamp + uint64(i)*config.BlockIntervalSeconds
-		newTimestamp := parentTimestamp + config.BlockIntervalSeconds
-		sched, err := pos.NewScheduler(block.Signer, proposers, parent, parentTimestamp, seed)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create scheduler for block %d: %w", parent, err)
-		}
-		for _, master := range proposers {
-			if sched.IsScheduled(newTimestamp, master.Address) {
-				slots = append(slots, FutureSlot{
-					Block:  parent + 1,
-					Signer: master.Address,
-				})
-				break // we only need one signer per block
+		futureBlockNumber := block.Number + i + 1
+		futureTimestamp := block.Timestamp + uint64(i+1)*config.BlockIntervalSeconds
+
+		// Check all validators (not just proposers) to find who is scheduled
+		found := false
+		for _, v := range validators {
+			if v.Status == validation.StatusActive {
+				if sched.IsScheduled(futureTimestamp, v.Address) {
+					slots = append(slots, FutureSlot{
+						Block:  futureBlockNumber,
+						Signer: v.Address,
+					})
+					found = true
+					break // we only need one signer per block
+				}
 			}
+		}
+		if !found {
+			// If no validator found for this slot, we can't predict further
+			break
 		}
 	}
 
