@@ -21,6 +21,7 @@ type Event struct {
 	ParentStaker    *StakerInformation
 	AuthNodes       AuthorityNodeList
 	ParentAuthNodes AuthorityNodeList
+	ParentSeed      []byte
 }
 
 type Validation struct {
