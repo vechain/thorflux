@@ -468,11 +468,17 @@ func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformat
 		points = append(points, point)
 	}
 	for _, v := range missedOffline {
+		missType := "went-offline"
+		if !v.WasOnline {
+			missType = "previously-offline"
+		}
+
 		point := influxdb2.NewPoint(
 			"dpos_offline_missed_slots",
 			map[string]string{
 				"chain_tag": event.DefaultTags["chain_tag"],
 				"signer":    v.Signer.String(),
+				"type":      missType,
 			},
 			map[string]interface{}{
 				"block_number": event.Block.Number,
@@ -494,6 +500,7 @@ func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformat
 			map[string]string{
 				"chain_tag": event.DefaultTags["chain_tag"],
 				"signer":    f.Signer.String(),
+				"index":     strconv.FormatUint(uint64(f.Index), 10),
 			},
 			map[string]interface{}{
 				"block_number":   f.Block,
