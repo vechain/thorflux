@@ -16,6 +16,7 @@ import (
 	"github.com/vechain/thorflux/stats/liveness"
 	"github.com/vechain/thorflux/stats/pos"
 	"github.com/vechain/thorflux/stats/priceapi"
+	"github.com/vechain/thorflux/stats/slots"
 	"github.com/vechain/thorflux/stats/transactions"
 	"github.com/vechain/thorflux/stats/utilisation"
 	"github.com/vechain/thorflux/types"
@@ -48,6 +49,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent, 
 		"liveness":     liveness.New(thorclient.New(thorURL)).Write,
 		"blocks":       blockstats.Write,
 		"utilisation":  utilisation.Write,
+		"slots":        slots.New().Write,
 		"price":        priceapi.New(db).Write,
 	}
 
@@ -99,14 +101,16 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 			}
 
 			event := &types.Event{
-				DefaultTags:    defaultTags,
-				Block:          b.Block,
-				Seed:           b.Seed,
-				Prev:           b.Prev,
-				Timestamp:      t,
-				HayabusaStatus: b.HayabusaStatus,
-				Staker:         b.Staker,
-				ParentStaker:   b.ParentStaker,
+				DefaultTags:     defaultTags,
+				Block:           b.Block,
+				Seed:            b.Seed,
+				Prev:            b.Prev,
+				Timestamp:       t,
+				HayabusaStatus:  b.HayabusaStatus,
+				Staker:          b.Staker,
+				ParentStaker:    b.ParentStaker,
+				AuthNodes:       b.AuthNodes,
+				ParentAuthNodes: b.ParentAuthNodes,
 			}
 
 			// Create tasks for all handlers

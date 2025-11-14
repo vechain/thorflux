@@ -11,14 +11,16 @@ import (
 )
 
 type Event struct {
-	DefaultTags    map[string]string
-	Block          *tapi.JSONExpandedBlock
-	Seed           []byte
-	HayabusaStatus HayabusaStatus
-	Prev           *tapi.JSONExpandedBlock
-	Timestamp      time.Time
-	Staker         *StakerInformation
-	ParentStaker   *StakerInformation
+	DefaultTags     map[string]string
+	Block           *tapi.JSONExpandedBlock
+	Seed            []byte
+	HayabusaStatus  HayabusaStatus
+	Prev            *tapi.JSONExpandedBlock
+	Timestamp       time.Time
+	Staker          *StakerInformation
+	ParentStaker    *StakerInformation
+	AuthNodes       AuthorityNodeList
+	ParentAuthNodes AuthorityNodeList
 }
 
 type Validation struct {
@@ -30,6 +32,8 @@ type Validation struct {
 	DelegatorWeight       *big.Int     // Total weight of delegators for this validator
 	DelegatorQueuedStake  *big.Int     // Total queued stake of delegators for this validator
 	DelegatorQueuedWeight *big.Int     // Total queued weight of delegators for this validator
+	AuthNodes             AuthorityNodeList
+	ParentAuthNodes       AuthorityNodeList
 }
 
 type VTHO struct {
