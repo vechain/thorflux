@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Configure git to use the GitHub token for HTTPS if provided
+if [ -n "$GITHUB_TOKEN" ]; then
+	git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+fi
+
 # if INFLUX_TOKEN is set, then run thorflux
 if [ -n "$INFLUX_TOKEN" ]; then
 	/app/thorflux
