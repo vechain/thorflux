@@ -208,7 +208,7 @@ func processStakeIncreased(rev thor.Bytes32, event *api.JSONEvent, abi abi.Event
 			"validator": validator.String(),
 		},
 		map[string]interface{}{
-			"added": added.String(),
+			"added": vetutil.ScaleToVET(added),
 		},
 		timestamp,
 	), nil
@@ -234,7 +234,7 @@ func processStakeDecreased(rev thor.Bytes32, event *api.JSONEvent, abi abi.Event
 			"validator": validator.String(),
 		},
 		map[string]interface{}{
-			"removed": removed.String(),
+			"removed": vetutil.ScaleToVET(removed),
 		},
 		timestamp,
 	), nil
