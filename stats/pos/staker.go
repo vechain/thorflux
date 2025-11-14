@@ -124,15 +124,17 @@ func (s *Staker) FutureSlots(validators []*types.Validation, block *api.JSONExpa
 
 	proposers := createProposers(validators)
 
-	sched, err := pos.NewScheduler(block.Signer, proposers, block.Number, block.Timestamp, seed)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create scheduler for block %d: %w", block.Number, err)
-	}
-
 	// Check each future timestamp to find who is scheduled
 	for i := range predictableSlots {
-		futureBlockNumber := block.Number + i + 1
-		futureTimestamp := block.Timestamp + uint64(i+1)*config.BlockIntervalSeconds
+		parent := block.Number + i
+		parentTimestamp := block.Timestamp + config.BlockIntervalSeconds*uint64(i)
+		futureBlockNumber := parent + 1
+		futureTimestamp := parentTimestamp + config.BlockIntervalSeconds
+
+		sched, err := pos.NewScheduler(block.Signer, proposers, parent, parentTimestamp, seed)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create scheduler for block %d: %w", block.Number, err)
+		}
 
 		// Check all validators (not just proposers) to find who is scheduled
 		found := false
