@@ -29,6 +29,7 @@ func (e *EventBlockService) ProcessBlock(blockNum uint32) (*BlockEvent, error) {
 	// Fetch previous block (N-1) if blockNum > 1
 	var prevBlock *api.JSONExpandedBlock
 	var parentStaker *types.StakerInformation
+	var parentAuthNodes types.AuthorityNodeList
 
 	if blockNum > 1 {
 		prevResult, err := e.blockFetcher.FetchBlock(blockNum - 1)
@@ -38,6 +39,7 @@ func (e *EventBlockService) ProcessBlock(blockNum uint32) (*BlockEvent, error) {
 
 		prevBlock = prevResult.Block
 		parentStaker = prevResult.Staker
+		parentAuthNodes = prevResult.AuthNodes
 	}
 
 	return &BlockEvent{
@@ -48,7 +50,9 @@ func (e *EventBlockService) ProcessBlock(blockNum uint32) (*BlockEvent, error) {
 			Active: blockNum >= e.hayabusaActiveBlock,
 			Forked: blockNum >= e.blockFetcher.hayabusaForkedBlock,
 		},
-		Prev:         prevBlock,
-		ParentStaker: parentStaker,
+		Prev:            prevBlock,
+		ParentStaker:    parentStaker,
+		AuthNodes:       currentResult.AuthNodes,
+		ParentAuthNodes: parentAuthNodes,
 	}, nil
 }

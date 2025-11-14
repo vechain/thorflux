@@ -13,3 +13,7 @@ func ScaleToVET(wei *big.Int) uint64 {
 	bigInt := new(big.Int).Div(wei, VET)
 	return bigInt.Uint64()
 }
+
+func ScaleToMillionVET(wei *big.Int) uint64 {
+	return ScaleToVET(wei) / 1000000
+}

@@ -1,0 +1,432 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 3,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "B87265B08D314AF"
+      },
+      "description": "Shows details about the selected block including the current signer and consensus mode (PoA or PoS).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Signer Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "MISMATCH": {
+                        "color": "red",
+                        "text": "❌ MISMATCH"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 194
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 143
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Block Number"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 117
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Current Block Signer"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 360
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Expected Block Signer"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 371
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Signer Status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Active Proposers"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 151
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Consensus Mode"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 169
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.4.19",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "B87265B08D314AF"
+          },
+          "query": "block_to_query = if \"${manual_block}\" != \"\" then \"${manual_block}\" else \"${selected_block}\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"slots\")\n  |> filter(fn: (r) => r[\"block_number\"] == block_to_query)\n  |> pivot(\n      rowKey: [\"_time\", \"pos_active\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> limit(n: 1)\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block_number: block_to_query,\n      current_signer: r.current_signer,\n      expected_signer: r.expected_block_signer,\n      active_nodes: string(v: r.total_active_nodes),\n      pos_active: r.pos_active,\n      consensus_mode: if r.pos_active == \"true\" then \"PoS (Hayabusa)\" else \"PoA\",\n      signer_status: if r.current_signer == r.expected_block_signer then \"MATCH\" else \"MISMATCH\"\n  }))",
+          "refId": "A"
+        }
+      ],
+      "title": "📋 Block Information",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "pos_active": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "_time": 0,
+              "active_nodes": 5,
+              "block_number": 1,
+              "consensus_mode": 6,
+              "current_signer": 2,
+              "expected_signer": 3,
+              "signer_status": 4
+            },
+            "renameByName": {
+              "_time": "Block Time",
+              "active_nodes": "Active Proposers",
+              "block_number": "Block Number",
+              "consensus_mode": "Consensus Mode",
+              "current_signer": "Current Block Signer",
+              "expected_signer": "Expected Block Signer",
+              "signer_status": "Signer Status"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "B87265B08D314AF"
+      },
+      "description": "Shows the first 10 future proposers for the selected block. These are the authority nodes (with their endorsors) that would propose blocks following the selected block. Weight shows 25.0M VET for PoA blocks and actual staked weight for PoS blocks.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": true
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Weight (M VET)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.4.19",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "B87265B08D314AF"
+          },
+          "query": "block_to_query = if \"${manual_block}\" != \"\" then \"${manual_block}\" else \"${selected_block}\"\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"slots\")\n  |> filter(fn: (r) => r[\"block_number\"] == block_to_query)\n  |> pivot(\n      rowKey:[\"_time\", \"position\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n  )\n  |> group()\n  |> map(fn: (r) => ({ r with position_num: int(v: r.position) }))\n  |> sort(columns: [\"position_num\"])\n  |> keep(columns: [\"position\", \"authority_node\", \"endorsor_node\", \"weight\"])",
+          "refId": "A"
+        }
+      ],
+      "title": "🔍 Top 10 Future Proposers",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "authority_node": 1,
+              "endorsor_node": 2,
+              "position": 0,
+              "weight": 3
+            },
+            "renameByName": {
+              "authority_node": "Authority Node",
+              "endorsor_node": "Endorsor Node",
+              "position": "Position to Propose",
+              "weight": "Weight (M VET)"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "authority",
+    "slots",
+    "investigation"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "vechain",
+          "value": "vechain"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "buckets()",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Bucket",
+        "multi": false,
+        "name": "bucket",
+        "options": [],
+        "query": "buckets()",
+        "refresh": 2,
+        "regex": "^[^_].*",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "23300487",
+          "value": "23300487"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"block_number\",\n    predicate: (r) => r._measurement == \"slots\"\n)\n|> sort(desc: true)\n|> limit(n: 200)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Block Number",
+        "multi": false,
+        "name": "selected_block",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"block_number\",\n    predicate: (r) => r._measurement == \"slots\"\n)\n|> sort(desc: true)\n|> limit(n: 200)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "23282283",
+          "value": "23282283"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Manual Block Number",
+        "multi": false,
+        "name": "manual_block",
+        "options": [
+          {
+            "selected": true,
+            "text": "23282283",
+            "value": "23282283"
+          }
+        ],
+        "query": "23282283",
+        "skipUrlSync": false,
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Slots Investigation",
+  "uid": "slots_investigation_001",
+  "version": 1,
+  "weekStart": ""
+}

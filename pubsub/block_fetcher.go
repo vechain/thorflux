@@ -5,6 +5,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
+	"github.com/vechain/thorflux/stats/slots"
+	"log/slog"
 	"time"
 
 	"github.com/ethereum/go-ethereum/rlp"
@@ -26,21 +29,24 @@ type BlockFetcher struct {
 	cache               *lru.Cache[uint32, *FetchResult]
 	hayabusaForkedBlock uint32
 	sf                  singleflight.Group
+	hayabusaActiveBlock uint32
 }
 
 type FetchResult struct {
-	Block  *api.JSONExpandedBlock
-	Seed   []byte
-	Staker *types.StakerInformation
+	Block     *api.JSONExpandedBlock
+	Seed      []byte
+	Staker    *types.StakerInformation
+	AuthNodes types.AuthorityNodeList
 }
 
-func NewBlockFetcher(client *thorclient.Client, hayabusaForkedBlock uint32) *BlockFetcher {
+func NewBlockFetcher(client *thorclient.Client, hayabusaForkedBlock uint32, hayabusaActiveBlock uint32) *BlockFetcher {
 	cache, _ := lru.New[uint32, *FetchResult](cacheSize)
 
 	return &BlockFetcher{
 		client:              client,
 		cache:               cache,
 		hayabusaForkedBlock: hayabusaForkedBlock,
+		hayabusaActiveBlock: hayabusaActiveBlock,
 	}
 }
 
@@ -77,10 +83,21 @@ func (b *BlockFetcher) FetchBlock(blockNum uint32) (*FetchResult, error) {
 				}
 			}
 
+			// Fetch Auth nodes info if needed
+			var authNodes types.AuthorityNodeList
+			if blockNum <= b.hayabusaActiveBlock {
+				authNodes, err = slots.FetchAuthorityNodes(b.client, block.ID)
+				if err != nil {
+					slog.Warn("failed to fetch auth nodes info for block", "block", block.Number, "error", err)
+					return errors.Wrap(err, "failed to fetch auth nodes info")
+				}
+			}
+
 			fetchResult = &FetchResult{
-				Block:  block,
-				Seed:   seed,
-				Staker: stakerInfo,
+				Block:     block,
+				Seed:      seed,
+				Staker:    stakerInfo,
+				AuthNodes: authNodes,
 			}
 			return nil
 		}, 30, 100*time.Millisecond)
