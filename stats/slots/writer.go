@@ -106,7 +106,7 @@ func (w *Writer) Write(event *types.Event) []*write.Point {
 func (w *Writer) calculatePoaProposers(event *types.Event) ([]FutureProposer, thor.Address, int) {
 	expectedBlockProposers := NextBlockProposersPoA(
 		event.ParentAuthNodes,
-		event.Seed,
+		event.ParentSeed,
 		event.Prev.Number, // Use previous block number for seed calculation
 		w.futureProposerCount,
 	)
@@ -135,7 +135,7 @@ func (w *Writer) calculatePosProposers(event *types.Event) ([]FutureProposer, th
 		parentPosNodes := convertStakerToPosNodes(event.ParentStaker)
 		expectedBlockProposers = NextBlockProposersPoS(
 			parentPosNodes,
-			event.Seed,
+			event.ParentSeed,
 			event.Prev.Number, // Use previous block number for seed calculation
 			1,                 // Only need the first proposer for expected signer
 		)
@@ -146,7 +146,7 @@ func (w *Writer) calculatePosProposers(event *types.Event) ([]FutureProposer, th
 	if len(posNodes) == 0 {
 		return []FutureProposer{}, thor.Address{}, 0
 	}
-	
+
 	// Calculate future proposers using PoS algorithm
 	futureProposers := NextBlockProposersPoS(
 		posNodes,
