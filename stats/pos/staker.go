@@ -19,6 +19,7 @@ import (
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thor/v2/thorclient/builtin"
 	"github.com/vechain/thorflux/config"
+	"github.com/vechain/thorflux/stats/slots"
 	"github.com/vechain/thorflux/types"
 	"github.com/vechain/thorflux/vetutil"
 )
@@ -29,20 +30,28 @@ type Staker struct {
 	epochLength uint32
 }
 
-func NewStaker(client *thorclient.Client) (*Staker, error) {
-	staker, err := builtin.NewStaker(client)
-	if err != nil {
-		return nil, err
-	}
+func NewStaker(client *thorclient.Client) *Staker {
+	staker, _ := builtin.NewStaker(client)
+	// imported function, ok to swallow errors
 
 	return &Staker{
 		staker:      staker,
 		client:      client,
 		epochLength: thor.EpochLength(),
-	}, nil
+	}
 }
 
-func createProposers(validators []*types.Validation) []pos.Proposer {
+type MissedSlot struct {
+	Signer    thor.Address
+	WasOnline bool
+}
+
+func (s *Staker) MissedSlots(
+	parent *api.JSONExpandedBlock,
+	validators []*types.Validation,
+	block *api.JSONExpandedBlock,
+	seed []byte,
+) ([]MissedSlot, []MissedSlot, error) {
 	proposers := make([]pos.Proposer, 0)
 	for _, v := range validators {
 		if v.Status == validation.StatusActive {
@@ -53,20 +62,6 @@ func createProposers(validators []*types.Validation) []pos.Proposer {
 			})
 		}
 	}
-	return proposers
-}
-
-type MissedSlot struct {
-	Signer thor.Address
-}
-
-func (s *Staker) MissedSlots(
-	parent *api.JSONExpandedBlock,
-	validators []*types.Validation,
-	block *api.JSONExpandedBlock,
-	seed []byte,
-) ([]MissedSlot, []MissedSlot, error) {
-	proposers := createProposers(validators)
 	sched, err := pos.NewScheduler(block.Signer, proposers, parent.Number, parent.Timestamp, seed)
 	if err != nil {
 		return nil, nil, err
@@ -104,7 +99,8 @@ func (s *Staker) MissedSlots(
 			// if an offline validator could be scheduled for this block
 			// but the signer is different
 			missedOfflineSigners = append(missedOfflineSigners, MissedSlot{
-				Signer: val.Address,
+				Signer:    val.Address,
+				WasOnline: false,
 			})
 		}
 
@@ -112,9 +108,25 @@ func (s *Staker) MissedSlots(
 	return missedOnlineSigners, missedOfflineSigners, nil
 }
 
+func createSlotsProposers(validators []*types.Validation) []slots.PosNode {
+	proposers := make([]slots.PosNode, 0)
+	for _, v := range validators {
+		if v.Status == validation.StatusActive {
+			proposers = append(proposers, slots.PosNode{
+				Master:   v.Address,
+				Endorsor: v.Endorser,
+				Active:   v.Online,
+				Weight:   v.Weight,
+			})
+		}
+	}
+	return proposers
+}
+
 type FutureSlot struct {
 	Block  uint32
 	Signer thor.Address
+	Index  uint32
 }
 
 func (s *Staker) FutureSlots(validators []*types.Validation, block *api.JSONExpandedBlock, seed []byte) ([]FutureSlot, error) {
@@ -122,30 +134,23 @@ func (s *Staker) FutureSlots(validators []*types.Validation, block *api.JSONExpa
 	// eg epoch length = 180, block number = 177, then we can predict, 178, 179. 180 is a new epoch
 	blockInEpoch := block.Number % s.epochLength
 	predictableSlots := s.epochLength - blockInEpoch - 1
-	slots := make([]FutureSlot, 0)
+	futures := make([]FutureSlot, 0)
 
-	proposers := createProposers(validators)
+	proposers := createSlotsProposers(validators)
 
+	// Check each future timestamp to find who is scheduled
 	for i := range predictableSlots {
 		parent := block.Number + i
-		parentTimestamp := block.Timestamp + uint64(i)*config.BlockIntervalSeconds
-		newTimestamp := parentTimestamp + config.BlockIntervalSeconds
-		sched, err := pos.NewScheduler(block.Signer, proposers, parent, parentTimestamp, seed)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create scheduler for block %d: %w", parent, err)
-		}
-		for _, master := range proposers {
-			if sched.IsScheduled(newTimestamp, master.Address) {
-				slots = append(slots, FutureSlot{
-					Block:  parent + 1,
-					Signer: master.Address,
-				})
-				break // we only need one signer per block
-			}
-		}
+		futureBlockNumber := parent + 1
+		list := slots.NextBlockProposersPoS(proposers, seed, parent, 101)
+		futures = append(futures, FutureSlot{
+			Block:  futureBlockNumber,
+			Signer: list[0].Master,
+			Index:  i + 1,
+		})
 	}
 
-	return slots, nil
+	return futures, nil
 }
 
 //go:embed compiled/GetValidators.abi

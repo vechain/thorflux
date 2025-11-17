@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/vechain/thorflux/excel"
+
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thor/v2/api"
 
@@ -27,16 +29,20 @@ import (
 var topFiveProposers = 5
 
 type List struct {
-	candidates  []Candidate
-	thor        *thorclient.Client
+	candidates []Candidate
+	thor       *thorclient.Client
 	updateBlock uint32
+	owners     map[thor.Address]*excel.Owner
+	ownersRepo string
 }
 
-func NewList(thor *thorclient.Client) *List {
+func NewList(thorClient *thorclient.Client, ownersRepo string) *List {
 	return &List{
-		thor:        thor,
-		candidates:  make([]Candidate, 0),
+		thor:       thorClient,
 		updateBlock: 0,
+		candidates: make([]Candidate, 0),
+		owners:     make(map[thor.Address]*excel.Owner),
+		ownersRepo: ownersRepo,
 	}
 }
 
@@ -114,7 +120,23 @@ func (l *List) Init(revision thor.Bytes32, blockNum uint32) error {
 	}
 	l.candidates = candidates
 	l.updateBlock = blockNum
+
+	l.RefreshOwnersList()
 	return nil
+}
+
+func (l *List) RefreshOwnersList() {
+	if l.ownersRepo == "" {
+		return
+	}
+	owners, err := excel.ParseOwnersFromXLSX(l.ownersRepo)
+	if err != nil {
+		slog.Warn("Cannot parse owners file", "error", err)
+	} else {
+		for _, owner := range *owners {
+			l.owners[owner.MasterAddress] = &owner
+		}
+	}
 }
 
 func (l *List) Shuffled(prev *api.JSONExpandedBlock, seed []byte) ([]thor.Address, error) {
@@ -133,7 +155,6 @@ func (l *List) Write(event *types.Event) []*write.Point {
 
 	block := event.Block
 	prev := event.Prev
-	chainTag := event.ChainTag
 	epoch := block.Number / thor.EpochLength()
 
 	points := make([]*write.Point, 0)
@@ -149,11 +170,13 @@ func (l *List) Write(event *types.Event) []*write.Point {
 			startSlot = slotsSinceLastBlock - detailedSlotWindow
 		}
 		proposer := block.Signer
+		ownerName, contact := l.getOwnerAndContactForProposer(proposer)
+
 		p := influxdb2.NewPoint(
 			"recent_slots",
-			map[string]string{"chain_tag": chainTag, "filled": "1", "proposer": proposer.String()},
+			map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "filled": "1", "proposer": proposer.String(), "owner": ownerName, "contact": contact},
 			map[string]interface{}{"epoch": epoch, "block_number": block.Number},
-			time.Unix(int64(block.Timestamp), 0),
+			event.Timestamp,
 		)
 		points = append(points, p)
 
@@ -177,7 +200,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 		}
 		authNodes := influxdb2.NewPoint(
 			"authority_nodes",
-			map[string]string{"chain_tag": chainTag, "block_number": strconv.Itoa(int(block.Number))},
+			map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "block_number": strconv.Itoa(int(block.Number))},
 			proposers,
 			time.Unix(int64(block.Timestamp), 0),
 		)
@@ -188,7 +211,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 			missedSlotData["expected_proposer"] = shuffledCandidates[0].String()
 			missedSlot := influxdb2.NewPoint(
 				"missed_slots",
-				map[string]string{"chain_tag": chainTag, "block_number": strconv.Itoa(int(block.Number)), "actual_proposer": block.Signer.String()},
+				map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "block_number": strconv.Itoa(int(block.Number)), "actual_proposer": block.Signer.String()},
 				missedSlotData,
 				time.Unix(int64(block.Timestamp), 0),
 			)
@@ -212,9 +235,10 @@ func (l *List) Write(event *types.Event) []*write.Point {
 				}
 			}
 
+			ownerName, contact = l.getOwnerAndContactForProposer(proposer)
 			p := influxdb2.NewPoint(
 				"recent_slots",
-				map[string]string{"chain_tag": chainTag, "filled": fmt.Sprintf("%d", value), "proposer": proposer.String()},
+				map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "filled": fmt.Sprintf("%d", value), "proposer": proposer.String(), "owner": ownerName, "contact": contact},
 				map[string]interface{}{"epoch": epoch, "block_number": block.Number},
 				slotTime,
 			)
@@ -229,7 +253,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 
 			p := influxdb2.NewPoint(
 				"aggregated_slots",
-				map[string]string{"chain_tag": chainTag},
+				map[string]string{"chain_tag": event.DefaultTags["chain_tag"]},
 				map[string]interface{}{
 					"missed": olderMissedSlots,
 					"filled": olderFilledSlots,
@@ -246,6 +270,9 @@ func (l *List) Write(event *types.Event) []*write.Point {
 			slog.Error("failed to initialize authority list", "error", err)
 			return points
 		}
+	} else if block.Number%(thor.EpochLength()*2) == 0 {
+		slog.Info("Refreshing owners list", "block", block.ID, "number", block.Number)
+		l.RefreshOwnersList()
 	}
 
 	return points
@@ -348,4 +375,15 @@ func shuffleCandidates(candidates []Candidate, seed []byte, blockNumber uint32) 
 		shuffled = append(shuffled, t.addr)
 	}
 	return shuffled
+}
+
+func (l *List) getOwnerAndContactForProposer(proposer thor.Address) (string, string) {
+	ownerName := "?"
+	contact := "?"
+	owner := l.owners[proposer]
+	if owner != nil {
+		ownerName = owner.Owner
+		contact = owner.PointOfContact
+	}
+	return ownerName, contact
 }

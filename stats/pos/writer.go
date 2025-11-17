@@ -124,7 +124,7 @@ func (s *Staker) createBlockPoints(event *types.Event, _ *types.StakerInformatio
 		eventTotalsPoint := influxdb2.NewPoint(
 			"staker_events",
 			map[string]string{
-				"chain_tag": event.ChainTag,
+				"chain_tag": event.DefaultTags["chain_tag"],
 			},
 			flags,
 			event.Timestamp,
@@ -228,10 +228,7 @@ func (s *Staker) createValidatorOverview(event *types.Event, info *types.StakerI
 	// Prepare data for heatmap
 	heatmapPoint := influxdb2.NewPoint(
 		"validator_overview",
-		map[string]string{
-			"chain_tag": event.ChainTag,
-			"signer":    event.Block.Signer.String(),
-		},
+		event.DefaultTags,
 		flags,
 		time.Unix(int64(block.Timestamp), 0),
 	)
@@ -280,10 +277,7 @@ func (s *Staker) createEnergyStats(event *types.Event, info *types.StakerInforma
 	// Prepare data for heatmap
 	heatmapPoint := influxdb2.NewPoint(
 		"hayabusa_gas",
-		map[string]string{
-			"chain_tag": event.ChainTag,
-			"signer":    event.Block.Signer.String(),
-		},
+		event.DefaultTags,
 		map[string]interface{}{
 			"vtho_issued":         vetutil.ScaleToVET(vthoIssued),
 			"vtho_burned":         vetutil.ScaleToVET(vthoBurned),
@@ -350,7 +344,7 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *types.StakerI
 		p := influxdb2.NewPoint(
 			"individual_validators",
 			map[string]string{
-				"chain_tag":             ev.ChainTag,
+				"chain_tag":             ev.DefaultTags["chain_tag"],
 				"validator":             addr.String(),
 				"endorsor":              validator.Endorser.String(),
 				"status":                statusToString(validation.StatusExit),
@@ -428,7 +422,7 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *types.StakerI
 		p := influxdb2.NewPoint(
 			"individual_validators",
 			map[string]string{
-				"chain_tag":             ev.ChainTag,
+				"chain_tag":             ev.DefaultTags["chain_tag"],
 				"validator":             validator.Address.String(),
 				"endorsor":              validator.Endorser.String(),
 				"status":                statusToString(validator.Status),
@@ -463,7 +457,7 @@ func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformat
 		point := influxdb2.NewPoint(
 			"dpos_missed_slots",
 			map[string]string{
-				"chain_tag": event.ChainTag,
+				"chain_tag": event.DefaultTags["chain_tag"],
 				"signer":    v.Signer.String(),
 			},
 			map[string]interface{}{
@@ -474,11 +468,17 @@ func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformat
 		points = append(points, point)
 	}
 	for _, v := range missedOffline {
+		missType := "went-offline"
+		if !v.WasOnline {
+			missType = "previously-offline"
+		}
+
 		point := influxdb2.NewPoint(
 			"dpos_offline_missed_slots",
 			map[string]string{
-				"chain_tag": event.ChainTag,
+				"chain_tag": event.DefaultTags["chain_tag"],
 				"signer":    v.Signer.String(),
+				"type":      missType,
 			},
 			map[string]interface{}{
 				"block_number": event.Block.Number,
@@ -498,8 +498,9 @@ func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformat
 		point := influxdb2.NewPoint(
 			"dpos_future_slots",
 			map[string]string{
-				"chain_tag": event.ChainTag,
+				"chain_tag": event.DefaultTags["chain_tag"],
 				"signer":    f.Signer.String(),
+				"index":     strconv.FormatUint(uint64(f.Index), 10),
 			},
 			map[string]interface{}{
 				"block_number":   f.Block,
