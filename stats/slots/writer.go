@@ -1,16 +1,16 @@
 package slots
 
 import (
-	"github.com/vechain/thor/v2/block"
-	"github.com/vechain/thor/v2/thor"
-	"github.com/vechain/thorflux/vetutil"
 	"log/slog"
 	"strconv"
 	"time"
 
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
+	"github.com/vechain/thor/v2/block"
 	"github.com/vechain/thor/v2/builtin/staker/validation"
+	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thorflux/types"
+	"github.com/vechain/thorflux/vetutil"
 )
 
 const (
@@ -104,10 +104,11 @@ func (w *Writer) Write(event *types.Event) []*write.Point {
 
 // calculatePoaProposers handles PoA consensus proposer calculation
 func (w *Writer) calculatePoaProposers(event *types.Event) ([]FutureProposer, thor.Address, int) {
+	// based on the previous block, calculate the expected proposers of current block
 	expectedBlockProposers := NextBlockProposersPoA(
 		event.ParentAuthNodes,
 		event.Seed,
-		event.Prev.Number, // Use previous block number for seed calculation
+		event.Block.Number-1, // Use the previous block number to calculate current block
 		w.futureProposerCount,
 	)
 
@@ -119,7 +120,7 @@ func (w *Writer) calculatePoaProposers(event *types.Event) ([]FutureProposer, th
 	}
 
 	// Calculate future proposers using PoA algorithm
-	futureProposers := NextBlockProposersPoA(event.AuthNodes, event.Seed, event.Block.Number, w.futureProposerCount)
+	futureProposers := NextBlockProposersPoA(event.AuthNodes, event.FutureSeed, event.Block.Number, w.futureProposerCount)
 	return futureProposers, expectedBlockProposers[0].Master, event.AuthNodes.GetActiveCount()
 }
 
@@ -136,8 +137,8 @@ func (w *Writer) calculatePosProposers(event *types.Event) ([]FutureProposer, th
 		expectedBlockProposers = NextBlockProposersPoS(
 			parentPosNodes,
 			event.Seed,
-			event.Prev.Number, // Use previous block number for seed calculation
-			1,                 // Only need the first proposer for expected signer
+			event.Block.Number-1, // Use previous block number for seed calculation
+			1,                    // Only need the first proposer for expected signer
 		)
 	}
 
@@ -146,11 +147,11 @@ func (w *Writer) calculatePosProposers(event *types.Event) ([]FutureProposer, th
 	if len(posNodes) == 0 {
 		return []FutureProposer{}, thor.Address{}, 0
 	}
-	
+
 	// Calculate future proposers using PoS algorithm
 	futureProposers := NextBlockProposersPoS(
 		posNodes,
-		event.Seed,
+		event.FutureSeed,
 		event.Block.Number,
 		w.futureProposerCount,
 	)

@@ -111,6 +111,7 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 				ParentStaker:    b.ParentStaker,
 				AuthNodes:       b.AuthNodes,
 				ParentAuthNodes: b.ParentAuthNodes,
+				FutureSeed:      b.FutureSeed,
 			}
 
 			// Create tasks for all handlers

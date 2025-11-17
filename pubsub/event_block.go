@@ -54,5 +54,6 @@ func (e *EventBlockService) ProcessBlock(blockNum uint32) (*BlockEvent, error) {
 		ParentStaker:    parentStaker,
 		AuthNodes:       currentResult.AuthNodes,
 		ParentAuthNodes: parentAuthNodes,
+		FutureSeed:      currentResult.FutureSeed,
 	}, nil
 }

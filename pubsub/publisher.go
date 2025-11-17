@@ -31,6 +31,7 @@ type BlockEvent struct {
 	Seed            []byte
 	AuthNodes       types.AuthorityNodeList
 	ParentAuthNodes types.AuthorityNodeList
+	FutureSeed      []byte
 }
 
 type Publisher struct {
