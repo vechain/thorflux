@@ -1,17 +1,16 @@
 package slots
 
 import (
-	"fmt"
-	"github.com/vechain/thor/v2/block"
-	"github.com/vechain/thor/v2/thor"
-	"github.com/vechain/thorflux/vetutil"
 	"log/slog"
 	"strconv"
 	"time"
 
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
+	"github.com/vechain/thor/v2/block"
 	"github.com/vechain/thor/v2/builtin/staker/validation"
+	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thorflux/types"
+	"github.com/vechain/thorflux/vetutil"
 )
 
 const (

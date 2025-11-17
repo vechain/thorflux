@@ -2,13 +2,14 @@ package slots
 
 import (
 	"errors"
+	"log/slog"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/stats/contracts/generated/listauthority"
 	"github.com/vechain/thorflux/types"
-	"log/slog"
 )
 
 // FetchAuthorityNodes fetches all authority nodes from the authority contract at a specific block
