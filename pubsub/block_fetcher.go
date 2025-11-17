@@ -33,10 +33,11 @@ type BlockFetcher struct {
 }
 
 type FetchResult struct {
-	Block     *api.JSONExpandedBlock
-	Seed      []byte
-	Staker    *types.StakerInformation
-	AuthNodes types.AuthorityNodeList
+	Block      *api.JSONExpandedBlock
+	Seed       []byte
+	Staker     *types.StakerInformation
+	AuthNodes  types.AuthorityNodeList
+	FutureSeed []byte
 }
 
 func NewBlockFetcher(client *thorclient.Client, hayabusaForkedBlock uint32, hayabusaActiveBlock uint32) *BlockFetcher {
@@ -68,10 +69,19 @@ func (b *BlockFetcher) FetchBlock(blockNum uint32) (*FetchResult, error) {
 				return fmt.Errorf("failed to fetch block: %w", err)
 			}
 
-			// Fetch seed
+			// Fetch seed of the current block
 			seed, err := fetchSeed(block.ParentID, b.client)
 			if err != nil {
 				return fmt.Errorf("failed to fetch seed: %w", err)
+			}
+
+			// update the future seed if it's a boundary seed
+			futureSeed := seed
+			if (blockNum+1)%thor.SeederInterval() == 0 {
+				futureSeed, err = fetchSeed(block.ID, b.client)
+				if err != nil {
+					return fmt.Errorf("failed to fetch future seed: %w", err)
+				}
 			}
 
 			// Fetch staker info if needed
@@ -94,10 +104,11 @@ func (b *BlockFetcher) FetchBlock(blockNum uint32) (*FetchResult, error) {
 			}
 
 			fetchResult = &FetchResult{
-				Block:     block,
-				Seed:      seed,
-				Staker:    stakerInfo,
-				AuthNodes: authNodes,
+				Block:      block,
+				Seed:       seed,
+				Staker:     stakerInfo,
+				AuthNodes:  authNodes,
+				FutureSeed: futureSeed,
 			}
 			return nil
 		}, 30, 100*time.Millisecond)

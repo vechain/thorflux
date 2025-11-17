@@ -30,7 +30,6 @@ func (e *EventBlockService) ProcessBlock(blockNum uint32) (*BlockEvent, error) {
 	var prevBlock *api.JSONExpandedBlock
 	var parentStaker *types.StakerInformation
 	var parentAuthNodes types.AuthorityNodeList
-	var parentSeed []byte
 
 	if blockNum > 1 {
 		prevResult, err := e.blockFetcher.FetchBlock(blockNum - 1)
@@ -41,7 +40,6 @@ func (e *EventBlockService) ProcessBlock(blockNum uint32) (*BlockEvent, error) {
 		prevBlock = prevResult.Block
 		parentStaker = prevResult.Staker
 		parentAuthNodes = prevResult.AuthNodes
-		parentSeed = prevResult.Seed
 	}
 
 	return &BlockEvent{
@@ -56,6 +54,6 @@ func (e *EventBlockService) ProcessBlock(blockNum uint32) (*BlockEvent, error) {
 		ParentStaker:    parentStaker,
 		AuthNodes:       currentResult.AuthNodes,
 		ParentAuthNodes: parentAuthNodes,
-		ParentSeed:      parentSeed,
+		FutureSeed:      currentResult.FutureSeed,
 	}, nil
 }
