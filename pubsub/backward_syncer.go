@@ -2,19 +2,24 @@ package pubsub
 
 import (
 	"context"
+	"log/slog"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thorflux/config"
-	"log/slog"
-	"sync"
 )
 
-const backwardWorkers = 100
+const backwardWorkers = 1000
 
 type BackwardSyncer struct {
 	eventBlockService *EventBlockService
 	blockChan         chan *BlockEvent
 	minBlock          uint32
 	head              uint32
+	backoff           atomic.Bool
 }
 
 func NewBackwardSyncer(
@@ -38,6 +43,7 @@ func NewBackwardSyncer(
 		blockChan:         blockChan,
 		minBlock:          minBlock,
 		head:              head.Number,
+		backoff:           atomic.Bool{},
 	}
 }
 
@@ -85,22 +91,58 @@ func (s *BackwardSyncer) worker(ctx context.Context, workChan chan uint32, wg *s
 				return
 			}
 
-			// Process block
-			blockEvent, err := s.eventBlockService.ProcessBlock(blockNum)
-			if err != nil {
-				slog.Error("📚 failed to process block", "block", blockNum, "worker", workerID, "error", err)
-				continue
+			if s.backoff.Load() {
+				slog.Warn("⏸️ backward worker backing off due to rate limit", "worker", workerID)
+				time.Sleep(time.Minute)
 			}
 
-			// Send to channel
-			select {
-			case <-ctx.Done():
-				return
-			case s.blockChan <- blockEvent:
-				if blockNum%config.LogIntervalBlocks == 0 {
-					slog.Info("📚 processed backwards block", "block", blockNum, "worker", workerID)
+			// process block with panic recovery and re-queuing
+			func(num uint32) {
+				processed := false
+				defer func() {
+					if r := recover(); r != nil {
+						slog.Error("⁉️ panic in backward worker", "block", num, "worker", workerID, "error", r)
+					}
+					if !processed {
+						workChan <- num // Re-queue the block for processing
+						slog.Warn("😩 re-queued block for processing", "block", num, "worker", workerID)
+					}
+				}()
+				// Process block
+				blockEvent, err := s.eventBlockService.ProcessBlock(num)
+				if err != nil {
+					if isRateLimitError(err) {
+						s.backoff.Store(true)
+						return
+					}
+					slog.Error("failed to process block", "block", num, "worker", workerID, "error", err)
+					return
 				}
-			}
+
+				// Send to channel
+				select {
+				case <-ctx.Done():
+					return
+				case s.blockChan <- blockEvent:
+					if blockNum%config.LogIntervalBlocks == 0 {
+						slog.Info("📚 processed backwards block", "block", num, "worker", workerID)
+					}
+					processed = true
+				}
+			}(blockNum)
+
 		}
 	}
+}
+
+func isRateLimitError(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "rate limit exceeded") ||
+		strings.Contains(message, "go away") ||
+		strings.Contains(message, "connection reset by peer") ||
+		strings.Contains(message, "too many requests") ||
+		strings.Contains(message, "429")
 }
