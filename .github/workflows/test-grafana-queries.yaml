@@ -30,13 +30,7 @@ jobs:
             sleep 120s # wait for thorflux to sync
       - name: Test Grafana Queries
         run: |
-          go test ./grafana
+          go test ./grafana -v
       - name: Print Logs
         if: always()
-        run: |
-          echo "=== Grafana Logs ==="
-          docker logs grafana
-          echo "=== InfluxDB Logs ==="
-          docker logs influxdb
-          echo "=== Thorflux Logs ==="
-          cat thorflux.log
+        run: cat thorflux.log
