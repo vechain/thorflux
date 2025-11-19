@@ -112,7 +112,7 @@ func (b *BlockFetcher) FetchBlock(blockNum uint32) (*FetchResult, error) {
 				FutureSeed: futureSeed,
 			}
 			return nil
-		}, 2*time.Minute, 20*time.Minute) // large retry duration due to rate limiting
+		}, 30*time.Second, 20*time.Minute) // large retry duration due to rate limiting
 
 		if err != nil {
 			return nil, err
