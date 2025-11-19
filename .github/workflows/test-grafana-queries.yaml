@@ -1,0 +1,33 @@
+name: Test Queries
+
+on:
+  pull_request:
+    branches:
+      - "*"
+  push:
+    branches:
+      - "*"
+
+permissions:
+  contents: read
+
+jobs:
+  golangci:
+    name: test-queries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: false
+      - name: Start Infra
+        run: docker compose up -d --wait influxdb grafana
+      - name: Start Thorflux
+        run: |
+            go build -o thorflux ./cmd/thorflux
+            nohup ./thorflux > thorflux.log 2>&1 &
+            sleep 120s # wait for thorflux to sync
+      - name: Test Grafana Queries
+        run: |
+          go test ./grafana
