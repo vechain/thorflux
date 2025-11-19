@@ -12,7 +12,7 @@ import (
 	"github.com/vechain/thorflux/config"
 )
 
-const backwardWorkers = 1000
+const backwardWorkers = 100
 
 type BackwardSyncer struct {
 	eventBlockService *EventBlockService
