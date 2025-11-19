@@ -14,8 +14,21 @@ jobs:
       contents: read
       packages: write
     with:
-      images: |
-        ghcr.io/${{ github.repository }}
+      images: ghcr.io/${{ github.repository }}
       tags: |
         type=raw,value=${{ github.ref_name }}
         type=raw,value=latest
+
+  deploy-thorflux:
+    name: Deploy ThorFlux
+    runs-on: ubuntu-latest
+    needs: publish-docker-image
+    steps:
+      - uses: convictional/trigger-workflow-and-wait@v1.6.1
+        name: Update Thorflux Deployment
+        with:
+          owner: vechain
+          repo: node-observability
+          github_token: ${{ secrets.DEPLOY_TOKEN }}
+          workflow_file_name: deploy-thorflux.yml
+          client_payload: '{"image_tag": "${{ github.ref_name }}", "create_pr": true}'
