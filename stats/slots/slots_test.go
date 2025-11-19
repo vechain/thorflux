@@ -209,16 +209,6 @@ func compareStakerSets(t *testing.T, newStakers, oldStakers *types.StakerInforma
 		}
 	}
 
-	// Summary
-	uniqueToNew := len(newStakersMap) - len(oldStakersMap) + len(newStakersMap) - len(oldStakersMap)
-	uniqueToOld := len(oldStakersMap) - len(newStakersMap) + len(oldStakersMap) - len(newStakersMap)
-	if uniqueToNew < 0 {
-		uniqueToNew = 0
-	}
-	if uniqueToOld < 0 {
-		uniqueToOld = 0
-	}
-
 	// Count unique validators
 	uniqueInNew := 0
 	uniqueInOld := 0
