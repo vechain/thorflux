@@ -88,8 +88,7 @@ func (w *Writer) Write(event *types.Event) []*write.Point {
 		point := write.NewPoint(
 			MeasurementName,
 			map[string]string{
-				"chain_tag":    event.DefaultTags["chain_tag"],
-				"block_number": strconv.Itoa(int(event.Block.Number)),
+				"block_number": strconv.Itoa(int(event.Block.Number)), // high cardinality tag, required for instant query
 				"position":     strconv.Itoa(proposer.Position),
 				"pos_active":   strconv.FormatBool(event.HayabusaStatus.Active),
 			},
