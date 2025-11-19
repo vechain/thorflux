@@ -29,20 +29,20 @@ import (
 var topFiveProposers = 5
 
 type List struct {
-	candidates []Candidate
-	thor       *thorclient.Client
+	candidates  []Candidate
+	thor        *thorclient.Client
 	updateBlock uint32
-	owners     map[thor.Address]*excel.Owner
-	ownersRepo string
+	owners      map[thor.Address]*excel.Owner
+	ownersRepo  string
 }
 
 func NewList(thorClient *thorclient.Client, ownersRepo string) *List {
 	return &List{
-		thor:       thorClient,
+		thor:        thorClient,
 		updateBlock: 0,
-		candidates: make([]Candidate, 0),
-		owners:     make(map[thor.Address]*excel.Owner),
-		ownersRepo: ownersRepo,
+		candidates:  make([]Candidate, 0),
+		owners:      make(map[thor.Address]*excel.Owner),
+		ownersRepo:  ownersRepo,
 	}
 }
 
@@ -174,7 +174,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 
 		p := influxdb2.NewPoint(
 			"recent_slots",
-			map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "filled": "1", "proposer": proposer.String(), "owner": ownerName, "contact": contact},
+			map[string]string{"filled": "1", "proposer": proposer.String(), "owner": ownerName, "contact": contact},
 			map[string]interface{}{"epoch": epoch, "block_number": block.Number},
 			event.Timestamp,
 		)
@@ -191,6 +191,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 		}
 
 		proposers["signer"] = block.Signer.String()
+		proposers["block_number"] = block.Number
 		topProposers := topFiveProposers
 		if len(shuffledCandidates) < topFiveProposers {
 			topProposers = len(shuffledCandidates)
@@ -200,7 +201,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 		}
 		authNodes := influxdb2.NewPoint(
 			"authority_nodes",
-			map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "block_number": strconv.Itoa(int(block.Number))},
+			event.DefaultTags,
 			proposers,
 			time.Unix(int64(block.Timestamp), 0),
 		)
@@ -209,9 +210,10 @@ func (l *List) Write(event *types.Event) []*write.Point {
 		if len(shuffledCandidates) > 0 && shuffledCandidates[0].String() != block.Signer.String() {
 			missedSlotData := make(map[string]interface{})
 			missedSlotData["expected_proposer"] = shuffledCandidates[0].String()
+			missedSlotData["block_number"] = block.Number
 			missedSlot := influxdb2.NewPoint(
 				"missed_slots",
-				map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "block_number": strconv.Itoa(int(block.Number)), "actual_proposer": block.Signer.String()},
+				map[string]string{"actual_proposer": block.Signer.String()},
 				missedSlotData,
 				time.Unix(int64(block.Timestamp), 0),
 			)
@@ -238,7 +240,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 			ownerName, contact = l.getOwnerAndContactForProposer(proposer)
 			p := influxdb2.NewPoint(
 				"recent_slots",
-				map[string]string{"chain_tag": event.DefaultTags["chain_tag"], "filled": fmt.Sprintf("%d", value), "proposer": proposer.String(), "owner": ownerName, "contact": contact},
+				map[string]string{"filled": fmt.Sprintf("%d", value), "proposer": proposer.String(), "owner": ownerName, "contact": contact},
 				map[string]interface{}{"epoch": epoch, "block_number": block.Number},
 				slotTime,
 			)
@@ -253,7 +255,7 @@ func (l *List) Write(event *types.Event) []*write.Point {
 
 			p := influxdb2.NewPoint(
 				"aggregated_slots",
-				map[string]string{"chain_tag": event.DefaultTags["chain_tag"]},
+				event.DefaultTags,
 				map[string]interface{}{
 					"missed": olderMissedSlots,
 					"filled": olderFilledSlots,

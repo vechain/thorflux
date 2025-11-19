@@ -123,9 +123,7 @@ func (s *Staker) createBlockPoints(event *types.Event, _ *types.StakerInformatio
 	if len(flags) > 1 {
 		eventTotalsPoint := influxdb2.NewPoint(
 			"staker_events",
-			map[string]string{
-				"chain_tag": event.DefaultTags["chain_tag"],
-			},
+			event.DefaultTags,
 			flags,
 			event.Timestamp,
 		)
@@ -344,7 +342,6 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *types.StakerI
 		p := influxdb2.NewPoint(
 			"individual_validators",
 			map[string]string{
-				"chain_tag":             ev.DefaultTags["chain_tag"],
 				"validator":             addr.String(),
 				"endorsor":              validator.Endorser.String(),
 				"status":                statusToString(validation.StatusExit),
@@ -422,7 +419,6 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *types.StakerI
 		p := influxdb2.NewPoint(
 			"individual_validators",
 			map[string]string{
-				"chain_tag":             ev.DefaultTags["chain_tag"],
 				"validator":             validator.Address.String(),
 				"endorsor":              validator.Endorser.String(),
 				"status":                statusToString(validator.Status),
@@ -457,8 +453,7 @@ func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformat
 		point := influxdb2.NewPoint(
 			"dpos_missed_slots",
 			map[string]string{
-				"chain_tag": event.DefaultTags["chain_tag"],
-				"signer":    v.Signer.String(),
+				"signer": v.Signer.String(),
 			},
 			map[string]interface{}{
 				"block_number": event.Block.Number,
@@ -476,9 +471,8 @@ func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformat
 		point := influxdb2.NewPoint(
 			"dpos_offline_missed_slots",
 			map[string]string{
-				"chain_tag": event.DefaultTags["chain_tag"],
-				"signer":    v.Signer.String(),
-				"type":      missType,
+				"signer": v.Signer.String(),
+				"type":   missType,
 			},
 			map[string]interface{}{
 				"block_number": event.Block.Number,
@@ -498,9 +492,8 @@ func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformat
 		point := influxdb2.NewPoint(
 			"dpos_future_slots",
 			map[string]string{
-				"chain_tag": event.DefaultTags["chain_tag"],
-				"signer":    f.Signer.String(),
-				"index":     strconv.FormatUint(uint64(f.Index), 10),
+				"signer": f.Signer.String(),
+				"index":  strconv.FormatUint(uint64(f.Index), 10),
 			},
 			map[string]interface{}{
 				"block_number":   f.Block,

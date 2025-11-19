@@ -2,7 +2,6 @@ package pubsub
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -95,9 +94,7 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 			}
 
 			defaultTags := map[string]string{
-				"chain_tag":    s.chainTag,
-				"signer":       b.Block.Signer.String(),
-				"block_number": fmt.Sprintf("%d", b.Block.Number),
+				"signer": b.Block.Signer.String(),
 			}
 
 			event := &types.Event{
