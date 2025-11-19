@@ -65,6 +65,21 @@ func ParseDashboards() ([]Dashboard, error) {
 	return dashboards, nil
 }
 
+func ParseDashboard(name string) (*Dashboard, error) {
+	data, err := dashboardsFS.ReadFile("dashboards/" + name)
+	if err != nil {
+		return nil, err
+	}
+
+	var dashboard Dashboard
+	err = json.Unmarshal(data, &dashboard)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dashboard, nil
+}
+
 func SetupTest() (*thorclient.Client, *influxdb.DB) {
 	client := thorclient.New(config.DefaultThorURL)
 	influx, err := influxdb.New(config.DefaultInfluxDB, config.DefaultInfluxToken, config.DefaultInfluxOrg, config.DefaultInfluxBucket)

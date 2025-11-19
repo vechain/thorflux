@@ -26,8 +26,17 @@ jobs:
       - name: Start Thorflux
         run: |
             go build -o thorflux .
-            nohup ./thorflux > thorflux.log 2>&1 &
+            nohup ./thorflux --thor-blocks 1440 > thorflux.log 2>&1 & # 4 hours of blocks
             sleep 120s # wait for thorflux to sync
       - name: Test Grafana Queries
         run: |
           go test ./grafana
+      - name: Print Logs
+        if: always()
+        run: |
+          echo "=== Grafana Logs ==="
+          docker logs grafana
+          echo "=== InfluxDB Logs ==="
+          docker logs influxdb
+          echo "=== Thorflux Logs ==="
+          cat thorflux.log
