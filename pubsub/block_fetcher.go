@@ -5,10 +5,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/vechain/thorflux/stats/slots"
 	"log/slog"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/vechain/thorflux/stats/slots"
 
 	"github.com/ethereum/go-ethereum/rlp"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -62,7 +63,7 @@ func (b *BlockFetcher) FetchBlock(blockNum uint32) (*FetchResult, error) {
 
 		// Fetch with retry
 		var fetchResult *FetchResult
-		err := common.Retry(func() error {
+		err := common.RetryIncreasing(func() error {
 			// Fetch block
 			block, err := b.client.ExpandedBlock(fmt.Sprintf("%d", blockNum))
 			if err != nil {
@@ -111,7 +112,10 @@ func (b *BlockFetcher) FetchBlock(blockNum uint32) (*FetchResult, error) {
 				FutureSeed: futureSeed,
 			}
 			return nil
-		}, 30, 100*time.Millisecond)
+
+			// large retry duration due to rate limiting
+			// initialDelay, maxDelay, maxWaitTime
+		}, 100*time.Millisecond, 30*time.Second, 2*time.Minute)
 
 		if err != nil {
 			return nil, err
