@@ -25,7 +25,7 @@ jobs:
         run: docker compose up -d --wait influxdb grafana
       - name: Start Thorflux
         run: |
-            go build -o thorflux ./cmd/thorflux
+            go build -o thorflux .
             nohup ./thorflux > thorflux.log 2>&1 &
             sleep 120s # wait for thorflux to sync
       - name: Test Grafana Queries
