@@ -124,7 +124,7 @@ func (s *BackwardSyncer) worker(ctx context.Context, workChan chan uint32, wg *s
 				case <-ctx.Done():
 					return
 				case s.blockChan <- blockEvent:
-					if blockNum%config.LogIntervalBlocks == 0 {
+					if num%config.LogIntervalBlocks == 0 {
 						slog.Info("📚 processed backwards block", "block", num, "worker", workerID)
 					}
 					processed = true
