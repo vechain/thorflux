@@ -7,7 +7,6 @@ import (
 
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
 	"github.com/vechain/thor/v2/block"
-	"github.com/vechain/thor/v2/builtin/staker/validation"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thorflux/types"
 	"github.com/vechain/thorflux/vetutil"
@@ -185,7 +184,7 @@ func convertStakerToPosNodes(stakerInfo *types.StakerInformation) []PosNode {
 		posNode := PosNode{
 			Master:   v.Address, // Use validator address as master
 			Endorsor: v.Endorser,
-			Active:   v.Status == validation.StatusActive,
+			Active:   v.Online,
 			Weight:   weight,
 		}
 
