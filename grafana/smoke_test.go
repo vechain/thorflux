@@ -73,7 +73,7 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 				t.Error("failed to execute variable query:", query)
 				continue
 			}
-			assert.True(t, res.Next(), "dashboard variable should have a value:", variable.Query, query)
+			assert.True(t, res.Next(), "dashboard variable should have a value:", dashboard.Title, variable.Query, query)
 		}
 
 		// test the dashboard panel queries
