@@ -13,7 +13,7 @@ import (
 
 func TestDashboard_Queries_NoError(t *testing.T) {
 	client, db := SetupTest()
-	defer db.Close()
+	defer require.NoError(t, db.Close())
 
 	best, err := client.Block("best")
 	require.NoError(t, err)
@@ -51,6 +51,31 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 	totalRequests := 0
 	hasResults := 0
 	for _, dashboard := range dashboards {
+		// test the dashboard variables
+		for _, variable := range dashboard.Templating.List {
+			query, ok := variable.Query.(string)
+			if !ok || variable.Datasource.Type != "influxdb" {
+				continue
+			}
+			for placeholder, replacement := range variableReplacements {
+				if strings.Contains(query, placeholder) {
+					query = strings.ReplaceAll(query, placeholder, replacement)
+				}
+			}
+
+			query = strings.ReplaceAll(query, "v.timeRangeStart", "-1h")
+			query = strings.ReplaceAll(query, "v.timeRangeStop", "now()")
+			query = strings.ReplaceAll(query, "v.windowPeriod", "1m")
+
+			res, err := db.Query(query)
+			if err != nil {
+				t.Error("failed to execute variable query:", query)
+				continue
+			}
+			require.True(t, res.Next()) // assert the query returns at least one rowe
+		}
+
+		// test the dashboard panel queries
 		for _, panel := range dashboard.Panels {
 			for _, target := range panel.Targets {
 				if target.Datasource.Type != "influxdb" {
