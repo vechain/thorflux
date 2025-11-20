@@ -1369,6 +1369,10 @@
           "text": "0.0156",
           "value": "0.0156"
         },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
         "definition": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"price_api\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vet_price\")\n  |> last()",
         "description": "",
         "hide": 0,
@@ -1389,6 +1393,10 @@
           "selected": false,
           "text": "0.0010915",
           "value": "0.0010915"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"price_api\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_price\")\n  |> last()",
         "description": "",
@@ -1435,6 +1443,10 @@
           "text": "18",
           "value": "18"
         },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"epoch_length\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
         "includeAll": false,
@@ -1454,6 +1466,10 @@
           "selected": false,
           "text": "10",
           "value": "10"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"block_interval\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -1475,6 +1491,10 @@
           "text": "720",
           "value": "720"
         },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"seeder_interval\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
         "includeAll": false,
@@ -1494,6 +1514,10 @@
           "selected": false,
           "text": "8640",
           "value": "8640"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"validator_eviction_threshold\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -1515,6 +1539,10 @@
           "text": "18",
           "value": "18"
         },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"low_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
         "includeAll": false,
@@ -1534,6 +1562,10 @@
           "selected": false,
           "text": "180",
           "value": "180"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"medium_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -1555,6 +1587,10 @@
           "text": "8640",
           "value": "8640"
         },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"high_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
         "includeAll": false,
@@ -1574,6 +1610,10 @@
           "selected": false,
           "text": "720",
           "value": "720"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"cooldown_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -1595,6 +1635,10 @@
           "text": "18",
           "value": "18"
         },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"hayabusa_tp\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
         "includeAll": false,
@@ -1614,6 +1658,10 @@
           "selected": false,
           "text": "0",
           "value": "0"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"hayabusa_fork_block\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
