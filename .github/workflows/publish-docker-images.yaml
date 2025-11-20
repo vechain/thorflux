@@ -211,36 +211,30 @@ jobs:
         shell: bash
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
-          IMAGES: ${{ inputs.images || format('ghcr.io/{0}', github.repository) }}
         run: |
           set -euo pipefail
           [ -f digests/digest-linux_amd64.txt ] || { echo "Missing amd64 digest"; exit 1; }
           [ -f digests/digest-linux_arm64.txt ] || { echo "Missing arm64 digest"; exit 1; }
-          AMD64_DIGEST=$(cat digests/digest-linux_amd64.txt)
-          ARM64_DIGEST=$(cat digests/digest-linux_arm64.txt)
 
-          # For each image, tag manifest with all matching canonical tags
-          while IFS= read -r image; do
-            [ -z "$image" ] && continue
-            TAG_ARGS=""
-            while IFS= read -r tag; do
-              [ -z "$tag" ] && continue
-              case "$tag" in
-                "${image}:"*)
-                  base="${tag%-amd64}"
-                  base="${base%-arm64}"
-                  TAG_ARGS="$TAG_ARGS -t $base"
-                  ;;
-              esac
-            done <<< "$TAGS"
+          # Create manifest for each canonical tag by combining arch-specific tags
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
 
-            [ -z "$TAG_ARGS" ] && { echo "No tags for $image"; continue; }
+            # Extract image name and tag name
+            image_name="${tag%:*}"
+            tag_name="${tag##*:}"
 
+            # Skip if this tag already has an architecture suffix
+            case "$tag_name" in
+              *-amd64|*-arm64) continue ;;
+            esac
+
+            echo "Creating multi-arch manifest for $tag"
             docker buildx imagetools create \
-              $TAG_ARGS \
-              "${image}@${AMD64_DIGEST}" \
-              "${image}@${ARM64_DIGEST}"
-          done <<< "$IMAGES"
+              -t "$tag" \
+              "${image_name}:${tag_name}-amd64" \
+              "${image_name}:${tag_name}-arm64"
+          done <<< "$TAGS"
 
       # ----------------------------
       # Cleanup: remove temporary -amd64 and -arm64 tags
