@@ -3000,8 +3000,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"epoch_length\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -3025,8 +3025,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"block_interval\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -3050,8 +3050,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"seeder_interval\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -3075,8 +3075,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"validator_eviction_threshold\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -3100,8 +3100,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"low_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -3125,8 +3125,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"medium_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -3150,8 +3150,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"high_staking_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -3175,8 +3175,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"cooldown_period\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -3200,8 +3200,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"hayabusa_tp\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
@@ -3225,8 +3225,8 @@
           "value": ""
         },
         "datasource": {
-          "type": "datasource",
-          "uid": "grafana"
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "import \"influxdata/influxdb/schema\"\n\nschema.tagValues(\n    bucket: \"${bucket}\",\n    tag: \"hayabusa_fork_block\",\n    predicate: (r) => r._measurement == \"chain_config\"\n)",
         "hide": 2,
