@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thorflux/config"
@@ -72,7 +73,7 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 				t.Error("failed to execute variable query:", query)
 				continue
 			}
-			require.True(t, res.Next()) // assert the query returns at least one rowe
+			assert.True(t, res.Next(), "dashboard variable should have a value:", variable.Query)
 		}
 
 		// test the dashboard panel queries
