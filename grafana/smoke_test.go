@@ -64,7 +64,7 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 				}
 			}
 
-			query = strings.ReplaceAll(query, "v.timeRangeStart", "-1h")
+			query = strings.ReplaceAll(query, "v.timeRangeStart", "-10h")
 			query = strings.ReplaceAll(query, "v.timeRangeStop", "now()")
 			query = strings.ReplaceAll(query, "v.windowPeriod", "1m")
 
@@ -73,7 +73,7 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 				t.Error("failed to execute variable query:", query)
 				continue
 			}
-			assert.True(t, res.Next(), "dashboard variable should have a value:", variable.Query)
+			assert.True(t, res.Next(), "dashboard variable should have a value:", variable.Query, query)
 		}
 
 		// test the dashboard panel queries
