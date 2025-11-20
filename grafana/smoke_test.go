@@ -58,6 +58,14 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 			if !ok || variable.Datasource.Type != "influxdb" {
 				continue
 			}
+
+			lines := strings.Split(query, "\n")
+			for _, line := range lines {
+				if strings.Contains(line, "bucket") && strings.Contains(line, "vechain") {
+					t.Error("panel query should use ${bucket} variable instead of hardcoding bucket name:", dashboard.Title, query)
+				}
+			}
+
 			for placeholder, replacement := range variableReplacements {
 				if strings.Contains(query, placeholder) {
 					query = strings.ReplaceAll(query, placeholder, replacement)
@@ -82,6 +90,14 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 				if target.Datasource.Type != "influxdb" {
 					continue
 				}
+
+				lines := strings.Split(target.Query, "\n")
+				for _, line := range lines {
+					if strings.Contains(line, "bucket") && strings.Contains(line, "vechain") {
+						t.Error("panel query should use ${bucket} variable instead of hardcoding bucket name:", dashboard.Title, panel.Title, target.Query)
+					}
+				}
+
 				for placeholder, replacement := range variableReplacements {
 					if strings.Contains(target.Query, placeholder) {
 						target.Query = strings.ReplaceAll(target.Query, placeholder, replacement)
