@@ -141,6 +141,16 @@ func (i *DB) WritePoints(points []*write.Point) {
 	}
 }
 
+func (i *DB) Query(query string) (*api.QueryTableResult, error) {
+	queryAPI := i.client.QueryAPI(i.org)
+	result, err := queryAPI.Query(context.Background(), query)
+	if err != nil {
+		slog.Error("failed to execute query", "error", err, "query", query)
+		return nil, err
+	}
+	return result, nil
+}
+
 func (i *DB) Close() error {
 	i.cancel()
 	i.writeAPI.Flush()

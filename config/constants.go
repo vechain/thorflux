@@ -52,7 +52,7 @@ const (
 
 // Default configuration values
 const (
-	DefaultThorURL      = "http://localhost:8569"
+	DefaultThorURL      = "https://testnet.vechain.org"
 	DefaultInfluxDB     = "http://localhost:8086"
 	DefaultInfluxToken  = "admin-token"
 	DefaultInfluxOrg    = "vechain"
