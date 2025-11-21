@@ -31,7 +31,7 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 				query := test.SubstituteVariables(target.Query, nil)
 
 				totalRequests++
-				res, err := test.DB().Query(query)
+				res, err := test.Query(query)
 				if err != nil {
 					t.Error("failed to execute query:", target.Query)
 					continue
@@ -56,7 +56,7 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 			substitutedQuery := test.SubstituteVariables(query, nil)
 			failureMessage := fmt.Sprintf("variable query failed (dashboard= %s): \n %s, \n %s", dashboard.Title, query, substitutedQuery)
 
-			res, err := test.DB().Query(substitutedQuery)
+			res, err := test.Query(substitutedQuery)
 			if err != nil {
 				t.Errorf("%s \n error: %v", failureMessage, err)
 				continue

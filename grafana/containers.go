@@ -18,36 +18,6 @@ import (
 const influxHost = "influx"
 const influxPort = "8086"
 
-// NewInfluxContainer creates and starts an InfluxDB 2.x container for testing.
-// The container is automatically cleaned up when the test completes.
-func NewInfluxContainer(t *testing.T, network *testcontainers.DockerNetwork) *testcontainers.DockerContainer {
-	ctx := t.Context()
-	t.Log("Starting InfluxDB container...")
-	influxContainer, err := testcontainers.Run(
-		ctx, "influxdb:2",
-		dockernet.WithNetwork([]string{influxHost}, network),
-		testcontainers.WithExposedPorts(influxPort+"/tcp"),
-		testcontainers.WithEnv(map[string]string{
-			"DOCKER_INFLUXDB_INIT_MODE":        "setup",
-			"DOCKER_INFLUXDB_INIT_USERNAME":    "admin",
-			"DOCKER_INFLUXDB_INIT_PASSWORD":    "password",
-			"DOCKER_INFLUXDB_INIT_ORG":         config.DefaultInfluxOrg,
-			"DOCKER_INFLUXDB_INIT_BUCKET":      config.DefaultInfluxBucket,
-			"DOCKER_INFLUXDB_INIT_RETENTION":   "0",
-			"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN": config.DefaultInfluxToken,
-		}),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/ping").WithPort(influxPort+"/tcp").WithStatusCodeMatcher(func(status int) bool {
-			return status == 204
-		})),
-	)
-	require.NoError(t, err)
-	testcontainers.CleanupContainer(t, influxContainer)
-
-	t.Log("✅ InfluxDB container started")
-
-	return influxContainer
-}
-
 // NewThorfluxContainer creates and starts a Thorflux container for testing.
 // The container is built from the local Dockerfile and configured to connect to
 // the specified Thor node and InfluxDB instance.

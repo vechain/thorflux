@@ -44,7 +44,7 @@ func (p *Panel) AssertHasResults(setup *TestSetup, overrides *SubstituteOverride
 			continue
 		}
 		query := setup.SubstituteVariables(target.Query, overrides)
-		res, err := setup.DB().Query(query)
+		res, err := setup.Query(query)
 		require.NoError(setup.test, err, "Panel '%s' query failed: %s", p.Title, query)
 		require.NoError(setup.test, res.Err(), "Panel '%s' query result error: %s", p.Title, query)
 		assert.True(setup.test, res.Next(), "Panel '%s' expected at least one result row for query: %s", p.Title, query)
