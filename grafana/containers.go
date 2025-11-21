@@ -56,27 +56,34 @@ func NewThorfluxContainer(
 	t *testing.T,
 	opts TestOptions,
 	network *testcontainers.DockerNetwork,
+	thorfluxImage string,
 ) *testcontainers.DockerContainer {
 	ctx := t.Context()
 	t.Log("Starting thorflux container...")
 	tcLog.SetDefault(tcLog.TestLogger(t))
 
-	thorfluxContainer, err := testcontainers.Run(ctx, "",
+	env := map[string]string{
+		"THOR_URL":      opts.ThorURL,
+		"INFLUX_TOKEN":  config.DefaultInfluxToken,
+		"INFLUX_ORG":    config.DefaultInfluxOrg,
+		"INFLUX_BUCKET": config.DefaultInfluxBucket,
+		"INFLUX_URL":    "http://" + influxHost + ":" + influxPort,
+		"THOR_BLOCKS":   strconv.Itoa(360 * 4), // Sync last 4 hours of blocks
+	}
+	if opts.EndBlock != "" {
+		env["END_BLOCK"] = opts.EndBlock
+	}
+
+	thorfluxContainer, err := testcontainers.Run(ctx, thorfluxImage,
 		dockernet.WithNetwork([]string{"thorflux"}, network),
-		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
-			Context:    "../",
-			Dockerfile: "Dockerfile",
-			KeepImage:  true,
-		}),
-		testcontainers.WithWaitStrategyAndDeadline(time.Minute, wait.ForLog("subscriber fully synced")),
-		testcontainers.WithEnv(map[string]string{
-			"THOR_URL":      opts.ThorURL,
-			"INFLUX_TOKEN":  config.DefaultInfluxToken,
-			"INFLUX_ORG":    config.DefaultInfluxOrg,
-			"INFLUX_BUCKET": config.DefaultInfluxBucket,
-			"INFLUX_URL":    "http://" + influxHost + ":" + influxPort,
-			"THOR_BLOCKS":   strconv.Itoa(360 * 4), // Sync last 4 hours of blocks
-		}),
+		// TODO: You can uncomment this and replace 'thorfluxImage' with "" to build from local Dockerfile
+		//testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+		//	Context:    "../",
+		//	Dockerfile: "Dockerfile",
+		//	KeepImage:  true,
+		//}),
+		testcontainers.WithWaitStrategyAndDeadline(time.Minute, wait.ForLog("backward sync complete")),
+		testcontainers.WithEnv(env),
 	)
 
 	// Log container output on test failure for debugging

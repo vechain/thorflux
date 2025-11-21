@@ -14,7 +14,11 @@ type Dashboard struct {
 }
 
 type Variable struct {
-	Name string `json:"name"`
+	Name       string `json:"name"`
+	Datasource struct {
+		Type string `json:"type"`
+	} `json:"datasource"`
+	Query any `json:"query"`
 }
 
 type Panel struct {

@@ -448,7 +448,9 @@ func (s *Staker) createSlotPoints(event *types.Event, info *types.StakerInformat
 		slog.Error("Failed to get missed slots", "error", err)
 		return nil, err
 	}
-	slog.Warn("⚠️ missed slots detected", "amount", len(missedOnline))
+	if len(missedOnline) > 0 {
+		slog.Warn("⚠️ missed slots detected", "amount", len(missedOnline))
+	}
 	for _, v := range missedOnline {
 		slog.Warn("Missed slot for an online validator", "validator", v.Signer, "block", event.Block.Number)
 		point := influxdb2.NewPoint(

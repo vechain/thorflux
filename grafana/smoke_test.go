@@ -2,8 +2,10 @@ package grafana
 
 import (
 	_ "embed"
+	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,6 +22,7 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 	totalRequests := 0
 	hasResults := 0
 	for _, dashboard := range dashboards {
+		// run every panel's query and ensure no errors
 		for _, panel := range dashboard.Panels {
 			for _, target := range panel.Targets {
 				if target.Datasource.Type != "influxdb" {
@@ -41,6 +44,24 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 				}
 				require.NoError(t, res.Close())
 			}
+		}
+
+		// run every templated variable query and ensure some results are returned
+		for _, variable := range dashboard.Templating.List {
+			query, ok := variable.Query.(string)
+			if !ok || variable.Datasource.Type != "influxdb" {
+				continue
+			}
+
+			substitutedQuery := test.SubstituteVariables(query, nil)
+
+			res, err := test.DB().Query(substitutedQuery)
+			if err != nil {
+				t.Errorf("failed to execute variable query: %s, %s, %s", dashboard.Title, query, substitutedQuery)
+				continue
+			}
+			failureMessage := fmt.Sprintf("variable query returned error (dashboard= %s): \n %s, \n %s", dashboard.Title, query, substitutedQuery)
+			assert.True(t, res.Next(), failureMessage)
 		}
 	}
 

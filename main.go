@@ -29,7 +29,7 @@ var (
 	thorFlag        = flag.String("thor-url", "https://testnet.vechain.org", "thor node URL, (env var: THOR_URL)")
 	genesisURLFlag  = flag.String("genesis-url", "", "thor genesis node URL, (env var: GENESIS_URL)")
 	blocksFlag      = flag.Uint64("thor-blocks", config.DefaultThorBlocks, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
-	endBlockFlag    = flag.Uint64("end-block", 0, "thor end block number to stop indexing at, 0 for no limit (env var: END_BLOCK)")
+	endBlockFlag    = flag.Uint64("end-block", 0, "thor end block number to stop indexing at (env var: END_BLOCK)")
 	influxUrlFlag   = flag.String("influx-url", config.DefaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
 	influxTokenFlag = flag.String("influx-token", config.DefaultInfluxToken, "influxdb auth token, (env var: INFLUX_TOKEN)")
 	influxOrg       = flag.String("influx-org", config.DefaultInfluxOrg, "influxdb organization, (env var: INFLUX_ORG)")

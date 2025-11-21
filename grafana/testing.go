@@ -2,6 +2,7 @@ package grafana
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -46,12 +47,16 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 	if opts.Blocks == 0 {
 		opts.Blocks = 360 * 4
 	}
+	thorfluxImage, ok := os.LookupEnv("THORFLUX_DOCKER_IMAGE")
+	if !ok {
+		t.Skipf("THORFLUX_DOCKER_IMAGE not found in environment")
+	}
 
 	network, err := dockernet.New(t.Context())
 	require.NoError(t, err)
 
 	influxContainer := NewInfluxContainer(t, network)
-	thorflux := NewThorfluxContainer(t, opts, network)
+	thorflux := NewThorfluxContainer(t, opts, network, thorfluxImage)
 
 	// Get the host-accessible URL for the test
 	influxHost, err := influxContainer.Host(t.Context())
@@ -135,7 +140,7 @@ func (ts *TestSetup) SubstituteVariables(query string, overrides *SubstituteOver
 	if overrides.StartPeriod != "" {
 		result = strings.ReplaceAll(result, "v.timeRangeStart", overrides.StartPeriod)
 	} else {
-		result = strings.ReplaceAll(result, "v.timeRangeStart", "-1h")
+		result = strings.ReplaceAll(result, "v.timeRangeStart", "-24h")
 	}
 	if overrides.EndPeriod != "" {
 		result = strings.ReplaceAll(result, "v.timeRangeStop", overrides.EndPeriod)
@@ -145,7 +150,7 @@ func (ts *TestSetup) SubstituteVariables(query string, overrides *SubstituteOver
 	if overrides.WindowPeriod != "" {
 		result = strings.ReplaceAll(result, "v.windowPeriod", overrides.WindowPeriod)
 	} else {
-		result = strings.ReplaceAll(result, "v.windowPeriod", "1m")
+		result = strings.ReplaceAll(result, "v.windowPeriod", "1h")
 	}
 
 	return result
