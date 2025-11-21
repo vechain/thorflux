@@ -21,16 +21,12 @@ jobs:
         with:
           go-version: '1.24'
           cache: false
-      - name: Start Infra
-        run: docker compose up -d --wait influxdb grafana
-      - name: Start Thorflux
-        run: |
-            go build -o thorflux .
-            nohup ./thorflux --thor-blocks 1440 > thorflux.log 2>&1 & # 4 hours of blocks
-            sleep 120s # wait for thorflux to sync
-      - name: Test Grafana Queries
+      - name: Build Thorflux
+        run: go build -o thorflux .
+      - name: Start InfluxDB
+        run: docker compose up -d --wait influxdb
+      - name: Run Dashboard Queries
+        env:
+          THORFLUX_BINARY: ${{ github.workspace }}/thorflux
         run: |
           go test ./grafana -v
-      - name: Print Logs
-        if: always()
-        run: cat thorflux.log

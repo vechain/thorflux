@@ -5,3 +5,4 @@ compose.yaml
 README.md
 Dockerfile
 grafana.Dockerfile
+grafana

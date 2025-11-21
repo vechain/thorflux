@@ -4,9 +4,8 @@ import (
 	"embed"
 	"encoding/json"
 
-	"github.com/vechain/thor/v2/thorclient"
-	"github.com/vechain/thorflux/config"
-	"github.com/vechain/thorflux/influxdb"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type Dashboard struct {
@@ -15,6 +14,15 @@ type Dashboard struct {
 		List []Variable `json:"list"`
 	} `json:"templating"`
 	Title string `json:"title"`
+}
+
+func (d *Dashboard) GetPanelByTitle(title string) (*Panel, bool) {
+	for _, panel := range d.Panels {
+		if panel.Title == title {
+			return &panel, true
+		}
+	}
+	return nil, false
 }
 
 type Variable struct {
@@ -28,6 +36,20 @@ type Variable struct {
 type Panel struct {
 	Targets []Target `json:"targets"`
 	Title   string   `json:"title"`
+}
+
+func (p *Panel) AssertHasResults(setup *TestSetup, overrides *SubstituteOverrides) {
+	for _, target := range p.Targets {
+		if target.Datasource.Type != "influxdb" {
+			continue
+		}
+		query := setup.SubstituteVariables(target.Query, overrides)
+		res, err := setup.Query(query)
+		require.NoError(setup.test, err, "Panel '%s' query failed: %s", p.Title, query)
+		require.NoError(setup.test, res.Err(), "Panel '%s' query result error: %s", p.Title, query)
+		assert.True(setup.test, res.Next(), "Panel '%s' expected at least one result row for query: %s", p.Title, query)
+		require.NoError(setup.test, res.Close())
+	}
 }
 
 type Target struct {
@@ -82,13 +104,4 @@ func ParseDashboard(name string) (*Dashboard, error) {
 	}
 
 	return &dashboard, nil
-}
-
-func SetupTest() (*thorclient.Client, *influxdb.DB) {
-	client := thorclient.New(config.DefaultThorURL)
-	influx, err := influxdb.New(config.DefaultInfluxDB, config.DefaultInfluxToken, config.DefaultInfluxOrg, config.DefaultInfluxBucket)
-	if err != nil {
-		panic(err)
-	}
-	return client, influx
 }

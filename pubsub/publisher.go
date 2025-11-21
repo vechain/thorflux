@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/vechain/thor/v2/api"
 	"github.com/vechain/thor/v2/genesis"
 	"github.com/vechain/thor/v2/thorclient"
@@ -40,13 +41,28 @@ type Publisher struct {
 	blockChan      chan *BlockEvent
 }
 
-func NewPublisher(thorURL string, genesisCfg *genesis.CustomGenesis, backSyncBlocks uint32, db *influxdb.DB) (*Publisher, chan *BlockEvent, error) {
+func NewPublisher(
+	thorURL string,
+	genesisCfg *genesis.CustomGenesis,
+	backSyncBlocks uint32,
+	endBlock uint32,
+	db *influxdb.DB,
+) (*Publisher, chan *BlockEvent, error) {
 	client := thorclient.New(thorURL)
 
 	blockChan := make(chan *BlockEvent, config.DefaultChannelBuffer)
-	first, err := client.ExpandedBlock("finalized")
+
+	var (
+		first *api.JSONExpandedBlock
+		err   error
+	)
+	if endBlock != 0 {
+		first, err = client.ExpandedBlock(strconv.FormatInt(int64(endBlock), 10))
+	} else {
+		first, err = client.ExpandedBlock("finalized")
+	}
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrap(err, "failed to get end/finalized block")
 	}
 
 	hayabusaForkBlock := genesisCfg.ForkConfig.HAYABUSA
@@ -57,12 +73,12 @@ func NewPublisher(thorURL string, genesisCfg *genesis.CustomGenesis, backSyncBlo
 		previous = first
 		first, err = client.ExpandedBlock("1")
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrap(err, "failed to get previous block")
 		}
 	} else {
 		previous, err = client.ExpandedBlock(strconv.FormatUint(uint64(first.Number-1), 10))
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrap(err, "failed to get previous block")
 		}
 	}
 	latest, err := db.Latest()
@@ -82,6 +98,7 @@ func NewPublisher(thorURL string, genesisCfg *genesis.CustomGenesis, backSyncBlo
 	}
 	slog.Info("🚀 creating publisher",
 		"start", first.Number,
+		"end", endBlock,
 		"blocks", backSyncBlocks,
 		"minimum", first.Number-backSyncBlocks,
 		"hayabusaForkBlock", hayabusaForkBlock,
@@ -101,13 +118,16 @@ func NewPublisher(thorURL string, genesisCfg *genesis.CustomGenesis, backSyncBlo
 		backSyncBlocks,
 	)
 
-	// Create forward syncer (real-time sync)
-	forwardSyncer := NewForwardSyncer(
-		client,
-		eventBlockService,
-		blockChan,
-		previous,
-	)
+	var forwardSyncer *ForwardSyncer
+	if endBlock == 0 {
+		// Create forward syncer (real-time sync)
+		forwardSyncer = NewForwardSyncer(
+			client,
+			eventBlockService,
+			blockChan,
+			previous,
+		)
+	}
 
 	return &Publisher{
 		forwardSyncer:  forwardSyncer,
@@ -123,10 +143,12 @@ func (p *Publisher) Start(ctx context.Context) {
 		defer wg.Done()
 		p.backwardSyncer.Start(ctx)
 	}()
-	go func() {
-		defer wg.Done()
-		p.forwardSyncer.Start(ctx)
-	}()
+	if p.forwardSyncer != nil {
+		go func() {
+			defer wg.Done()
+			p.forwardSyncer.Start(ctx)
+		}()
+	}
 	go func() {
 		wg.Wait()
 		close(p.blockChan)
