@@ -54,13 +54,13 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 			}
 
 			substitutedQuery := test.SubstituteVariables(query, nil)
+			failureMessage := fmt.Sprintf("variable query failed (dashboard= %s): \n %s, \n %s", dashboard.Title, query, substitutedQuery)
 
 			res, err := test.DB().Query(substitutedQuery)
 			if err != nil {
-				t.Errorf("failed to execute variable query: %s, %s, %s", dashboard.Title, query, substitutedQuery)
+				t.Errorf("%s \n error: %v", failureMessage, err)
 				continue
 			}
-			failureMessage := fmt.Sprintf("variable query returned error (dashboard= %s): \n %s, \n %s", dashboard.Title, query, substitutedQuery)
 			assert.True(t, res.Next(), failureMessage)
 		}
 	}

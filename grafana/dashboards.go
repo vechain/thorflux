@@ -4,6 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,7 +47,7 @@ func (p *Panel) AssertHasResults(setup *TestSetup, overrides *SubstituteOverride
 		res, err := setup.DB().Query(query)
 		require.NoError(setup.test, err, "Panel '%s' query failed: %s", p.Title, query)
 		require.NoError(setup.test, res.Err(), "Panel '%s' query result error: %s", p.Title, query)
-		require.True(setup.test, res.Next(), "Panel '%s' expected at least one result row for query: %s", p.Title, query)
+		assert.True(setup.test, res.Next(), "Panel '%s' expected at least one result row for query: %s", p.Title, query)
 		require.NoError(setup.test, res.Close())
 	}
 }
