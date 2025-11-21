@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,28 +20,17 @@ func Test_DPoS_SlotsDashboard(t *testing.T) {
 		EndBlock: strconv.Itoa(missedSlotBlock + 50),
 	})
 
-	panels := map[string]bool{
-		"😈😈 Missed Slot Leader board": true,
-		"🚨🚨 Missed Slots":             true,
+	overrides := &SubstituteOverrides{
+		StartPeriod:  "now-20y",
+		EndPeriod:    "now",
+		WindowPeriod: "1y",
 	}
 
-	for _, panel := range dashboard.Panels {
-		if _, ok := panels[panel.Title]; !ok {
-			continue
-		}
-		t.Logf("Checking panel: %s", panel.Title)
-		for _, target := range panel.Targets {
-			if target.Datasource.Type != "influxdb" {
-				continue
-			}
-			query := test.SubstituteVariables(target.Query, &SubstituteOverrides{
-				StartPeriod:  "now-20y",
-				EndPeriod:    "now",
-				WindowPeriod: "1y",
-			})
-			res, err := test.DB().Query(query)
-			require.NoError(t, err)
-			assert.True(t, res.Next(), "Expected at least one result row in panel '%s'", panel.Title)
-		}
-	}
+	panel, ok := dashboard.GetPanelByTitle("😈😈 Missed Slot Leader board")
+	require.True(t, ok, "Missed Slot Leader board panel not found")
+	panel.AssertHasResults(test, overrides)
+
+	panel, ok = dashboard.GetPanelByTitle("🚨🚨 Missed Slots")
+	require.True(t, ok, "Missed Slots panel not found")
+	panel.AssertHasResults(test, overrides)
 }
