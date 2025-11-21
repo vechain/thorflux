@@ -22,7 +22,7 @@ jobs:
           go-version: '1.24'
           cache: false
       - name: Build Thorflux
-        run: go build -o thorflux ./cmd/thorflux
+        run: go build -o thorflux .
       - name: Start InfluxDB
         run: docker compose up -d --wait influxdb
       - name: Run Dashboard Queries
