@@ -29,6 +29,7 @@ var (
 	thorFlag        = flag.String("thor-url", "https://testnet.vechain.org", "thor node URL, (env var: THOR_URL)")
 	genesisURLFlag  = flag.String("genesis-url", "", "thor genesis node URL, (env var: GENESIS_URL)")
 	blocksFlag      = flag.Uint64("thor-blocks", config.DefaultThorBlocks, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
+	endBlockFlag    = flag.Uint64("end-block", 0, "thor end block number to stop indexing at, 0 for no limit (env var: END_BLOCK)")
 	influxUrlFlag   = flag.String("influx-url", config.DefaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
 	influxTokenFlag = flag.String("influx-token", config.DefaultInfluxToken, "influxdb auth token, (env var: INFLUX_TOKEN)")
 	influxOrg       = flag.String("influx-org", config.DefaultInfluxOrg, "influxdb organization, (env var: INFLUX_ORG)")
@@ -37,7 +38,7 @@ var (
 )
 
 func main() {
-	thorURL, influxURL, influxToken, blocks, err := parseFlags()
+	thorURL, influxURL, influxToken, err := parseFlags()
 	if err != nil {
 		slog.Error("failed to parse flags", "error", err)
 		flag.PrintDefaults()
@@ -48,7 +49,8 @@ func main() {
 		"influx-url", influxURL,
 		"influx-org", *influxOrg,
 		"influx-bucket", *influxBucket,
-		"blocks", blocks,
+		"blocks", *blocksFlag,
+		"end-block", *endBlockFlag,
 	)
 
 	influx, err := influxdb.New(influxURL, influxToken, *influxOrg, *influxBucket)
@@ -74,7 +76,7 @@ func main() {
 	}
 
 	ctx := exitContext()
-	publisher, blockChan, err := pubsub.NewPublisher(thorURL, genesisCfg, uint32(*blocksFlag), influx)
+	publisher, blockChan, err := pubsub.NewPublisher(thorURL, genesisCfg, uint32(*blocksFlag), uint32(*endBlockFlag), influx)
 	if err != nil {
 		slog.Error("failed to create publisher", "error", err)
 		os.Exit(1)
@@ -93,14 +95,14 @@ func main() {
 	<-ctx.Done()
 }
 
-func parseFlags() (string, string, string, uint32, error) {
+func parseFlags() (string, string, string, error) {
 	if err := envflag.Parse(); err != nil {
-		return "", "", "", 0, err
+		return "", "", "", err
 	}
 
 	influxToken := *influxTokenFlag
 	if influxToken == "" {
-		return "", "", "", 0, errors.New(config.ErrInfluxTokenRequired)
+		return "", "", "", errors.New(config.ErrInfluxTokenRequired)
 	}
 
 	thorURL := *thorFlag
@@ -113,9 +115,7 @@ func parseFlags() (string, string, string, uint32, error) {
 		slog.Warn("influxdb URL not set via flag or env, using default", "url", config.DefaultInfluxDB)
 	}
 
-	blocks := *blocksFlag
-
-	return thorURL, influxURL, influxToken, uint32(blocks), nil
+	return thorURL, influxURL, influxToken, nil
 }
 
 func exitContext() context.Context {

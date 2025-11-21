@@ -2,46 +2,15 @@ package grafana
 
 import (
 	_ "embed"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/vechain/thor/v2/thor"
-	"github.com/vechain/thorflux/config"
 )
 
 func TestDashboard_Queries_NoError(t *testing.T) {
-	client, db := SetupTest()
-	defer db.Close()
-
-	best, err := client.Block("best")
-	require.NoError(t, err)
-
-	variableReplacements := map[string]string{
-		"${staker}":                       best.Signer.String(),
-		"${proposer}":                     best.Signer.String(),
-		"${selected_block}":               strconv.FormatUint(uint64(best.Number-thor.EpochLength()), 10),
-		"${manual_block}":                 strconv.FormatUint(uint64(best.Number-thor.EpochLength()), 10),
-		"${bucket}":                       config.DefaultInfluxBucket,
-		"${vet_price}":                    "0.02",
-		"${vtho_price}":                   "0.001",
-		"${epoch_length}":                 "180",
-		"${block_interval}":               "10",
-		"${seeder_interval}":              "8640",
-		"${validator_eviction_threshold}": "60480",
-		"${low_staking_period}":           "60480",
-		"${medium_staking_period}":        "259200",
-		"${high_staking_period}":          "777600",
-		"${cooldown_period}":              "60480",
-		"${hayabusa_tp}":                  "1500",
-		"${hayabusa_fork_block}":          "11000000",
-		"${amount_of_epochs}":             "5",
-		"${datasource}":                   "InfluxDB",
-		"${region}":                       "eu-west-1",
-		"${color}":                        "blue",
-		"${group}":                        "dev-pn",
-	}
+	test := NewTestSetup(t, TestOptions{
+		ThorURL: TestnetURL,
+	})
 
 	dashboards, err := ParseDashboards()
 	if err != nil {
@@ -56,18 +25,10 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 				if target.Datasource.Type != "influxdb" {
 					continue
 				}
-				for placeholder, replacement := range variableReplacements {
-					if strings.Contains(target.Query, placeholder) {
-						target.Query = strings.ReplaceAll(target.Query, placeholder, replacement)
-					}
-				}
-
-				target.Query = strings.ReplaceAll(target.Query, "v.timeRangeStart", "-1h")
-				target.Query = strings.ReplaceAll(target.Query, "v.timeRangeStop", "now()")
-				target.Query = strings.ReplaceAll(target.Query, "v.windowPeriod", "1m")
+				query := test.SubstituteVariables(target.Query, nil)
 
 				totalRequests++
-				res, err := db.Query(target.Query)
+				res, err := test.DB().Query(query)
 				if err != nil {
 					t.Error("failed to execute query:", target.Query)
 					continue

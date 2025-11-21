@@ -3,10 +3,6 @@ package grafana
 import (
 	"embed"
 	"encoding/json"
-
-	"github.com/vechain/thor/v2/thorclient"
-	"github.com/vechain/thorflux/config"
-	"github.com/vechain/thorflux/influxdb"
 )
 
 type Dashboard struct {
@@ -78,13 +74,4 @@ func ParseDashboard(name string) (*Dashboard, error) {
 	}
 
 	return &dashboard, nil
-}
-
-func SetupTest() (*thorclient.Client, *influxdb.DB) {
-	client := thorclient.New(config.DefaultThorURL)
-	influx, err := influxdb.New(config.DefaultInfluxDB, config.DefaultInfluxToken, config.DefaultInfluxOrg, config.DefaultInfluxBucket)
-	if err != nil {
-		panic(err)
-	}
-	return client, influx
 }
