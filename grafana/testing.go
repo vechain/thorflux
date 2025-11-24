@@ -51,6 +51,9 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 
 	// Get the host-accessible URL for the test
 	influx := influxdb2.NewClient(config.DefaultInfluxDB, config.DefaultInfluxToken)
+	if ok, err := influx.Ping(t.Context()); !ok || err != nil {
+		t.Skip("Skipping test since InfluxDB is not reachable at", config.DefaultInfluxDB)
+	}
 	client := thorclient.New(opts.ThorURL)
 
 	org, err := influx.OrganizationsAPI().FindOrganizationByName(t.Context(), "vechain")
