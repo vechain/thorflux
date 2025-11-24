@@ -43,9 +43,9 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=admin-token
     volumes:
-      - ${PWD}/grafana/data-sources.yaml:/etc/grafana/provisioning/datasources/grafana-data-sources.yaml:ro
-      - ${PWD}/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml:ro
-      - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ${PWD}/grafana/config/data-sources.yaml:/etc/grafana/provisioning/datasources/grafana-data-sources.yaml:ro
+      - ${PWD}/grafana/config/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml:ro
+      - ${PWD}/grafana/config/dashboards:/var/lib/grafana/dashboards:ro
       - ${PWD}/volumes/grafana:/var/lib/grafana
 
   thorflux:

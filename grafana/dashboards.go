@@ -59,7 +59,7 @@ type Target struct {
 	Query string `json:"query"`
 }
 
-//go:embed dashboards
+//go:embed config/dashboards
 var dashboardsFS embed.FS
 
 func ParseDashboards() ([]Dashboard, error) {

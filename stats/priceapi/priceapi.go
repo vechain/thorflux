@@ -75,14 +75,15 @@ func (p *PriceAPI) Write(e *types.Event) []*write.Point {
 		slog.Error("failed to delete old price data", "error", err)
 	}
 
+	p.lastUpdate = time.Now()
+
 	point := write.NewPoint(Measurement, map[string]string{
 		"t": "true",
 	}, map[string]any{
 		"vet_price":  vetPrice,
 		"vtho_price": vthoPrice,
-	}, e.Timestamp)
+	}, p.lastUpdate)
 
-	p.lastUpdate = time.Now()
 	return []*write.Point{point}
 }
 
