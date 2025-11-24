@@ -12,6 +12,7 @@ import (
 func TestDashboard_Queries_NoError(t *testing.T) {
 	test := NewTestSetup(t, TestOptions{
 		ThorURL: TestnetURL,
+		Blocks:  360,
 	})
 
 	dashboards, err := ParseDashboards()

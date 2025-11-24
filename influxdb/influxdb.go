@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -108,23 +107,22 @@ func (i *DB) Latest() (uint32, error) {
 		}
 	}()
 
-	if res.Next() {
-		blockNum := res.Record().ValueByKey("block_number")
-		if blockNum == nil {
-			return 0, nil
-		}
-		slog.Info("found latest in flux", "result", blockNum)
-		num, err := strconv.ParseUint(blockNum.(string), 10, 32)
-		if err != nil {
-			return 0, err
-		}
-		return uint32(num), nil
-	}
-
 	err = res.Err()
 	if err != nil {
 		slog.Error("error in result", "error", res.Err())
 		return 0, err
+	}
+
+	if res.Next() {
+		blockNum := res.Record().ValueByKey("_value")
+		if blockNum == nil {
+			return 0, nil
+		}
+		num, ok := blockNum.(uint64)
+		if !ok {
+			return 0, fmt.Errorf("unexpected type for block number: %T", blockNum)
+		}
+		return uint32(num), nil
 	}
 
 	return 0, nil

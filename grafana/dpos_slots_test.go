@@ -1,7 +1,6 @@
 package grafana
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,12 +11,12 @@ func Test_DPoS_SlotsDashboard(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, dashboard)
 
-	missedSlotBlock := 23342968
+	missedSlotBlock := uint64(23342968)
 
 	test := NewTestSetup(t, TestOptions{
 		ThorURL:  TestnetURL,
 		Blocks:   100,
-		EndBlock: strconv.Itoa(missedSlotBlock + 50),
+		EndBlock: missedSlotBlock + 50,
 	})
 
 	overrides := &SubstituteOverrides{

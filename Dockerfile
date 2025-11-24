@@ -30,7 +30,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN go build -o thorflux
+RUN go build -o thorflux ./cmd/
 
 FROM alpine:3.20
 

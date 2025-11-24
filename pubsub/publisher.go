@@ -136,22 +136,20 @@ func NewPublisher(
 	}, blockChan, nil
 }
 
-func (p *Publisher) Start(ctx context.Context) {
+// Run starts the publisher's syncers and blocks until the context is cancelled or the jobs complete.
+func (p *Publisher) Run(ctx context.Context) {
 	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
+
+	wg.Go(func() {
 		p.backwardSyncer.Start(ctx)
-	}()
+	})
+
 	if p.forwardSyncer != nil {
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			p.forwardSyncer.Start(ctx)
-		}()
+		})
 	}
-	go func() {
-		wg.Wait()
-		close(p.blockChan)
-		slog.Info("🔒 block channel closed")
-	}()
+
+	wg.Wait()          // Wait for both syncers to finish
+	close(p.blockChan) // Close the block channel when done
 }
