@@ -1,6 +1,6 @@
 module github.com/vechain/thorflux
 
-go 1.24.2
+go 1.25
 
 require (
 	github.com/ethereum/go-ethereum v1.14.7

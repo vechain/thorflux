@@ -1,16 +1,12 @@
 package grafana
 
 import (
-	"bufio"
 	"context"
-	"io"
 	"log/slog"
-	"os"
-	"os/exec"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
+	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
@@ -18,11 +14,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
+	"github.com/vechain/thorflux/cmd/thorflux"
 	"github.com/vechain/thorflux/config"
 )
 
 // TestSetup provides a test fixture with running Thor, InfluxDB, and Thorflux containers.
 type TestSetup struct {
+	cmd    *thorflux.Cmd
 	test   *testing.T
 	db     influxdb2.Client
 	client *thorclient.Client
@@ -32,7 +30,7 @@ type TestSetup struct {
 // TestOptions configures the test environment.
 type TestOptions struct {
 	ThorURL  string // mandatory, the thor node URL to make http requests to
-	EndBlock string // optional, last block to index. Defaults to best
+	EndBlock uint64 // optional, last block to index. Defaults to best
 	Blocks   uint32 // optional, number of blocks to index. Defaults to 4 hours
 }
 
@@ -50,10 +48,7 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 	if opts.Blocks == 0 {
 		opts.Blocks = 360 * 4
 	}
-	binary, ok := os.LookupEnv("THORFLUX_BINARY")
-	if !ok {
-		t.Skip("THORFLUX_BINARY not set, skipping grafana tests")
-	}
+
 	// Get the host-accessible URL for the test
 	influx := influxdb2.NewClient(config.DefaultInfluxDB, config.DefaultInfluxToken)
 	client := thorclient.New(opts.ThorURL)
@@ -73,115 +68,52 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 		}
 	}
 
-	args := []string{
-		"--thor-url", opts.ThorURL,
-		"--influx-bucket", bucket.Name,
-		"--thor-blocks", strconv.Itoa(int(opts.Blocks)),
-	}
-	if opts.EndBlock != "" {
-		args = append(args, "--end-block", opts.EndBlock)
-	}
-
-	cmd := exec.Command(binary, args...)
-
-	// Capture stdout and stderr to monitor for completion
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		t.Fatalf("failed to create stdout pipe: %v", err)
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		t.Fatalf("failed to create stderr pipe: %v", err)
-	}
-
-	if err := cmd.Start(); err != nil {
-		t.Fatalf("failed to start thorflux: %v", err)
-	}
-
-	slog.Info("started thorflux process", "pid", cmd.Process.Pid)
-
-	// Wait for thorflux to finish processing
-	syncComplete := make(chan struct{})
-	go scanOutput(stdout, stderr, syncComplete)
-
-	select {
-	case <-syncComplete:
-		slog.Info("thorflux backward sync completed")
-	case <-t.Context().Done():
-		t.Fatal("test context cancelled while waiting for thorflux to complete sync")
-	}
-
-	t.Cleanup(func() {
-		if err := cmd.Process.Signal(os.Interrupt); err != nil {
-			slog.Error("failed to send interrupt to thorflux process", "error", err)
-		}
-		slog.Info("stopping thorflux process")
-		if err := cmd.Process.Kill(); err != nil {
-			slog.Error("failed to kill thorflux process", "error", err)
-		}
-
-		_, err := cmd.Process.Wait()
-		if err != nil {
-			slog.Error("failed to wait for thorflux process to exit", "error", err)
-		}
-		slog.Info("thorflux process stopped")
+	cmd, err := thorflux.New(t.Context(), thorflux.Options{
+		ThorURL:      opts.ThorURL,
+		Blocks:       uint64(opts.Blocks),
+		InfluxURL:    config.DefaultInfluxDB,
+		InfluxToken:  config.DefaultInfluxToken,
+		EndBlock:     opts.EndBlock,
+		InfluxBucket: bucket.Name,
+		InfluxOrg:    config.DefaultInfluxOrg,
 	})
+	require.NoError(t, err)
 
-	return &TestSetup{
+	setup := &TestSetup{
 		db:     influx,
 		test:   t,
 		client: client,
 		bucket: bucket,
+		cmd:    cmd,
 	}
+
+	if opts.EndBlock != 0 {
+		// run and wait for subscriber to exit (ie. sync up)
+		go cmd.Publisher().Run(t.Context())
+		cmd.Subscriber().Subscribe(t.Context())
+	} else {
+		go cmd.Run()
+		setup.WaitForBest()
+	}
+
+	return setup
 }
 
-// scanOutput monitors stdout and stderr for the "backward worker finished" log message
-func scanOutput(stdout, stderr io.Reader, done chan struct{}) {
-	// Channel to merge lines from both stdout and stderr
-	lines := make(chan string, 100)
+// WaitForBest waits until InfluxDB has indexed up to the best block.
+func (ts *TestSetup) WaitForBest() {
+	best, err := ts.client.Block("best")
+	require.NoError(ts.test, err)
 
-	var wg sync.WaitGroup
-	wg.Add(2)
+	dbBest, err := ts.cmd.InfluxDB().Latest()
+	require.NoError(ts.test, err)
 
-	// Read from stdout in a goroutine
-	go func() {
-		defer wg.Done()
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			lines <- scanner.Text()
-		}
-		if err := scanner.Err(); err != nil {
-			slog.Error("error reading stdout", "error", err)
-		}
-	}()
+	for dbBest < best.Number {
+		best, err = ts.client.Block("best")
+		require.NoError(ts.test, err)
 
-	// Read from stderr in a goroutine
-	go func() {
-		defer wg.Done()
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			lines <- scanner.Text()
-		}
-		if err := scanner.Err(); err != nil {
-			slog.Error("error reading stderr", "error", err)
-		}
-	}()
-
-	// Close lines channel when both readers finish
-	go func() {
-		wg.Wait()
-		close(lines)
-	}()
-
-	// Process lines from both streams
-	signaled := false
-	for line := range lines {
-		// Signal completion when we see the backward sync complete message
-		if !signaled && strings.Contains(line, "backward sync complete") {
-			close(done)
-			signaled = true
-			// Continue reading to prevent blocking the process
-		}
+		dbBest, err = ts.cmd.InfluxDB().Latest()
+		require.NoError(ts.test, err)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 

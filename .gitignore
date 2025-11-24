@@ -3,3 +3,4 @@ volumes
 .idea/
 .vscode/
 thorflux.log
+bin

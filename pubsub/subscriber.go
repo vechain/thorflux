@@ -66,6 +66,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent, 
 	}, nil
 }
 
+// Subscribe listens for new BlockEvents and processes them using registered handlers.
 func (s *Subscriber) Subscribe(ctx context.Context) {
 	defer s.workerPool.Shutdown()
 

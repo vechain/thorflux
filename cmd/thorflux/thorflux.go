@@ -1,134 +1,122 @@
-package main
+package thorflux
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"flag"
 	"io"
 	"log/slog"
-	"math"
 	"net/http"
-	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
+	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
-	"github.com/kouhin/envflag"
 	"github.com/vechain/thor/v2/genesis"
 	"github.com/vechain/thor/v2/thor"
-	"github.com/vechain/thorflux/config"
 	"github.com/vechain/thorflux/influxdb"
 	"github.com/vechain/thorflux/pubsub"
 )
 
-var (
-	thorFlag        = flag.String("thor-url", "https://testnet.vechain.org", "thor node URL, (env var: THOR_URL)")
-	genesisURLFlag  = flag.String("genesis-url", "", "thor genesis node URL, (env var: GENESIS_URL)")
-	blocksFlag      = flag.Uint64("thor-blocks", config.DefaultThorBlocks, "number of blocks to sync (best - <thor-blocks>) (env var: THOR_BLOCKS)")
-	endBlockFlag    = flag.Uint64("end-block", 0, "thor end block number to stop indexing at (env var: END_BLOCK)")
-	influxUrlFlag   = flag.String("influx-url", config.DefaultInfluxDB, "influxdb URL, (env var: INFLUX_URL)")
-	influxTokenFlag = flag.String("influx-token", config.DefaultInfluxToken, "influxdb auth token, (env var: INFLUX_TOKEN)")
-	influxOrg       = flag.String("influx-org", config.DefaultInfluxOrg, "influxdb organization, (env var: INFLUX_ORG)")
-	influxBucket    = flag.String("influx-bucket", config.DefaultInfluxBucket, "influxdb bucket, (env var: INFLUX_BUCKET)")
-	ownersRepo      = flag.String("owners-repo-path", "", "owners excel file path repo, (env var: OWNERS_REPO)")
-)
+type Cmd struct {
+	ctx        context.Context
+	cancel     context.CancelFunc
+	wg         sync.WaitGroup
+	publisher  *pubsub.Publisher
+	subscriber *pubsub.Subscriber
+	influx     *influxdb.DB
+}
 
-func main() {
-	thorURL, influxURL, influxToken, err := parseFlags()
-	if err != nil {
-		slog.Error("failed to parse flags", "error", err)
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-	slog.Info("starting thorflux",
-		"thor-url", thorURL,
-		"influx-url", influxURL,
-		"influx-org", *influxOrg,
-		"influx-bucket", *influxBucket,
-		"blocks", *blocksFlag,
-		"end-block", *endBlockFlag,
+type Options struct {
+	ThorURL      string
+	GenesisURL   string
+	Blocks       uint64
+	EndBlock     uint64
+	InfluxURL    string
+	InfluxToken  string
+	InfluxOrg    string
+	InfluxBucket string
+	OwnersRepo   string
+}
+
+func New(ctx context.Context, opts Options) (*Cmd, error) {
+	slog.Info("initializing thorflux",
+		"thor-url", opts.ThorURL,
+		"influx-url", opts.InfluxURL,
+		"influx-org", opts.InfluxOrg,
+		"influx-bucket", opts.InfluxBucket,
+		"blocks", opts.Blocks,
+		"end-block", opts.EndBlock,
 	)
 
-	influx, err := influxdb.New(influxURL, influxToken, *influxOrg, *influxBucket)
+	influx, err := influxdb.New(opts.InfluxURL, opts.InfluxToken, opts.InfluxOrg, opts.InfluxBucket)
 	if err != nil {
 		slog.Error("failed to create influxdb", "error", err)
-		os.Exit(1)
+		return nil, err
 	}
-	defer func() {
-		if err := influx.Close(); err != nil {
-			slog.Error("error closing influxdb", "error", err)
-		}
-	}()
 
-	genesisCfg, err := setGenesisConfig(*genesisURLFlag, thorURL, influx)
+	genesisCfg, err := setGenesisConfig(opts.GenesisURL, opts.ThorURL, influx)
 	if err != nil {
 		slog.Error("failed to set genesis config", "error", err)
-		os.Exit(1)
+		return nil, err
 	}
 
-	if *blocksFlag > math.MaxUint32 {
+	if opts.Blocks > math.MaxUint32 {
 		slog.Error("thor-blocks cannot be greater than max uint32")
-		os.Exit(1)
+		return nil, err
 	}
 
-	ctx := exitContext()
-	publisher, blockChan, err := pubsub.NewPublisher(thorURL, genesisCfg, uint32(*blocksFlag), uint32(*endBlockFlag), influx)
+	publisher, blockChan, err := pubsub.NewPublisher(opts.ThorURL, genesisCfg, uint32(opts.Blocks), uint32(opts.EndBlock), influx)
 	if err != nil {
 		slog.Error("failed to create publisher", "error", err)
-		os.Exit(1)
+		return nil, err
 	}
-	subscriber, err := pubsub.NewSubscriber(thorURL, influx, blockChan, *ownersRepo)
+	subscriber, err := pubsub.NewSubscriber(opts.ThorURL, influx, blockChan, opts.OwnersRepo)
 	if err != nil {
 		slog.Error("failed to create subscriber", "error", err)
-		os.Exit(1)
+		return nil, err
 	}
 
-	go publisher.Start(ctx)
-	go subscriber.Subscribe(ctx)
-
-	slog.Info("thorflux started")
-
-	<-ctx.Done()
+	appCtx, cancel := context.WithCancel(ctx)
+	return &Cmd{
+		ctx:        appCtx,
+		cancel:     cancel,
+		publisher:  publisher,
+		subscriber: subscriber,
+		influx:     influx,
+	}, nil
 }
 
-func parseFlags() (string, string, string, error) {
-	if err := envflag.Parse(); err != nil {
-		return "", "", "", err
-	}
-
-	influxToken := *influxTokenFlag
-	if influxToken == "" {
-		return "", "", "", errors.New(config.ErrInfluxTokenRequired)
-	}
-
-	thorURL := *thorFlag
-	if thorURL == config.DefaultThorURL {
-		slog.Warn("thor node URL not set via flag or env, using default", "url", config.DefaultThorURL)
-	}
-
-	influxURL := *influxUrlFlag
-	if influxURL == config.DefaultInfluxDB {
-		slog.Warn("influxdb URL not set via flag or env, using default", "url", config.DefaultInfluxDB)
-	}
-
-	return thorURL, influxURL, influxToken, nil
+// Run starts the publisher and subscriber routines.
+func (cmd *Cmd) Run() {
+	slog.Info("starting thorflux publisher and subscriber")
+	cmd.wg.Go(func() {
+		cmd.publisher.Run(cmd.ctx)
+	})
+	cmd.wg.Go(func() {
+		cmd.subscriber.Subscribe(cmd.ctx)
+	})
 }
 
-func exitContext() context.Context {
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		exitSignalCh := make(chan os.Signal, 1)
-		signal.Notify(exitSignalCh, os.Interrupt, syscall.SIGTERM)
+func (cmd *Cmd) Stop() error {
+	slog.Info("stopping thorflux")
+	cmd.cancel()
+	cmd.wg.Wait()
+	return cmd.influx.Close()
+}
 
-		sig := <-exitSignalCh
-		slog.Info("exit signal received", "signal", sig)
-		cancel()
-	}()
-	return ctx
+func (cmd *Cmd) Publisher() *pubsub.Publisher {
+	return cmd.publisher
+}
+
+func (cmd *Cmd) Subscriber() *pubsub.Subscriber {
+	return cmd.subscriber
+}
+
+func (cmd *Cmd) InfluxDB() *influxdb.DB {
+	return cmd.influx
 }
 
 func setGenesisConfig(genesisURL, thorURL string, influx *influxdb.DB) (*genesis.CustomGenesis, error) {
