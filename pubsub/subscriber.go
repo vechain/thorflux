@@ -30,6 +30,7 @@ type Subscriber struct {
 	handlers   map[string]Handler
 	client     *thorclient.Client
 	workerPool *WorkerPool
+	synced     bool
 }
 
 func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent, ownersRepo string) (*Subscriber, error) {
@@ -65,6 +66,7 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent, 
 	}, nil
 }
 
+// Subscribe listens for new BlockEvents and processes them using registered handlers.
 func (s *Subscriber) Subscribe(ctx context.Context) {
 	defer s.workerPool.Shutdown()
 
@@ -91,6 +93,14 @@ func (s *Subscriber) Subscribe(ctx context.Context) {
 
 			if b.Block.Number%config.LogIntervalBlocks == 0 || time.Since(t) < config.RecentBlockThreshold {
 				slog.Info("🪣 writing to bucket", "number", b.Block.Number)
+			}
+			if !s.synced && time.Since(t) < time.Second*15 {
+				slog.Info("✅ subscriber fully synced", "block_number", b.Block.Number)
+				s.synced = true
+			}
+			if s.synced && time.Since(t) > time.Minute {
+				slog.Warn("⚠️ subscriber out of sync", "block_number", b.Block.Number)
+				s.synced = false
 			}
 
 			defaultTags := map[string]string{
