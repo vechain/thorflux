@@ -4,9 +4,8 @@ import (
 	"embed"
 	"encoding/json"
 
-	"github.com/vechain/thor/v2/thorclient"
-	"github.com/vechain/thorflux/config"
-	"github.com/vechain/thorflux/influxdb"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type Dashboard struct {
@@ -15,6 +14,15 @@ type Dashboard struct {
 		List []Variable `json:"list"`
 	} `json:"templating"`
 	Title string `json:"title"`
+}
+
+func (d *Dashboard) GetPanelByTitle(title string) (*Panel, bool) {
+	for _, panel := range d.Panels {
+		if panel.Title == title {
+			return &panel, true
+		}
+	}
+	return nil, false
 }
 
 type Variable struct {
@@ -30,6 +38,20 @@ type Panel struct {
 	Title   string   `json:"title"`
 }
 
+func (p *Panel) AssertHasResults(setup *TestSetup, overrides *SubstituteOverrides) {
+	for _, target := range p.Targets {
+		if target.Datasource.Type != "influxdb" {
+			continue
+		}
+		query := setup.SubstituteVariables(target.Query, overrides)
+		res, err := setup.Query(query)
+		require.NoError(setup.test, err, "Panel '%s' query failed: %s", p.Title, query)
+		require.NoError(setup.test, res.Err(), "Panel '%s' query result error: %s", p.Title, query)
+		assert.True(setup.test, res.Next(), "Panel '%s' expected at least one result row for query: %s", p.Title, query)
+		require.NoError(setup.test, res.Close())
+	}
+}
+
 type Target struct {
 	Datasource struct {
 		Type string `json:"type"`
@@ -37,13 +59,15 @@ type Target struct {
 	Query string `json:"query"`
 }
 
-//go:embed dashboards
+var dashboardsPath = "config/dashboards"
+
+//go:embed config/dashboards
 var dashboardsFS embed.FS
 
 func ParseDashboards() ([]Dashboard, error) {
 	var dashboards []Dashboard
 
-	entries, err := dashboardsFS.ReadDir("dashboards")
+	entries, err := dashboardsFS.ReadDir(dashboardsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +76,7 @@ func ParseDashboards() ([]Dashboard, error) {
 		if entry.IsDir() {
 			continue
 		}
-		data, err := dashboardsFS.ReadFile("dashboards/" + entry.Name())
+		data, err := dashboardsFS.ReadFile(dashboardsPath + "/" + entry.Name())
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +94,7 @@ func ParseDashboards() ([]Dashboard, error) {
 }
 
 func ParseDashboard(name string) (*Dashboard, error) {
-	data, err := dashboardsFS.ReadFile("dashboards/" + name)
+	data, err := dashboardsFS.ReadFile(dashboardsPath + "/" + name)
 	if err != nil {
 		return nil, err
 	}
@@ -82,13 +106,4 @@ func ParseDashboard(name string) (*Dashboard, error) {
 	}
 
 	return &dashboard, nil
-}
-
-func SetupTest() (*thorclient.Client, *influxdb.DB) {
-	client := thorclient.New(config.DefaultThorURL)
-	influx, err := influxdb.New(config.DefaultInfluxDB, config.DefaultInfluxToken, config.DefaultInfluxOrg, config.DefaultInfluxBucket)
-	if err != nil {
-		panic(err)
-	}
-	return client, influx
 }

@@ -2,10 +2,11 @@ package pubsub
 
 import (
 	"context"
-	"github.com/vechain/thor/v2/api"
-	"github.com/vechain/thorflux/config"
 	"log/slog"
 	"sync"
+
+	"github.com/vechain/thor/v2/api"
+	"github.com/vechain/thorflux/config"
 )
 
 const backwardWorkers = 100
@@ -48,27 +49,26 @@ func (s *BackwardSyncer) Start(ctx context.Context) {
 	workChan := make(chan uint32, backwardWorkers*2)
 	var wg sync.WaitGroup
 
-	// Start workers
+	defer func() {
+		close(workChan)
+		wg.Wait()
+		slog.Info("📚 backward sync complete")
+	}()
+
+	// Run workers
 	for i := 0; i < backwardWorkers; i++ {
 		wg.Add(1)
 		go s.worker(ctx, workChan, &wg, i)
 	}
 
 	// Generate work (block numbers to process)
-	go func() {
-		defer close(workChan)
-		for blockNum := s.head; blockNum > s.minBlock && blockNum > 0; blockNum-- {
-			select {
-			case <-ctx.Done():
-				return
-			case workChan <- blockNum:
-			}
+	for blockNum := s.head; blockNum > s.minBlock && blockNum > 0; blockNum-- {
+		select {
+		case <-ctx.Done():
+			return
+		case workChan <- blockNum:
 		}
-	}()
-
-	// Wait for all workers to complete
-	wg.Wait()
-	slog.Info("📚 backward sync complete")
+	}
 }
 
 func (s *BackwardSyncer) worker(ctx context.Context, workChan chan uint32, wg *sync.WaitGroup, workerID int) {
