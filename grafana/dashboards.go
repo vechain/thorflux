@@ -65,7 +65,7 @@ var dashboardsFS embed.FS
 func ParseDashboards() ([]Dashboard, error) {
 	var dashboards []Dashboard
 
-	entries, err := dashboardsFS.ReadDir("dashboards")
+	entries, err := dashboardsFS.ReadDir("dashboards/config")
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func ParseDashboards() ([]Dashboard, error) {
 		if entry.IsDir() {
 			continue
 		}
-		data, err := dashboardsFS.ReadFile("dashboards/" + entry.Name())
+		data, err := dashboardsFS.ReadFile("dashboards/config/" + entry.Name())
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +92,7 @@ func ParseDashboards() ([]Dashboard, error) {
 }
 
 func ParseDashboard(name string) (*Dashboard, error) {
-	data, err := dashboardsFS.ReadFile("dashboards/" + name)
+	data, err := dashboardsFS.ReadFile("dashboards/config/" + name)
 	if err != nil {
 		return nil, err
 	}
