@@ -44,7 +44,7 @@ type Variable struct {
 
 func (v *Variable) AssertHasResults(setup *TestSetup, overrides *SubstituteOverrides) {
 	if v.Datasource.Type != "influxdb" {
-		return
+		setup.test.Errorf("Expected datasource.Type to be 'influxdb', got '%s'", v.Datasource.Type)
 	}
 	queryStr, ok := v.Query.(string)
 	if !ok {
@@ -66,7 +66,7 @@ type Panel struct {
 func (p *Panel) AssertHasResults(setup *TestSetup, overrides *SubstituteOverrides) {
 	for _, target := range p.Targets {
 		if target.Datasource.Type != "influxdb" {
-			continue
+			setup.test.Errorf("Expected datasource.Type to be 'influxdb', got '%s'", target.Datasource.Type)
 		}
 		query := setup.SubstituteVariables(target.Query, overrides)
 		res, err := setup.Query(query)
