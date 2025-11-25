@@ -2932,6 +2932,10 @@
           "text": "0.0156",
           "value": "0.0156"
         },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
+        },
         "definition": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"price_api\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vet_price\")\n  |> last()",
         "description": "",
         "hide": 0,
@@ -2952,6 +2956,10 @@
           "selected": false,
           "text": "0.0010915",
           "value": "0.0010915"
+        },
+        "datasource": {
+          "type": "influxdb",
+          "uid": "B87265B08D314AF"
         },
         "definition": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"price_api\")\n  |> filter(fn: (r) => r[\"_field\"] == \"vtho_price\")\n  |> last()",
         "description": "",
