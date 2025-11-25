@@ -62,17 +62,14 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 	org, err := influx.OrganizationsAPI().FindOrganizationByName(t.Context(), "vechain")
 	require.NoError(t, err)
 
-	bucket, err := influx.BucketsAPI().CreateBucketWithNameWithID(t.Context(), *org.Id, t.Name())
-	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			bucket, err = influx.BucketsAPI().FindBucketByName(t.Context(), t.Name())
-			if err != nil {
-				t.Fatalf("failed to find existing influxdb bucket: %v", err)
-			}
-		} else {
-			t.Fatalf("failed to create influxdb bucket: %v", err)
-		}
+	// recreate the bucket
+	bucket, err := influx.BucketsAPI().FindBucketByName(t.Context(), t.Name())
+	require.NoError(t, err)
+	if bucket.Id != nil {
+		require.NoError(t, influx.BucketsAPI().DeleteBucketWithID(t.Context(), *bucket.Id))
 	}
+	bucket, err = influx.BucketsAPI().CreateBucketWithNameWithID(t.Context(), *org.Id, t.Name())
+	require.NoError(t, err)
 
 	cmd, err := thorflux.New(t.Context(), thorflux.Options{
 		ThorURL:      opts.ThorURL,
