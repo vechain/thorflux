@@ -53,6 +53,7 @@ func Write(ev *types.Event) []*write.Point {
 	} else {
 		flags["block_base_fee"] = "0"
 	}
+	flags["com"] = ev.Block.COM
 
 	tags := make(map[string]string)
 	tags["signer"] = ev.Block.Signer.String()

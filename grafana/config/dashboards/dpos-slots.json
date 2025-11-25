@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 8,
+  "id": 10,
   "links": [],
   "panels": [
     {
@@ -546,16 +546,150 @@
         }
       ],
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "B87265B08D314AF"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_value {_field=\"block_base_fee\", _start=\"2025-11-25 07:29:51.925 +0000 UTC\", _stop=\"2025-11-25 13:29:51.925 +0000 UTC\"}"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 539
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_field {_start=\"2025-11-25 13:35:30.936 +0000 UTC\", _stop=\"2025-11-25 13:45:30.936 +0000 UTC\"}"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 167
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_value {_start=\"2025-11-25 13:35:30.936 +0000 UTC\", _stop=\"2025-11-25 13:45:30.936 +0000 UTC\"}"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 192
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 19,
+        "x": 0,
+        "y": 32
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "frameIndex": 1,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "_time"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.19",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "B87265B08D314AF"
+          },
+          "query": "from(bucket:\"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n    r._measurement == \"block_stats\" \n  )\n  |> filter(fn: (r) =>\n    r._field == \"com\" or r._field == \"best_block_number\"\n  )\n  |> pivot(rowKey: [\"_time\", \"signer\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) =>\n    r.com == false\n  )\n  |> keep(columns: [\"_time\", \"best_block_number\", \"signer\", \"com\"])\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)",
+          "refId": "A"
+        }
+      ],
+      "title": "Com false votes by signer",
+      "transformations": [
+        {
+          "filter": {
+            "id": "byRefId",
+            "options": "A"
+          },
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "number",
+                "targetField": "best_block_number"
+              },
+              {
+                "destinationType": "boolean",
+                "targetField": "com"
+              }
+            ],
+            "fields": {}
+          },
+          "topic": "series"
+        }
+      ],
+      "type": "table"
     }
   ],
-  "preload": false,
   "refresh": "",
-  "schemaVersion": 41,
+  "schemaVersion": 39,
   "tags": [],
   "templating": {
     "list": [
       {
         "current": {
+          "selected": false,
           "text": "vechain",
           "value": "vechain"
         },
@@ -564,13 +698,16 @@
           "uid": "B87265B08D314AF"
         },
         "definition": "buckets()",
+        "hide": 0,
         "includeAll": false,
         "label": "Bucket",
+        "multi": false,
         "name": "bucket",
         "options": [],
         "query": "buckets()",
         "refresh": 2,
         "regex": "^[^_].*",
+        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       },
