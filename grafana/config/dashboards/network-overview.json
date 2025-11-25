@@ -1146,7 +1146,7 @@
       "pluginVersion": "12.0.1",
       "targets": [
         {
-          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      (r._field == \"legacy_txs\" or r._field == \"dyn_fee_txs\") and\n      r._value > 0\n    )\n  |> keep(columns: [\"_time\", \"block_number\", \"_field\", \"_value\"])\n  |> pivot(\n      rowKey:     [\"_time\", \"block_number\"],\n      columnKey:  [\"_field\"],\n      valueColumn:\"_value\"\n    )\n  // convert the block_number string into an integer field called \"block\"\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block: int(v: r.block_number),\n      legacy_txs: if exists r.legacy_txs then r.legacy_txs else 0,\n      dyn_fee_txs: if exists r.dyn_fee_txs then r.dyn_fee_txs else 0\n    }))\n  |> yield(name: \"txs_per_block\")\n",
+          "query": "from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) =>\n      r._measurement == \"transactions\" and\n      (r._field == \"legacy_txs\" or r._field == \"dyn_fee_txs\") and\n      r._value > 0\n    )\n  |> keep(columns: [\"_time\", \"block_number\", \"_field\", \"_value\"])\n  |> pivot(\n      rowKey:     [\"_time\"],\n      columnKey:  [\"_field\"],\n      valueColumn:\"_value\"\n    )\n  // convert the block_number string into an integer field called \"block\"\n  |> map(fn: (r) => ({\n      _time: r._time,\n      block: int(v: r.block_number),\n      legacy_txs: if exists r.legacy_txs then r.legacy_txs else 0,\n      dyn_fee_txs: if exists r.dyn_fee_txs then r.dyn_fee_txs else 0\n    }))\n  |> yield(name: \"txs_per_block\")\n",
           "refId": "A"
         }
       ],

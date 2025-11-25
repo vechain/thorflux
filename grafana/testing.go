@@ -45,6 +45,9 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 	if opts.ThorURL == "" {
 		t.Fatal("ThorURL must be provided in TestOptions")
 	}
+	if opts.EndBlock == 0 {
+		t.Fatal("EndBlock must be provided in TestOptions")
+	}
 	if opts.Blocks == 0 {
 		opts.Blocks = 360 * 4
 	}
@@ -90,14 +93,8 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 		cmd:    cmd,
 	}
 
-	if opts.EndBlock != 0 {
-		// run and wait for subscriber to exit (ie. sync up)
-		go cmd.Publisher().Run(t.Context())
-		cmd.Subscriber().Subscribe(t.Context())
-	} else {
-		go cmd.Run()
-		setup.WaitForBest()
-	}
+	go cmd.Publisher().Run(t.Context())
+	cmd.Subscriber().Subscribe(t.Context())
 
 	return setup
 }
