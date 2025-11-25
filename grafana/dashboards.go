@@ -25,12 +25,37 @@ func (d *Dashboard) GetPanelByTitle(title string) (*Panel, bool) {
 	return nil, false
 }
 
+func (d *Dashboard) GetVariableByName(name string) (*Variable, bool) {
+	for _, variable := range d.Templating.List {
+		if variable.Name == name {
+			return &variable, true
+		}
+	}
+	return nil, false
+}
+
 type Variable struct {
 	Name       string `json:"name"`
 	Datasource struct {
 		Type string `json:"type"`
 	} `json:"datasource"`
 	Query any `json:"query"`
+}
+
+func (v *Variable) AssertHasResults(setup *TestSetup, overrides *SubstituteOverrides) {
+	if v.Datasource.Type != "influxdb" {
+		return
+	}
+	queryStr, ok := v.Query.(string)
+	if !ok {
+		return
+	}
+	query := setup.SubstituteVariables(queryStr, overrides)
+	res, err := setup.Query(query)
+	require.NoError(setup.test, err, "Variable '%s' query failed: %s", v.Name, query)
+	require.NoError(setup.test, res.Err(), "Variable '%s' query result error: %s", v.Name, query)
+	assert.True(setup.test, res.Next(), "Variable '%s' expected at least one result row for query: %s", v.Name, query)
+	require.NoError(setup.test, res.Close())
 }
 
 type Panel struct {
