@@ -11,8 +11,9 @@ import (
 
 func TestDashboard_Queries_NoError(t *testing.T) {
 	test := NewTestSetup(t, TestOptions{
-		ThorURL: TestnetURL,
-		Blocks:  360,
+		ThorURL:  TestnetURL,
+		Blocks:   200,
+		EndBlock: 23402478,
 	})
 
 	dashboards, err := ParseDashboards()
@@ -26,19 +27,22 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 		// run every panel's query and ensure no errors
 		for _, panel := range dashboard.Panels {
 			for _, target := range panel.Targets {
-				if target.Datasource.Type != "influxdb" {
+				if panel.Datasource.Type != "influxdb" && target.Datasource.Type != "influxdb" {
+					t.Logf("⚠️ Skipping non-influxdb target (dashboard=%s, panel=%s, query=%s)", dashboard.Title, panel.Title, target.Query)
 					continue
 				}
 				query := test.SubstituteVariables(target.Query, nil)
 
+				baseErrMessage := fmt.Sprintf("query failed (dashboard= %s, panel= %s): \n %s, \n %s", dashboard.Title, panel.Title, target.Query, query)
+
 				totalRequests++
 				res, err := test.Query(query)
 				if err != nil {
-					t.Error("failed to execute query:", target.Query)
+					t.Error(baseErrMessage)
 					continue
 				}
 				if res.Err() != nil {
-					t.Error("query result error:", res.Err(), "for query:", target.Query)
+					t.Error(baseErrMessage)
 				}
 				if res.Next() {
 					hasResults++

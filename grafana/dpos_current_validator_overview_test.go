@@ -13,19 +13,19 @@ func Test_DPoS_Prices(t *testing.T) {
 		"dpos-historical-staker-overview.json",
 	}
 
+	block := uint64(23342968)
+
+	test := NewTestSetup(t, TestOptions{
+		ThorURL:  TestnetURL,
+		Blocks:   100,
+		EndBlock: block + 50,
+	})
+
 	for _, dashboard := range dashboards {
 		t.Run(dashboard, func(t *testing.T) {
-			dashboard, err := ParseDashboard("dpos-current-validator-overview.json")
+			dashboard, err := ParseDashboard(dashboard)
 			require.NoError(t, err)
 			require.NotNil(t, dashboard)
-
-			block := uint64(23342968)
-
-			test := NewTestSetup(t, TestOptions{
-				ThorURL:  TestnetURL,
-				Blocks:   100,
-				EndBlock: block + 50,
-			})
 
 			overrides := &SubstituteOverrides{
 				StartPeriod:  "-20y",

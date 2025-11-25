@@ -84,7 +84,8 @@
     },
     {
       "datasource": {
-        "uid": "B87265B08D314AF"
+        "uid": "B87265B08D314AF",
+        "type": "influxdb"
       },
       "fieldConfig": {
         "defaults": {

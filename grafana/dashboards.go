@@ -59,15 +59,18 @@ func (v *Variable) AssertHasResults(setup *TestSetup, overrides *SubstituteOverr
 }
 
 type Panel struct {
-	Targets []Target `json:"targets"`
-	Title   string   `json:"title"`
+	Targets    []Target `json:"targets"`
+	Title      string   `json:"title"`
+	Datasource struct {
+		Type string `json:"type"`
+	} `json:"datasource"`
 }
 
 func (p *Panel) AssertHasResults(setup *TestSetup, overrides *SubstituteOverrides) {
+	if p.Datasource.Type != "influxdb" {
+		setup.test.Errorf("Expected datasource.Type to be 'influxdb', got '%s'", p.Datasource.Type)
+	}
 	for _, target := range p.Targets {
-		if target.Datasource.Type != "influxdb" {
-			setup.test.Errorf("Expected datasource.Type to be 'influxdb', got '%s'", target.Datasource.Type)
-		}
 		query := setup.SubstituteVariables(target.Query, overrides)
 		res, err := setup.Query(query)
 		require.NoError(setup.test, err, "Panel '%s' query failed: %s", p.Title, query)
@@ -78,10 +81,10 @@ func (p *Panel) AssertHasResults(setup *TestSetup, overrides *SubstituteOverride
 }
 
 type Target struct {
+	Query      string `json:"query"`
 	Datasource struct {
 		Type string `json:"type"`
 	} `json:"datasource"`
-	Query string `json:"query"`
 }
 
 var dashboardsPath = "config/dashboards"
