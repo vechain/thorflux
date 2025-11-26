@@ -64,7 +64,7 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 
 	// recreate the bucket
 	bucket, err := influx.BucketsAPI().FindBucketByName(t.Context(), t.Name())
-	if bucket != nil && bucket.Id != nil {
+	if err == nil {
 		require.NoError(t, influx.BucketsAPI().DeleteBucketWithID(t.Context(), *bucket.Id))
 	}
 	bucket, err = influx.BucketsAPI().CreateBucketWithNameWithID(t.Context(), *org.Id, t.Name())
