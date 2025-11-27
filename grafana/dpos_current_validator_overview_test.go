@@ -1,10 +1,42 @@
 package grafana
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestDPoS_CurrentOverview(t *testing.T) {
+	dashboard, err := ParseDashboard("dpos-current-validator-overview.json")
+	require.NoError(t, err)
+	require.NotNil(t, dashboard)
+
+	test := NewTestSetup(t, TestOptions{
+		ThorURL:  TestnetURL,
+		Blocks:   250,
+		EndBlock: 23363950,
+	})
+	overrides := &SubstituteOverrides{
+		StartPeriod:  "-10y",
+		EndPeriod:    "-1h",
+		WindowPeriod: "1y",
+	}
+
+	for _, panel := range dashboard.Panels {
+		t.Run(panel.Title, func(t *testing.T) {
+			for i, target := range panel.Targets {
+				if strings.Contains(target.Query, "range(start: -120m)") {
+					panel.Targets[i].Query = strings.ReplaceAll(target.Query, "range(start: -120m)", "range(start: -10y)")
+				}
+			}
+			if panel.Title == "Validations Healthy Production Rate" {
+				t.Log("Skipping panel 'Validations Healthy Production Rate' due to known data gaps")
+			}
+			panel.AssertHasResults(test, overrides)
+		})
+	}
+}
 
 func Test_DPoS_Prices(t *testing.T) {
 	dashboards := []string{

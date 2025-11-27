@@ -54,8 +54,9 @@ func NewWorkerPool(workers int, queueSize int, db *influxdb.DB) *WorkerPool {
 
 	// Start workers
 	for i := 0; i < workers; i++ {
-		pool.wg.Add(1)
-		go pool.worker(i)
+		pool.wg.Go(func() {
+			pool.worker(i)
+		})
 	}
 
 	slog.Info("Worker pool started", "workers", workers, "queue_size", queueSize)
@@ -64,8 +65,6 @@ func NewWorkerPool(workers int, queueSize int, db *influxdb.DB) *WorkerPool {
 
 // worker is the main worker goroutine that processes tasks
 func (wp *WorkerPool) worker(id int) {
-	defer wp.wg.Done()
-
 	slog.Debug("Worker started", "worker_id", id)
 
 	for {
@@ -122,7 +121,7 @@ func (wp *WorkerPool) processTask(task Task, workerID int) {
 		"event_type", task.EventType,
 		"duration", time.Since(start),
 		"block_number", task.Event.Block.Number)
-	
+
 	wp.db.WritePoints(points)
 }
 
