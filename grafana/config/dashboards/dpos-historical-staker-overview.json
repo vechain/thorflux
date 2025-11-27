@@ -1127,7 +1127,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "total_weight_accumulated"
+              "options": "accumulated_weight"
             },
             "properties": [
               {

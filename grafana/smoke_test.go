@@ -31,7 +31,7 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 					t.Logf("⚠️ Skipping non-influxdb target (dashboard=%s, panel=%s, query=%s)", dashboard.Title, panel.Title, target.Query)
 					continue
 				}
-				query := test.SubstituteVariables(target.Query, nil)
+				query := test.SubstituteVariables(target.Query)
 
 				baseErrMessage := fmt.Sprintf("query failed (dashboard= %s, panel= %s): \n %s, \n %s", dashboard.Title, panel.Title, target.Query, query)
 
@@ -58,7 +58,7 @@ func TestDashboard_Queries_NoError(t *testing.T) {
 				continue
 			}
 
-			substitutedQuery := test.SubstituteVariables(query, nil)
+			substitutedQuery := test.SubstituteVariables(query)
 			failureMessage := fmt.Sprintf("variable query failed (dashboard= %s): \n %s, \n %s", dashboard.Title, query, substitutedQuery)
 
 			res, err := test.Query(substitutedQuery)

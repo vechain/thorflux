@@ -42,7 +42,7 @@ type Variable struct {
 	Query any `json:"query"`
 }
 
-func (v *Variable) AssertHasResults(setup *TestSetup, overrides *SubstituteOverrides) {
+func (v *Variable) AssertHasResults(setup *TestSetup) {
 	if v.Datasource.Type != "influxdb" {
 		setup.test.Errorf("Expected datasource.Type to be 'influxdb', got '%s'", v.Datasource.Type)
 	}
@@ -50,7 +50,7 @@ func (v *Variable) AssertHasResults(setup *TestSetup, overrides *SubstituteOverr
 	if !ok {
 		return
 	}
-	query := setup.SubstituteVariables(queryStr, overrides)
+	query := setup.SubstituteVariables(queryStr)
 	res, err := setup.Query(query)
 	require.NoError(setup.test, err, "Variable '%s' query failed: %s", v.Name, query)
 	require.NoError(setup.test, res.Err(), "Variable '%s' query result error: %s", v.Name, query)
@@ -66,12 +66,12 @@ type Panel struct {
 	} `json:"datasource"`
 }
 
-func (p *Panel) AssertHasResults(setup *TestSetup, overrides *SubstituteOverrides) {
+func (p *Panel) AssertHasResults(setup *TestSetup) {
 	if p.Datasource.Type != "influxdb" {
 		setup.test.Errorf("Expected datasource.Type to be 'influxdb', got '%s'", p.Datasource.Type)
 	}
 	for _, target := range p.Targets {
-		query := setup.SubstituteVariables(target.Query, overrides)
+		query := setup.SubstituteVariables(target.Query)
 		res, err := setup.Query(query)
 		require.NoError(setup.test, err, "Panel '%s' query failed: %s", p.Title, query)
 		require.NoError(setup.test, res.Err(), "Panel '%s' query result error: %s", p.Title, query)
