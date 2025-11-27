@@ -16,15 +16,10 @@ func TestDPoS_Contract_Events_Dashboard(t *testing.T) {
 		Blocks:   250,
 		EndBlock: 23363950,
 	})
-	overrides := &SubstituteOverrides{
-		StartPeriod:  "-10y",
-		EndPeriod:    "-1h",
-		WindowPeriod: "1y",
-	}
 
 	for _, panel := range dashboard.Panels {
 		t.Run(panel.Title, func(t *testing.T) {
-			panel.AssertHasResults(test, overrides)
+			panel.AssertHasResults(test)
 		})
 	}
 }

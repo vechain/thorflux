@@ -112,20 +112,15 @@ func (ts *TestSetup) Client() *thorclient.Client {
 	return ts.client
 }
 
-// SubstituteOverrides allows overriding time range and window period in queries.
-type SubstituteOverrides struct {
-	StartPeriod  string // eg "-30m"
-	EndPeriod    string // eg "now()"
-	WindowPeriod string // eg "10s"
-}
-
 // SubstituteVariables replaces Grafana template variables in a query with actual values.
 // This allows testing Grafana dashboard queries with real data.
-func (ts *TestSetup) SubstituteVariables(query string, overrides *SubstituteOverrides) string {
+func (ts *TestSetup) SubstituteVariables(query string) string {
 	topBlock, err := ts.client.Block(strconv.FormatUint(ts.opts.EndBlock, 10))
 	require.NoError(ts.test, err)
 	bottomBlock, err := ts.client.Block(strconv.FormatUint(ts.opts.EndBlock-uint64(ts.opts.Blocks), 10))
 	require.NoError(ts.test, err)
+
+	startTimestamp := time.Unix(int64(bottomBlock.Timestamp), 0).UTC()
 
 	variableReplacements := map[string]string{
 		"${staker}":                       topBlock.Signer.String(),
@@ -150,6 +145,9 @@ func (ts *TestSetup) SubstituteVariables(query string, overrides *SubstituteOver
 		"${region}":                       "eu-west-1",
 		"${color}":                        "blue",
 		"${group}":                        "dev-pn",
+		"v.timeRangeStart":                startTimestamp.Format(time.RFC3339),
+		"v.timeRangeStop":                 "now()",
+		"v.windowPeriod":                  "1m",
 	}
 
 	result := query
@@ -157,27 +155,6 @@ func (ts *TestSetup) SubstituteVariables(query string, overrides *SubstituteOver
 		if strings.Contains(query, placeholder) {
 			result = strings.ReplaceAll(result, placeholder, replacement)
 		}
-	}
-
-	startTimestamp := time.Unix(int64(bottomBlock.Timestamp), 0).UTC()
-
-	if overrides == nil {
-		overrides = &SubstituteOverrides{}
-	}
-	if overrides.StartPeriod != "" {
-		result = strings.ReplaceAll(result, "v.timeRangeStart", overrides.StartPeriod)
-	} else {
-		result = strings.ReplaceAll(result, "v.timeRangeStart", startTimestamp.Format(time.RFC3339))
-	}
-	if overrides.EndPeriod != "" {
-		result = strings.ReplaceAll(result, "v.timeRangeStop", overrides.EndPeriod)
-	} else {
-		result = strings.ReplaceAll(result, "v.timeRangeStop", "now()")
-	}
-	if overrides.WindowPeriod != "" {
-		result = strings.ReplaceAll(result, "v.windowPeriod", overrides.WindowPeriod)
-	} else {
-		result = strings.ReplaceAll(result, "v.windowPeriod", "1h")
 	}
 
 	return result

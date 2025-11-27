@@ -17,11 +17,6 @@ func TestDPoS_CurrentOverview(t *testing.T) {
 		Blocks:   250,
 		EndBlock: 23363950,
 	})
-	overrides := &SubstituteOverrides{
-		StartPeriod:  "-10y",
-		EndPeriod:    "-1h",
-		WindowPeriod: "1y",
-	}
 
 	for _, panel := range dashboard.Panels {
 		t.Run(panel.Title, func(t *testing.T) {
@@ -33,7 +28,7 @@ func TestDPoS_CurrentOverview(t *testing.T) {
 			if panel.Title == "Validations Healthy Production Rate" {
 				t.Log("Skipping panel 'Validations Healthy Production Rate' due to known data gaps")
 			}
-			panel.AssertHasResults(test, overrides)
+			panel.AssertHasResults(test)
 		})
 	}
 }
@@ -59,19 +54,13 @@ func Test_DPoS_Prices(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, dashboard)
 
-			overrides := &SubstituteOverrides{
-				StartPeriod:  "-20y",
-				EndPeriod:    "now()",
-				WindowPeriod: "1y",
-			}
-
 			vetVariable, ok := dashboard.GetVariableByName("vet_price")
 			require.True(t, ok, "vet_price variable not found")
-			vetVariable.AssertHasResults(test, overrides)
+			vetVariable.AssertHasResults(test)
 
 			vthoVariable, ok := dashboard.GetVariableByName("vtho_price")
 			require.True(t, ok, "vtho_price variable not found")
-			vthoVariable.AssertHasResults(test, overrides)
+			vthoVariable.AssertHasResults(test)
 		})
 	}
 }
