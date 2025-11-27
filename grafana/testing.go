@@ -12,7 +12,6 @@ import (
 	"github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/influxdata/influxdb-client-go/v2/domain"
 	"github.com/stretchr/testify/require"
-	"github.com/vechain/thor/v2/thor"
 	"github.com/vechain/thor/v2/thorclient"
 	"github.com/vechain/thorflux/cmd/thorflux"
 	"github.com/vechain/thorflux/config"
@@ -20,6 +19,7 @@ import (
 
 // TestSetup provides a test fixture with running Thor, InfluxDB, and Thorflux containers.
 type TestSetup struct {
+	opts   TestOptions
 	cmd    *thorflux.Cmd
 	test   *testing.T
 	db     influxdb2.Client
@@ -82,6 +82,7 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 	require.NoError(t, err)
 
 	setup := &TestSetup{
+		opts:   opts,
 		db:     influx,
 		test:   t,
 		client: client,
@@ -91,26 +92,9 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 
 	go cmd.Publisher().Run(t.Context())
 	cmd.Subscriber().Subscribe(t.Context())
+	require.NoError(t, cmd.InfluxDB().Close()) // this flushes all writes
 
 	return setup
-}
-
-// WaitForBest waits until InfluxDB has indexed up to the best block.
-func (ts *TestSetup) WaitForBest() {
-	best, err := ts.client.Block("best")
-	require.NoError(ts.test, err)
-
-	dbBest, err := ts.cmd.InfluxDB().Latest()
-	require.NoError(ts.test, err)
-
-	for dbBest < best.Number {
-		best, err = ts.client.Block("best")
-		require.NoError(ts.test, err)
-
-		dbBest, err = ts.cmd.InfluxDB().Latest()
-		require.NoError(ts.test, err)
-		time.Sleep(100 * time.Millisecond)
-	}
 }
 
 func (ts *TestSetup) Query(query string) (*api.QueryTableResult, error) {
@@ -138,14 +122,16 @@ type SubstituteOverrides struct {
 // SubstituteVariables replaces Grafana template variables in a query with actual values.
 // This allows testing Grafana dashboard queries with real data.
 func (ts *TestSetup) SubstituteVariables(query string, overrides *SubstituteOverrides) string {
-	best, err := ts.client.Block("best")
+	topBlock, err := ts.client.Block(strconv.FormatUint(ts.opts.EndBlock, 10))
+	require.NoError(ts.test, err)
+	bottomBlock, err := ts.client.Block(strconv.FormatUint(ts.opts.EndBlock-uint64(ts.opts.Blocks), 10))
 	require.NoError(ts.test, err)
 
 	variableReplacements := map[string]string{
-		"${staker}":                       best.Signer.String(),
-		"${proposer}":                     best.Signer.String(),
-		"${selected_block}":               strconv.FormatUint(uint64(best.Number-thor.EpochLength()), 10),
-		"${manual_block}":                 strconv.FormatUint(uint64(best.Number-thor.EpochLength()), 10),
+		"${staker}":                       topBlock.Signer.String(),
+		"${proposer}":                     topBlock.Signer.String(),
+		"${selected_block}":               strconv.FormatUint(ts.opts.EndBlock, 10),
+		"${manual_block}":                 strconv.FormatUint(ts.opts.EndBlock, 10),
 		"${bucket}":                       ts.bucket.Name,
 		"${vet_price}":                    "0.02",
 		"${vtho_price}":                   "0.001",
@@ -173,13 +159,15 @@ func (ts *TestSetup) SubstituteVariables(query string, overrides *SubstituteOver
 		}
 	}
 
+	startTimestamp := time.Unix(int64(bottomBlock.Timestamp), 0).UTC()
+
 	if overrides == nil {
 		overrides = &SubstituteOverrides{}
 	}
 	if overrides.StartPeriod != "" {
 		result = strings.ReplaceAll(result, "v.timeRangeStart", overrides.StartPeriod)
 	} else {
-		result = strings.ReplaceAll(result, "v.timeRangeStart", "-24h")
+		result = strings.ReplaceAll(result, "v.timeRangeStart", startTimestamp.Format(time.RFC3339))
 	}
 	if overrides.EndPeriod != "" {
 		result = strings.ReplaceAll(result, "v.timeRangeStop", overrides.EndPeriod)
