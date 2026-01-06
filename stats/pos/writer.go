@@ -356,11 +356,15 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *types.StakerI
 
 	}
 
+	totalWeight := uint64(0)
 	// process all current validators, queued and active
 	for _, validator := range info.Validations {
 		multiplier := uint64(1)
 		if validator.DelegatorStake.Sign() > 0 {
 			multiplier = uint64(2)
+		}
+		if validator.Status == validation.StatusActive {
+			totalWeight += validator.Weight
 		}
 		flags := map[string]any{
 			"online":            validator.Online,
@@ -430,6 +434,26 @@ func (s *Staker) createSingleValidatorStats(ev *types.Event, info *types.StakerI
 		)
 
 		points = append(points, p)
+	}
+
+	if ev.Block.Number%s.epochLength == 0 {
+		// Store expected blocks for each active online validator
+		if totalWeight > 0 {
+			for _, v := range info.Validations {
+				if v.Status != validation.StatusActive {
+					continue
+				}
+				expectedBlocks := float64(v.Weight) / float64(totalWeight) * float64(s.epochLength)
+
+				p := influxdb2.NewPoint(
+					"expected_blocks",
+					map[string]string{"validator": v.Address.String()},
+					map[string]interface{}{"expected": expectedBlocks},
+					ev.Timestamp,
+				)
+				points = append(points, p)
+			}
+		}
 	}
 
 	return points

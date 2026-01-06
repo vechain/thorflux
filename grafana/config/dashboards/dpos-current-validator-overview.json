@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 11,
+  "id": 6,
   "links": [],
   "panels": [
     {
@@ -408,7 +408,7 @@
               }
             ]
           },
-          "unit": "locale"
+          "unit": "currencyUSD"
         },
         "overrides": []
       },
@@ -442,11 +442,15 @@
       "pluginVersion": "10.4.19",
       "targets": [
         {
-          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> sum(column: \"_value\")",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "B87265B08D314AF"
+          },
+          "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
           "refId": "A"
         }
       ],
-      "title": "Validator TVL (VET)",
+      "title": "Validator TVL (USD)",
       "type": "stat"
     },
     {
@@ -565,6 +569,10 @@
       "pluginVersion": "10.4.19",
       "targets": [
         {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "B87265B08D314AF"
+          },
           "query": "latestRecord = from(bucket: \"${bucket}\")\n  |> range(start: 2015-01-01T00:00:00Z, stop: 2100-01-01T00:00:00Z)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"_field\"] == \"validator_staked\")\n  |> group()\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nlatestTime = latestRecord._time\n\nfrom(bucket: \"${bucket}\")\n  |> range(start: latestTime)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"individual_validators\")\n  |> filter(fn: (r) => r[\"status\"] == \"active\")\n  |> filter(fn: (r) => r[\"_field\"] == \"delegators_staked\")\n  |> group()\n  |> sum(column: \"_value\")\n  |> map(fn: (r) => ({ _value: float(v: r._value) * float(v: ${vet_price})}))",
           "refId": "A"
         }
@@ -2919,6 +2927,171 @@
       ],
       "title": "Validations Healthy Production Rate",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "B87265B08D314AF"
+      },
+      "description": "Compares actual blocks proposed vs expected blocks for each validator over the selected time range. Is Healthy = less than 10% difference.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Expected Blocks"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual Blocks"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Diff %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Is Healthy"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "false": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "No"
+                      },
+                      "not_enough_data": {
+                        "color": "yellow",
+                        "index": 2,
+                        "text": "Not Enough Data"
+                      },
+                      "true": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "Yes"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "basic",
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 24,
+        "x": 0,
+        "y": 134
+      },
+      "id": 46,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": false,
+          "fields": [],
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Diff %"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.19",
+      "targets": [
+        {
+          "query": "import \"math\"\n\n// Get expected blocks per validator (sum over time range)\nexpected = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"expected_blocks\")\n  |> filter(fn: (r) => r[\"_field\"] == \"expected\")\n  |> group(columns: [\"validator\"])\n  |> sum()\n  |> rename(columns: {_value: \"expected_blocks\"})\n  |> keep(columns: [\"validator\", \"expected_blocks\"])\n\n// Get actual blocks proposed per validator (count rows)\nactual = from(bucket: \"${bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"validator_overview\")\n  |> filter(fn: (r) => r[\"_field\"] == \"block_number\")\n  |> group(columns: [\"signer\"])\n  |> count()\n  |> rename(columns: {signer: \"validator\", _value: \"actual_blocks\"})\n  |> keep(columns: [\"validator\", \"actual_blocks\"])\n\n// Join expected and actual\njoin(\n  tables: {expected: expected, actual: actual},\n  on: [\"validator\"]\n)\n  |> map(fn: (r) => {\n      // Positive diff = underperforming (produced fewer than expected)\n      // Negative diff = overperforming (produced more than expected)\n      diff_pct = if r.expected_blocks == 0.0 then 0.0\n                 else (r.expected_blocks - float(v: r.actual_blocks)) / r.expected_blocks * 100.0\n      // Only unhealthy if underperforming by more than 10%\n      status = if r.expected_blocks < 200.0 then \"not_enough_data\"\n               else if diff_pct > 10.0 then \"false\"\n               else \"true\"\n      return {\n        \"Validator\": \"=\" + r.validator,\n        \"Expected Blocks\": r.expected_blocks,\n        \"Actual Blocks\": r.actual_blocks,\n        \"Diff %\": diff_pct,\n        \"Is Healthy\": status\n      }\n    })\n  |> group()\n  |> sort(columns: [\"Expected Blocks\"], desc: true)\n",
+          "refId": "A"
+        }
+      ],
+      "title": "Validator Block Production Health",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "Actual Blocks": 2,
+              "Diff %": 3,
+              "Expected Blocks": 1,
+              "Is Healthy": 4,
+              "Validator": 0
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
     }
   ],
   "refresh": "",
@@ -2929,8 +3102,8 @@
       {
         "current": {
           "selected": false,
-          "text": "0.0156",
-          "value": "0.0156"
+          "text": "0.0126",
+          "value": "0.0126"
         },
         "datasource": {
           "type": "influxdb",
@@ -2954,8 +3127,8 @@
       {
         "current": {
           "selected": false,
-          "text": "0.0010915",
-          "value": "0.0010915"
+          "text": "0.000854",
+          "value": "0.000854"
         },
         "datasource": {
           "type": "influxdb",
@@ -3002,10 +3175,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "180",
+          "value": "180"
         },
         "datasource": {
           "type": "influxdb",
@@ -3027,10 +3199,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "10",
+          "value": "10"
         },
         "datasource": {
           "type": "influxdb",
@@ -3052,10 +3223,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "8640",
+          "value": "8640"
         },
         "datasource": {
           "type": "influxdb",
@@ -3077,10 +3247,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "60480",
+          "value": "60480"
         },
         "datasource": {
           "type": "influxdb",
@@ -3102,10 +3271,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "60480",
+          "value": "60480"
         },
         "datasource": {
           "type": "influxdb",
@@ -3127,10 +3295,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "129600",
+          "value": "129600"
         },
         "datasource": {
           "type": "influxdb",
@@ -3152,10 +3319,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "259200",
+          "value": "259200"
         },
         "datasource": {
           "type": "influxdb",
@@ -3177,10 +3343,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "8640",
+          "value": "8640"
         },
         "datasource": {
           "type": "influxdb",
@@ -3202,10 +3367,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "60480",
+          "value": "60480"
         },
         "datasource": {
           "type": "influxdb",
@@ -3227,10 +3391,9 @@
       },
       {
         "current": {
-          "isNone": true,
           "selected": false,
-          "text": "None",
-          "value": ""
+          "text": "23414400",
+          "value": "23414400"
         },
         "datasource": {
           "type": "influxdb",
@@ -3253,7 +3416,7 @@
     ]
   },
   "time": {
-    "from": "now-3h",
+    "from": "now-7d",
     "to": "now"
   },
   "timepicker": {},
