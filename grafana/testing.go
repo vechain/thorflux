@@ -95,6 +95,9 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 	// run with latest blocks as well
 	thorfluxOpts.EndBlock = uint64(best.Number)
 	thorfluxOpts.Blocks = 200
+	thorfluxOpts.ExcludedHandlers = map[string]bool{
+		"pos": true,
+	}
 	runWithOptions(thorfluxOpts)
 
 	setup := &TestSetup{

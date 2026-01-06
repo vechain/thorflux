@@ -33,7 +33,13 @@ type Subscriber struct {
 	synced     bool
 }
 
-func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent, ownersRepo string) (*Subscriber, error) {
+func NewSubscriber(
+	thorURL string,
+	db *influxdb.DB,
+	blockChan chan *BlockEvent,
+	ownersRepo string,
+	excludedHandlers map[string]bool,
+) (*Subscriber, error) {
 	tclient := thorclient.New(thorURL)
 
 	chainTag, err := tclient.ChainTag()
@@ -51,6 +57,10 @@ func NewSubscriber(thorURL string, db *influxdb.DB, blockChan chan *BlockEvent, 
 		"utilisation":  utilisation.Write,
 		"slots":        slots.New().Write,
 		"price":        priceapi.New(db).Write,
+	}
+	// remove excluded handlers
+	for name := range excludedHandlers {
+		delete(handlers, name)
 	}
 
 	// Create worker pool for concurrent handler execution
