@@ -20,7 +20,6 @@ import (
 // TestSetup provides a test fixture with running Thor, InfluxDB, and Thorflux containers.
 type TestSetup struct {
 	opts   TestOptions
-	cmd    *thorflux.Cmd
 	test   *testing.T
 	db     influxdb2.Client
 	client *thorclient.Client
@@ -51,6 +50,8 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 	if opts.Blocks == 0 {
 		opts.Blocks = 360 * 4
 	}
+	best, err := thorclient.New(opts.ThorURL).Block("best")
+	require.NoError(t, err)
 
 	// Get the host-accessible URL for the test
 	influx := influxdb2.NewClient(config.DefaultInfluxDB, config.DefaultInfluxToken)
@@ -70,7 +71,16 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 	bucket, err = influx.BucketsAPI().CreateBucketWithNameWithID(t.Context(), *org.Id, t.Name())
 	require.NoError(t, err)
 
-	cmd, err := thorflux.New(t.Context(), thorflux.Options{
+	runWithOptions := func(opts thorflux.Options) {
+		cmd, err := thorflux.New(t.Context(), opts)
+		require.NoError(t, err)
+
+		go cmd.Publisher().Run(t.Context())
+		cmd.Subscriber().Subscribe(t.Context())
+		require.NoError(t, cmd.InfluxDB().Close()) // this flushes all writes
+	}
+
+	thorfluxOpts := thorflux.Options{
 		ThorURL:      opts.ThorURL,
 		Blocks:       uint64(opts.Blocks),
 		InfluxURL:    config.DefaultInfluxDB,
@@ -78,8 +88,14 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 		EndBlock:     opts.EndBlock,
 		InfluxBucket: bucket.Name,
 		InfluxOrg:    config.DefaultInfluxOrg,
-	})
-	require.NoError(t, err)
+	}
+
+	runWithOptions(thorfluxOpts)
+
+	// run with latest blocks as well
+	thorfluxOpts.EndBlock = uint64(best.Number)
+	thorfluxOpts.Blocks = 200
+	runWithOptions(thorfluxOpts)
 
 	setup := &TestSetup{
 		opts:   opts,
@@ -87,12 +103,7 @@ func NewTestSetup(t *testing.T, opts TestOptions) *TestSetup {
 		test:   t,
 		client: client,
 		bucket: bucket,
-		cmd:    cmd,
 	}
-
-	go cmd.Publisher().Run(t.Context())
-	cmd.Subscriber().Subscribe(t.Context())
-	require.NoError(t, cmd.InfluxDB().Close()) // this flushes all writes
 
 	return setup
 }
