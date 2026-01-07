@@ -30,15 +30,16 @@ type Cmd struct {
 }
 
 type Options struct {
-	ThorURL      string
-	GenesisURL   string
-	Blocks       uint64
-	EndBlock     uint64
-	InfluxURL    string
-	InfluxToken  string
-	InfluxOrg    string
-	InfluxBucket string
-	OwnersRepo   string
+	ThorURL          string
+	GenesisURL       string
+	Blocks           uint64
+	EndBlock         uint64
+	InfluxURL        string
+	InfluxToken      string
+	InfluxOrg        string
+	InfluxBucket     string
+	OwnersRepo       string
+	ExcludedHandlers map[string]bool
 }
 
 func New(ctx context.Context, opts Options) (*Cmd, error) {
@@ -73,7 +74,7 @@ func New(ctx context.Context, opts Options) (*Cmd, error) {
 		slog.Error("failed to create publisher", "error", err)
 		return nil, err
 	}
-	subscriber, err := pubsub.NewSubscriber(opts.ThorURL, influx, blockChan, opts.OwnersRepo)
+	subscriber, err := pubsub.NewSubscriber(opts.ThorURL, influx, blockChan, opts.OwnersRepo, opts.ExcludedHandlers)
 	if err != nil {
 		slog.Error("failed to create subscriber", "error", err)
 		return nil, err
